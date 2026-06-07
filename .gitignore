@@ -1,10 +1,25 @@
-# Build artifacts (rebuilt by `node vercel-build.js` / `npm run build`)
-dist/
-hub.html
+# Dependencies
+node_modules/
 
-# Heavy local media / recording inputs & outputs — not part of the app
-raw/
-srt/
+# Build output
+dist/
+.vite/
+
+# Vercel
+.vercel/
+
+# Local env
+.env
+.env.local
+*.local
+
+# Editor / OS
+.DS_Store
+.claude/
+
+# Heavy local recording media (inputs/outputs live at repo root, not committed)
+/raw/
+/srt/
 *.mp4
 *.mp3
 *.webm
@@ -13,18 +28,15 @@ srt/
 *.m4a
 *.wav
 
-# Screenshots & stray images (a journal doodle.png is allowed below)
-*.png
-*.jpg
-*.jpeg
-!doodle.png
-!doodle.jpg
-!doodle.jpeg
+# Root-level images & artifacts (screenshots, legacy built hub) — not the app.
+# Scoped to root so sim assets under src/ are NOT ignored.
+/*.png
+/*.jpg
+/*.jpeg
+/hub.html
 
-# The Remotion render project is a separate tool with its own deps
-template/
+# Remotion render project (separate tool, has its own deps)
+/template/
 
-# Tooling / local-only
-node_modules/
-.claude/
-.vercel/
+# TS incremental build info
+*.tsbuildinfo

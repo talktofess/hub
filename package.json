@@ -1,11 +1,25 @@
 {
   "name": "sim-hub",
-  "version": "1.0.0",
   "private": true,
-  "description": "Sim Hub — the recording hub (all 9 sims in one file) deployed as a static app on Vercel, used as an OBS Browser Source.",
+  "version": "2.0.0",
+  "type": "module",
+  "description": "Sim Hub — an OBS-friendly recording app: typed-animation recreations of everyday apps, deployed on Vercel.",
   "scripts": {
-    "build": "node vercel-build.js",
-    "dev": "node vercel-build.js && node serve.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
   },
   "engines": {
     "node": ">=18"
