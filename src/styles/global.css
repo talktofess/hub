@@ -28,11 +28,20 @@ button { font-family: inherit; }
   pointer-events: none; transition: opacity .3s ease;
 }
 
+/* ---------- background media layer (behind the stage) ---------- */
+.bg-layer { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #000; }
+.bg-fill { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ken-burns { animation: kenburns 24s ease-in-out infinite alternate; transform-origin: center; }
+@keyframes kenburns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.18) translate(-2%, -3%); }
+}
+
 /* ---------- edit layout ---------- */
 .edit-root {
   position: relative; z-index: 1;
   display: grid; grid-template-columns: 236px 1fr 384px;
-  height: 100vh; background: var(--bg);
+  height: 100vh; background: transparent; /* stage area reveals the bg layer */
 }
 
 /* ---------- sidebar / launcher ---------- */
@@ -159,6 +168,58 @@ button { font-family: inherit; }
   padding: 9px 12px; font-weight: 600; font-size: 13px; cursor: pointer; text-align: left;
 }
 .settings-btn:hover { background: #242833; }
+
+/* ---------- caret (driven by universal settings) ---------- */
+.caret {
+  display: inline-block; width: 3px; height: 1.05em; margin-left: 2px;
+  background: var(--caret-color, #fff); vertical-align: -0.16em;
+}
+:root[data-caret="block"] .caret { width: .55em; opacity: .5; }
+:root[data-caret="underline"] .caret { width: .6em; height: 3px; vertical-align: baseline; }
+:root[data-caret-blink="1"] .caret { animation: blink 1s steps(2, start) infinite; }
+:root[data-show-caret="0"] .caret { display: none; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ---------- stage FX overlays (universal) ---------- */
+.fx-grain, .fx-vignette { position: absolute; inset: 0; pointer-events: none; }
+.fx-vignette { box-shadow: inset 0 0 360px 90px rgba(0, 0, 0, 0.7); }
+.fx-grain {
+  opacity: .08; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 240px 240px;
+}
+
+/* ---------- media library ---------- */
+.uploader {
+  display: block; text-align: center; cursor: pointer; user-select: none;
+  border: 1px dashed var(--line); border-radius: 9px; padding: 12px;
+  font-size: 13px; font-weight: 600; color: var(--muted); background: #0e0f13;
+}
+.uploader:hover { color: var(--text); border-color: color-mix(in srgb, var(--accent) 50%, var(--line)); }
+.media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 9px; }
+.media-cell {
+  position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer;
+  background: #0e0f13; border: 2px solid transparent;
+}
+.media-cell.sel { border-color: var(--accent); }
+.media-cell img, .media-cell video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.media-audio { display: grid; place-items: center; height: 100%; font-size: 26px; color: var(--muted); }
+.media-del {
+  position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border: none; cursor: pointer;
+  border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-size: 14px; line-height: 1; display: grid; place-items: center;
+}
+.media-del:hover { background: #ef4444; }
+
+/* ---------- settings groups ---------- */
+.grp { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--panel-2); }
+.grp > summary { cursor: pointer; font-weight: 600; font-size: 13px; list-style: none; padding: 2px 0; }
+.grp > summary::-webkit-details-marker { display: none; }
+.grp > summary::before { content: '▸ '; color: var(--muted); }
+.grp[open] > summary::before { content: '▾ '; }
+.grp > *:not(summary) { margin-top: 8px; }
+.grp .panel-label { margin-top: 10px; }
+.grp input[type=range] { width: 100%; }
+input[type=color] { width: 34px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; }
 
 /* ---------- universal settings drawer ---------- */
 .drawer-scrim {

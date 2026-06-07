@@ -11,6 +11,8 @@ export function Stage() {
     <div className={'stage ' + (rec.isRecording ? 'stage-rec' : 'stage-edit')} data-frame={sim.frame}>
       <StageFrame w={sim.logical.w} h={sim.logical.h}>
         {C ? <C /> : <NotReady sim={sim} />}
+        {rec.settings.grain && <div className="fx-grain" />}
+        {rec.settings.vignette && <div className="fx-vignette" />}
       </StageFrame>
     </div>
   );

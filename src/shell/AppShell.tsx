@@ -27,14 +27,15 @@ export function AppShell() {
     return () => window.removeEventListener('keydown', onKey);
   }, [rec]);
 
-  // present/render autostart one take; audiocap waits for a click (autoplay).
+  // present/render autostart one take (after any token config loads);
+  // audiocap waits for a click (autoplay policy).
   useEffect(() => {
-    if (rec.mode === 'present' || rec.mode === 'render') {
-      const id = setTimeout(() => { setStarted(true); rec.play(); }, 900);
+    if (rec.bootReady && (rec.mode === 'present' || rec.mode === 'render')) {
+      const id = setTimeout(() => { setStarted(true); rec.play(); }, 700);
       return () => clearTimeout(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [rec.bootReady]);
 
   if (rec.isRecording) {
     return (

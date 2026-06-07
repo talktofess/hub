@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useRecording } from '../recording/useRecording';
 import { getSim } from '../sims/registry';
-import { buildObsUrl } from '../recording/url';
+import { buildInlineUrl, buildTokenUrl } from '../recording/url';
+import { saveConfig } from '../recording/media';
+import { settingsToParams } from '../recording/settings';
 
 function copyText(t: string) {
   if (navigator.clipboard) navigator.clipboard.writeText(t).catch(() => fallback(t));
@@ -19,9 +21,17 @@ export function ControlPanel({ onOpenSettings }: { onOpenSettings: () => void })
   const rec = useRecording();
   const sim = getSim(rec.simId)!;
   const [copied, setCopied] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const copyUrl = () => {
-    copyText(buildObsUrl(rec.simId, rec.script, rec.settings));
+  const copyUrl = async () => {
+    setBusy(true);
+    // Preferred: store the full config (script + settings + media) under a token.
+    const token = await saveConfig({ sim: rec.simId, script: rec.script, settings: rec.settings });
+    const url = token
+      ? buildTokenUrl(rec.simId, token)
+      : buildInlineUrl(rec.simId, rec.script, settingsToParams(rec.settings)); // no API: lightweight, no media
+    copyText(url);
+    setBusy(false);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
@@ -52,8 +62,8 @@ export function ControlPanel({ onOpenSettings }: { onOpenSettings: () => void })
       </section>
 
       <section className="panel-sec">
-        <button className="btn primary big" onClick={copyUrl}>
-          {copied ? '✓ Copied — paste into OBS' : '📋 Copy OBS URL'}
+        <button className="btn primary big" onClick={copyUrl} disabled={busy}>
+          {busy ? 'Preparing…' : copied ? '✓ Copied — paste into OBS' : '📋 Copy OBS URL'}
         </button>
         <p className="hint">
           One URL — copy it <b>once</b> into an OBS Browser Source. It carries this sim, its

@@ -6,7 +6,8 @@ import { installSeededRandom } from './rng';
 import { readBootConfig } from './url';
 import type { BootConfig, Mode } from './url';
 import { DEFAULT_SETTINGS, loadSettings, mergeSettings, saveSettings } from './settings';
-import type { BgSettings, Settings } from './settings';
+import type { BackgroundSetting, Settings } from './settings';
+import { loadConfig } from './media';
 import { defaultSimId, getSim } from '../sims/registry';
 
 export interface RecordingContextValue {
@@ -31,8 +32,9 @@ export interface RecordingContextValue {
   playing: boolean;
   setPlaying: (p: boolean) => void;
   // background media (convenience view over settings.bg)
-  bg: BgSettings;
-  setBg: (next: Partial<BgSettings>) => void;
+  bg: BackgroundSetting;
+  setBg: (next: Partial<BackgroundSetting>) => void;
+  bootReady: boolean;
   bgRef: RefObject<HTMLVideoElement>;
   boot: BootConfig;
 }
@@ -72,11 +74,42 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const [playSignal, setPlaySignal] = useState(0);
   const [stopSignal, setStopSignal] = useState(0);
   const [markerSignal, setMarkerSignal] = useState(0);
+  // gate autostart until a token config has loaded (so the take uses it)
+  const [bootReady, setBootReady] = useState(boot.mode === 'edit' || !boot.cfg);
 
   // apply settings to the audio engine
   useEffect(() => { audio.setProfile(settings.sound); }, [audio, settings.sound]);
   useEffect(() => { audio.setVolume(settings.volume); }, [audio, settings.volume]);
   useEffect(() => { audio.setMuted(mode === 'render'); }, [audio, mode]);
+
+  // fetch a token config (the one OBS URL → full config from the local store)
+  useEffect(() => {
+    if (boot.mode === 'edit' || !boot.cfg) return;
+    let cancelled = false;
+    loadConfig(boot.cfg).then((cfg) => {
+      if (cancelled) return;
+      if (cfg) {
+        if (cfg.sim && getSim(cfg.sim)) setSimIdState(cfg.sim);
+        if (typeof cfg.script === 'string') setScriptState(cfg.script);
+        if (cfg.settings) setSettingsState((prev) => mergeSettings(prev, cfg.settings));
+      }
+      setBootReady(true);
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // apply universal look & feel as CSS vars / data attributes
+  useEffect(() => {
+    const r = document.documentElement;
+    r.style.setProperty('--accent', settings.accent);
+    r.style.setProperty('--font-scale', String(settings.fontScale));
+    r.style.setProperty('--caret-color', settings.caretColor);
+    r.dataset.theme = settings.theme;
+    r.dataset.caret = settings.caretStyle;
+    r.dataset.caretBlink = settings.caretBlink ? '1' : '0';
+    r.dataset.showCaret = settings.showCaret ? '1' : '0';
+  }, [settings.accent, settings.fontScale, settings.caretColor, settings.theme, settings.caretStyle, settings.caretBlink, settings.showCaret]);
 
   // seeded RNG for reproducible render/audiocap passes (legacy two-pass)
   useEffect(() => {
@@ -105,8 +138,8 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     });
   }, [isRecording]);
 
-  const setBg = useCallback((next: Partial<BgSettings>) => {
-    setSettings({ bg: { ...next } as BgSettings });
+  const setBg = useCallback((next: Partial<BackgroundSetting>) => {
+    setSettings({ bg: { ...next } as BackgroundSetting });
   }, [setSettings]);
 
   const play = useCallback(() => setPlaySignal((n) => n + 1), []);
@@ -139,7 +172,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     settings, setSettings,
     audio, elapsed, flashMarker, markerSignal,
     playSignal, stopSignal, play, stop, playing, setPlaying,
-    bg: settings.bg, setBg, bgRef, boot,
+    bg: settings.bg, setBg, bgRef, boot, bootReady,
   };
 
   return <RecordingContext.Provider value={value}>{children}</RecordingContext.Provider>;

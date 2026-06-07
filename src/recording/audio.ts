@@ -90,6 +90,10 @@ export class AudioEngine {
       case 'typewriter': return this.synthTypewriter(ctx, t, v);
       case 'soft': return this.synthSoft(ctx, t, v);
       case 'tactile': return this.synthTactile(ctx, t, v);
+      case 'blue': return this.synthBlue(ctx, t, v);
+      case 'vintage': return this.synthVintage(ctx, t, v);
+      case 'bubble': return this.synthBubble(ctx, t, v);
+      case 'mush': return this.synthMush(ctx, t, v);
       default: return this.synthMechanical(ctx, t, v);
     }
   }
@@ -156,5 +160,59 @@ export class AudioEngine {
     og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.3 * v, t + 0.005); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.085);
     n.connect(lp).connect(ng).connect(m); osc.connect(og).connect(m);
     n.start(t); n.stop(t + 0.04); osc.start(t); osc.stop(t + 0.09);
+  }
+
+  // sharp double-tick (key down + up) of a clicky blue switch
+  private synthBlue(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const tick = (at: number, amp: number) => {
+      const n = this.noise(ctx, 0.02, 5);
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 3200;
+      const g = ctx.createGain(); g.gain.value = amp * v;
+      n.connect(hp).connect(g).connect(m); n.start(at); n.stop(at + 0.02);
+    };
+    tick(t, 0.6);
+    tick(t + 0.035 + Math.random() * 0.01, 0.4);
+    const osc = ctx.createOscillator(); osc.type = 'square'; osc.frequency.value = 240;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.1 * v, t + 0.002); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    osc.connect(og).connect(m); osc.start(t); osc.stop(t + 0.03);
+  }
+
+  // woody, lower vintage keyboard clack
+  private synthVintage(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const n = this.noise(ctx, 0.05, 2.2);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 750 + Math.random() * 250; bp.Q.value = 1.1;
+    const ng = ctx.createGain(); ng.gain.value = 0.45 * v;
+    const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = 150 + Math.random() * 40;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.24 * v, t + 0.006); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    n.connect(bp).connect(ng).connect(m); osc.connect(og).connect(m);
+    n.start(t); n.stop(t + 0.05); osc.start(t); osc.stop(t + 0.1);
+  }
+
+  // playful pitched pop
+  private synthBubble(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const osc = ctx.createOscillator(); osc.type = 'sine';
+    const f0 = 420 + Math.random() * 180;
+    osc.frequency.setValueAtTime(f0, t); osc.frequency.exponentialRampToValueAtTime(f0 * 2.2, t + 0.05);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3 * v, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    osc.connect(g).connect(m); osc.start(t); osc.stop(t + 0.1);
+  }
+
+  // very muted marshmallow thud
+  private synthMush(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const n = this.noise(ctx, 0.05, 1.6);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 320 + Math.random() * 80;
+    const ng = ctx.createGain(); ng.gain.value = 0.2 * v;
+    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 70 + Math.random() * 20;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.12 * v, t + 0.01); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    n.connect(lp).connect(ng).connect(m); osc.connect(og).connect(m);
+    n.start(t); n.stop(t + 0.05); osc.start(t); osc.stop(t + 0.09);
   }
 }

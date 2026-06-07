@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --host",
+    "local": "vite build && node server.mjs",
+    "serve": "node server.mjs",
     "typecheck": "tsc -b --noEmit"
   },
   "dependencies": {

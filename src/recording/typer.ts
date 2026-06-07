@@ -41,12 +41,29 @@ export function settledText(text: string): string {
   return text.replace(/\[\[([^\]|]*)\|([^\]]*)\]\]/g, (_, _w, right) => right);
 }
 
-/** Per-character delay (ms). Spaces/punctuation breathe; letters are quick. */
-export function charDelay(ch: string): number {
-  if (ch === '\n') return 220 + Math.random() * 160;
-  if (ch === ' ') return 60 + Math.random() * 60;
-  if (',.;:!?—'.includes(ch)) return 130 + Math.random() * 140;
-  // occasional "thinking" hitch
-  const base = 42 + Math.random() * 70;
-  return Math.random() < 0.06 ? base + 160 + Math.random() * 200 : base;
+export interface TimingOpts { jitter: number; thinkPauses: number }
+
+/** Per-character delay (ms). jitter scales variance; thinkPauses scales the
+    occasional hesitation. Spaces/punctuation breathe; letters are quick. */
+export function charDelay(ch: string, o: TimingOpts): number {
+  const j = 0.35 + o.jitter; // keep a little variance even at 0
+  if (ch === '\n') return 170 + Math.random() * 150 * j;
+  if (ch === ' ') return 52 + Math.random() * 55 * j;
+  if (',.;:!?—'.includes(ch)) return 115 + Math.random() * 130 * j;
+  const base = 40 + Math.random() * 65 * j;
+  const hitchProb = 0.1 * o.thinkPauses;
+  return Math.random() < hitchProb ? base + 150 + Math.random() * 260 * o.thinkPauses : base;
+}
+
+/** A plausible wrong neighbor key for the auto-typo effect. */
+const NEIGHBORS: Record<string, string> = {
+  a: 's', s: 'd', d: 'f', f: 'g', g: 'h', h: 'j', j: 'k', k: 'l', l: 'k',
+  q: 'w', w: 'e', e: 'r', r: 't', t: 'y', y: 'u', u: 'i', i: 'o', o: 'p', p: 'o',
+  z: 'x', x: 'c', c: 'v', v: 'b', b: 'n', n: 'm', m: 'n',
+};
+export function fumbleFor(ch: string): string | null {
+  const lower = ch.toLowerCase();
+  const n = NEIGHBORS[lower];
+  if (!n) return null;
+  return ch === lower ? n : n.toUpperCase();
 }

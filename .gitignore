@@ -5,6 +5,10 @@ node_modules/
 dist/
 .vite/
 
+# Local media + config store (created by the local server at runtime)
+uploads/
+config/
+
 # Vercel
 .vercel/
 

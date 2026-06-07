@@ -48,7 +48,7 @@ export function Notes() {
 
   // start / stop are driven by the shell via play/stop signals
   useEffect(() => {
-    if (rec.playSignal > 0) run(buildPlan());
+    if (rec.playSignal > 0) run(buildPlan);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rec.playSignal]);
   useEffect(() => {

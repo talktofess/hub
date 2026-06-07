@@ -22,6 +22,7 @@
   flex-direction: column;
   align-items: center;
   gap: 96px;
+  zoom: var(--font-scale, 1); /* universal text scale */
 }
 
 .note {
@@ -35,16 +36,7 @@
 .note-line { min-height: 1em; }
 .note-footer { margin-top: 22px; opacity: 0.8; }
 
-.caret {
-  display: inline-block;
-  width: 3px;
-  height: 1.05em;
-  margin-left: 2px;
-  background: currentColor;
-  vertical-align: -0.16em;
-  animation: blink 1s steps(2, start) infinite;
-}
-@keyframes blink { 50% { opacity: 0; } }
+/* caret styling is universal — see global.css (.caret + [data-caret] rules) */
 
 /* ---- sticky ---- */
 .note-sticky {
