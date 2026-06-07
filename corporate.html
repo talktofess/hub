@@ -1,0 +1,3321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Corporate · Long-form Text for TikTok</title>
+<style>
+  :root {
+    /* Lens / zoom (camera push-in on the page + vignette) */
+    --lens-mag: 1.1;
+    --lens-vignette: 0.5;
+    /* Phone screen */
+    --screen-w: 540px;
+    --screen-h: 960px;
+    --screen-scale: 0.9;
+    --screen-radius: 38px;
+    --screen-bg: #f7f5f0;
+    --screen-shadow-y: 20px;
+    --screen-shadow-blur: 60px;
+    --screen-shadow-alpha: 0.45;
+
+    /* Bezel */
+    --bezel-pad: 14px;
+    --bezel-radius: 54px;
+    --bezel-bg: #0a0a0c;
+    --bezel-inner: #2a2a2e;
+
+    /* Stage (outside phone) */
+    --stage-bg: #20232a;
+
+    /* Page (the reading surface) */
+    --page-bg: transparent;
+    --page-pad-top: 110px;
+    --page-pad-bottom: 96px;
+    --page-pad-x: 40px;
+    --page-anim-ms: 480ms;
+    --page-anim-easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Body text */
+    --body-font: "Georgia", "EB Garamond", "Crimson Text", "Times New Roman", serif;
+    --body-size: 19px;
+    --body-weight: 400;
+    --body-line-h: 1.55;
+    --body-letter: 0.005em;
+    --body-color: #1a1a1a;
+    --body-mb: 14px;
+    --body-align: left;
+    --body-first-indent: 0em;
+
+    /* Headings */
+    --h1-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --h1-size: 34px;
+    --h1-weight: 800;
+    --h1-line-h: 1.1;
+    --h1-letter: -0.02em;
+    --h1-color: #0a0a0a;
+    --h1-mt: 14px;
+    --h1-mb: 18px;
+
+    --h2-font: "Inter", -apple-system, sans-serif;
+    --h2-size: 24px;
+    --h2-weight: 700;
+    --h2-line-h: 1.15;
+    --h2-letter: -0.015em;
+    --h2-color: #1a1a1a;
+    --h2-mt: 24px;
+    --h2-mb: 12px;
+
+    --h3-font: "Inter", -apple-system, sans-serif;
+    --h3-size: 16px;
+    --h3-weight: 600;
+    --h3-line-h: 1.2;
+    --h3-letter: 0.06em;
+    --h3-color: #555555;
+    --h3-mt: 20px;
+    --h3-mb: 8px;
+    --h3-transform: uppercase;
+
+    /* Quote block */
+    --quote-font: var(--body-font);
+    --quote-size: 22px;
+    --quote-weight: 400;
+    --quote-style: italic;
+    --quote-line-h: 1.4;
+    --quote-color: #2a2a2a;
+    --quote-border-w: 3px;
+    --quote-border-color: #c2410c;
+    --quote-pad-l: 16px;
+    --quote-pad-y: 6px;
+    --quote-mt: 18px;
+    --quote-mb: 18px;
+    --quote-source-size: 14px;
+    --quote-source-color: #6a6a6a;
+    --quote-source-mt: 8px;
+
+    /* Cursor */
+    --cursor-color: #1a1a1a;
+    --cursor-w: 2px;
+    --cursor-h: 1.05em;
+    --cursor-offset: 2px;
+    --cursor-block-w: 0.55em;
+    --cursor-underline-h: 2px;
+
+    /* Title bar (top of phone) */
+    --title-font: "Inter", -apple-system, sans-serif;
+    --title-size: 12px;
+    --title-weight: 700;
+    --title-color: #555555;
+    --title-letter: 0.18em;
+    --title-transform: uppercase;
+    --title-top: 56px;
+    --title-pad-x: 40px;
+    --subtitle-size: 11px;
+    --subtitle-weight: 400;
+    --subtitle-color: #888888;
+    --subtitle-mt: 4px;
+
+    /* Footer bar (bottom of phone) */
+    --footer-bottom: 32px;
+    --footer-pad-x: 40px;
+    --counter-font: ui-monospace, "JetBrains Mono", Consolas, monospace;
+    --counter-size: 12px;
+    --counter-weight: 600;
+    --counter-color: #555555;
+    --counter-letter: 0.08em;
+    --byline-size: 11px;
+    --byline-color: #888888;
+    --byline-font: "Inter", -apple-system, sans-serif;
+
+    /* Accent line / divider */
+    --accent-color: #c2410c;
+    --accent-h: 2px;
+    --accent-w: 36px;
+    --accent-mt: 0px;
+    --accent-mb: 22px;
+
+    /* Progress bar */
+    --progress-h: 2px;
+    --progress-bg: rgba(0,0,0,0.08);
+    --progress-fill: var(--accent-color);
+
+    /* Drop cap (first letter) */
+    --dropcap-size: 4em;
+    --dropcap-line-h: 0.85;
+    --dropcap-color: var(--h1-color);
+    --dropcap-mr: 8px;
+    --dropcap-mt: 4px;
+    --dropcap-weight: 700;
+
+    /* Highlight (marker) */
+    --hl-bg: rgba(255, 235, 59, 0.55);
+    --hl-pad-y: 1px;
+    --hl-pad-x: 3px;
+    --hl-radius: 2px;
+
+
+    /* Skin / page transparency (lets bg media peep through) */
+    --page-bg-alpha: 1;
+    --skin-alpha:    1;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: transparent !important;
+    color: #d6d7df;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    display: flex;
+    min-height: 100%;
+  }
+  #page-bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--stage-bg, #0e0f12);
+    opacity: var(--page-bg-alpha);
+    pointer-events: none;
+  }
+
+  /* ---------- Controls panel ---------- */
+  #controls {
+    width: 380px;
+    flex: 0 0 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #15161a;
+    border-right: 1px solid #2a2c33;
+    padding: 18px 18px 28px;
+    font-size: 13px;
+    transition: margin-left 200ms ease;
+    z-index: 10;
+    color: #c4c6cd;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+
+  #controls h1 {
+    font-size: 14px;
+    margin: 0 0 14px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #controls h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8a8d96;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #2a2c33;
+    padding-bottom: 4px;
+  }
+
+  #tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a2c33;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #8a8d96;
+    padding: 7px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab-btn:hover { color: #c4c6cd; }
+  .tab-btn.active { color: #fff; border-bottom-color: #c2410c; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tab-fade 160ms ease; }
+  @keyframes tab-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { flex: 1; color: #c4c6cd; }
+  .row input[type="number"], .row select, .row input[type="text"] {
+    width: 150px; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 6px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px;
+  }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="color"] {
+    width: 40px; height: 28px; padding: 0;
+    border: 1px solid #2a2c33; border-radius: 6px; background: #0e0f12;
+  }
+  .row .val { width: 56px; text-align: right; color: #8a8d96; font-variant-numeric: tabular-nums; }
+  .row input[type="checkbox"] { accent-color: #c2410c; }
+
+  textarea#script {
+    width: 100%;
+    height: 360px;
+    background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    resize: vertical;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    background: #2b2f3a; color: #ececf1;
+    border: 1px solid #3a3f4c; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #353a47; }
+  button.primary { background: #c2410c; border-color: #c2410c; color: #fff; font-weight: 600; }
+  button.primary:hover { background: #d4501a; }
+  button.danger { background: #5a2a2a; border-color: #6a3535; }
+
+  .help {
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+    color: #a8abb3; font-size: 12px; line-height: 1.6;
+  }
+  .help code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+  }
+
+  /* ---------- Stage / phone ---------- */
+  #stage {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--stage-bg);
+    overflow: hidden;
+  }
+  .phone-wrap {
+    transform: scale(var(--screen-scale));
+    transform-origin: center center;
+    transition: transform 200ms ease;
+  }
+  body.phone-bezel .phone-wrap {
+    padding: var(--bezel-pad);
+    background: var(--bezel-bg);
+    border-radius: var(--bezel-radius);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.65), inset 0 0 0 2px var(--bezel-inner);
+  }
+  .phone-screen {
+    width: var(--screen-w);
+    height: var(--screen-h);
+    background: transparent;
+    border-radius: var(--screen-radius);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 var(--screen-shadow-y) var(--screen-shadow-blur) rgba(0,0,0,var(--screen-shadow-alpha));
+  }
+  .phone-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--screen-bg);
+    border-radius: inherit;
+    opacity: var(--skin-alpha);
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  .phone-screen > * { position: relative; z-index: 1; }
+  body.no-frame .phone-screen { border-radius: 0; box-shadow: none; }
+
+  /* Progress bar */
+  #progress {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: var(--progress-h);
+    background: var(--progress-bg);
+    z-index: 60;
+  }
+  body.no-progress #progress { display: none; }
+  #progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--progress-fill);
+    transition: width 100ms linear;
+  }
+
+  /* Title bar */
+  #title-bar {
+    position: absolute;
+    top: var(--title-top);
+    left: 0; right: 0;
+    padding: 0 var(--title-pad-x);
+    z-index: 5;
+    text-align: var(--body-align);
+  }
+  body.no-title #title-bar { display: none; }
+  #title-line {
+    font-family: var(--title-font);
+    font-size: var(--title-size);
+    font-weight: var(--title-weight);
+    color: var(--title-color);
+    letter-spacing: var(--title-letter);
+    text-transform: var(--title-transform);
+  }
+  #subtitle-line {
+    font-family: var(--title-font);
+    font-size: var(--subtitle-size);
+    font-weight: var(--subtitle-weight);
+    color: var(--subtitle-color);
+    margin-top: var(--subtitle-mt);
+    letter-spacing: 0.04em;
+  }
+  #accent-line {
+    width: var(--accent-w);
+    height: var(--accent-h);
+    background: var(--accent-color);
+    margin-top: var(--accent-mt);
+    margin-bottom: var(--accent-mb);
+  }
+  body.no-accent #accent-line { display: none; }
+
+  /* Pages stack */
+  #pages {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    transition: transform 600ms cubic-bezier(.22,1,.36,1);
+  }
+  /* ---------- Lens / zoom: enlarge the body text + vignette. Scale .page AND the
+     hidden #measure clone identically so pagination still measures correctly
+     (it just fits fewer lines per page). No cropping. ---------- */
+  body.lens-on .page, body.lens-on #measure { font-size: calc(var(--body-size) * var(--lens-mag, 1.1)); }
+  #lens-vignette-fx {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    z-index: 80; opacity: 0; transition: opacity 600ms ease;
+    background: radial-gradient(ellipse 82% 76% at 50% 48%,
+      rgba(0,0,0,0) 40%,
+      rgba(0,0,0,calc(var(--lens-vignette, 0.5) * 0.5)) 72%,
+      rgba(0,0,0,var(--lens-vignette, 0.5)) 100%);
+  }
+  body.lens-on #lens-vignette-fx { opacity: 1; }
+
+  .page {
+    position: absolute;
+    inset: 0;
+    padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
+    background: var(--page-bg);
+    color: var(--body-color);
+    font-family: var(--body-font);
+    font-size: var(--body-size);
+    font-weight: var(--body-weight);
+    line-height: var(--body-line-h);
+    letter-spacing: var(--body-letter);
+    text-align: var(--body-align);
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .page.active { pointer-events: auto; }
+
+  /* Page transitions */
+  body.tr-fade .page { opacity: 0; transition: opacity var(--page-anim-ms) var(--page-anim-easing); }
+  body.tr-fade .page.active { opacity: 1; }
+
+  body.tr-slide-left .page { transform: translateX(100%); transition: transform var(--page-anim-ms) var(--page-anim-easing); }
+  body.tr-slide-left .page.active { transform: translateX(0); }
+  body.tr-slide-left .page.prev { transform: translateX(-100%); }
+
+  body.tr-slide-up .page { transform: translateY(100%); transition: transform var(--page-anim-ms) var(--page-anim-easing); }
+  body.tr-slide-up .page.active { transform: translateY(0); }
+  body.tr-slide-up .page.prev { transform: translateY(-100%); }
+
+  body.tr-flip .page {
+    opacity: 0;
+    transform: rotateY(90deg);
+    transform-origin: left center;
+    transition: opacity calc(var(--page-anim-ms) * 0.6) ease, transform var(--page-anim-ms) var(--page-anim-easing);
+  }
+  body.tr-flip .page.active { opacity: 1; transform: rotateY(0); }
+  body.tr-flip .page.prev { opacity: 0; transform: rotateY(-90deg); transform-origin: right center; }
+
+  body.tr-none .page { opacity: 0; }
+  body.tr-none .page.active { opacity: 1; }
+
+  /* Block elements inside a page */
+  .page p, .page .p {
+    margin: 0 0 var(--body-mb);
+    text-indent: var(--body-first-indent);
+  }
+  .page p:first-of-type, .page .p:first-of-type { text-indent: 0; }
+
+  .page .h1 {
+    font-family: var(--h1-font);
+    font-size: var(--h1-size);
+    font-weight: var(--h1-weight);
+    line-height: var(--h1-line-h);
+    letter-spacing: var(--h1-letter);
+    color: var(--h1-color);
+    margin-top: var(--h1-mt);
+    margin-bottom: var(--h1-mb);
+  }
+  .page .h2 {
+    font-family: var(--h2-font);
+    font-size: var(--h2-size);
+    font-weight: var(--h2-weight);
+    line-height: var(--h2-line-h);
+    letter-spacing: var(--h2-letter);
+    color: var(--h2-color);
+    margin-top: var(--h2-mt);
+    margin-bottom: var(--h2-mb);
+  }
+  .page .h3 {
+    font-family: var(--h3-font);
+    font-size: var(--h3-size);
+    font-weight: var(--h3-weight);
+    line-height: var(--h3-line-h);
+    letter-spacing: var(--h3-letter);
+    color: var(--h3-color);
+    margin-top: var(--h3-mt);
+    margin-bottom: var(--h3-mb);
+    text-transform: var(--h3-transform);
+  }
+  .page .quote {
+    font-family: var(--quote-font);
+    font-size: var(--quote-size);
+    font-weight: var(--quote-weight);
+    font-style: var(--quote-style);
+    line-height: var(--quote-line-h);
+    color: var(--quote-color);
+    border-left: var(--quote-border-w) solid var(--quote-border-color);
+    padding: var(--quote-pad-y) 0 var(--quote-pad-y) var(--quote-pad-l);
+    margin-top: var(--quote-mt);
+    margin-bottom: var(--quote-mb);
+  }
+  .page .quote .quote-source {
+    display: block;
+    font-style: normal;
+    font-size: var(--quote-source-size);
+    color: var(--quote-source-color);
+    margin-top: var(--quote-source-mt);
+    font-family: var(--h2-font);
+  }
+  .page .dropcap {
+    float: left;
+    font-family: var(--h1-font);
+    font-size: var(--dropcap-size);
+    line-height: var(--dropcap-line-h);
+    color: var(--dropcap-color);
+    margin-right: var(--dropcap-mr);
+    margin-top: var(--dropcap-mt);
+    font-weight: var(--dropcap-weight);
+  }
+  .page mark, .page .hl {
+    background: var(--hl-bg);
+    padding: var(--hl-pad-y) var(--hl-pad-x);
+    border-radius: var(--hl-radius);
+    color: inherit;
+  }
+  .page b, .page strong { font-weight: 700; color: inherit; }
+  .page i, .page em { font-style: italic; }
+  .page .typed-cursor {
+    display: inline-block;
+    width: var(--cursor-w);
+    height: var(--cursor-h);
+    background: var(--cursor-color);
+    vertical-align: text-bottom;
+    margin-left: 1px;
+    transform: translateY(var(--cursor-offset));
+  }
+  .page .typed-cursor.block { width: var(--cursor-block-w); opacity: 0.85; }
+  .page .typed-cursor.underline { width: var(--cursor-block-w); height: var(--cursor-underline-h); transform: translateY(0); }
+  body.cursor-blink .page.active .typed-cursor { animation: cur-blink 1s steps(2, start) infinite; }
+  @keyframes cur-blink { 50% { opacity: 0; } }
+
+  /* Footer (page counter + byline) */
+  #footer {
+    position: absolute;
+    bottom: var(--footer-bottom);
+    left: 0; right: 0;
+    padding: 0 var(--footer-pad-x);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    z-index: 5;
+    pointer-events: none;
+  }
+  body.no-footer #footer { display: none; }
+  #byline {
+    font-family: var(--byline-font);
+    font-size: var(--byline-size);
+    color: var(--byline-color);
+    font-weight: 400;
+    flex: 1; min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #counter {
+    font-family: var(--counter-font);
+    font-size: var(--counter-size);
+    font-weight: var(--counter-weight);
+    color: var(--counter-color);
+    letter-spacing: var(--counter-letter);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Hidden measure node (used for pagination) */
+  #measure {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    top: 0; left: 0;
+    /* Same geometry / font as a page so measurements match */
+    width: var(--screen-w);
+    padding: var(--page-pad-top) var(--page-pad-x) var(--page-pad-bottom);
+    font-family: var(--body-font);
+    font-size: var(--body-size);
+    font-weight: var(--body-weight);
+    line-height: var(--body-line-h);
+    letter-spacing: var(--body-letter);
+    text-align: var(--body-align);
+    z-index: -1;
+  }
+
+  /* Media list */
+  #image-list, #video-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .img-item {
+    display: flex; align-items: center; gap: 8px;
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 6px;
+    padding: 4px 8px;
+  }
+  .img-item .idx { width: 18px; text-align: center; font-weight: 600; color: #c2410c; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  .img-item img, .img-item video { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; background: #000; }
+  .img-item .name { flex: 1; color: #c4c6cd; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .img-item .remove { flex: 0 0 24px; background: none; border: none; color: #888; font-size: 18px; cursor: pointer; padding: 0; line-height: 1; }
+  .img-item .remove:hover { color: #fff; background: none; }
+
+  /* Phone resize */
+  .resize-handle {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    width: 48px; height: 48px;
+    background: rgba(194, 65, 12, 0.92);
+    border: 3px solid white;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 22px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    touch-action: none; user-select: none;
+  }
+  .resize-handle::before { content: '⇲'; line-height: 1; }
+  body.hide-controls .resize-handle { display: none; }
+
+  #hint {
+    position: fixed; bottom: 12px; right: 16px;
+    color: rgba(255,255,255,0.35); font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace;
+    opacity: 0; transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  body.hide-controls #hint { opacity: 1; }
+
+
+  #manual-cue {
+    position: absolute;
+    bottom: 80px; left: 50%;
+    transform: translateX(-50%);
+    color: var(--counter-color);
+    font-family: var(--counter-font);
+    font-size: 11px;
+    background: rgba(255,255,255,0.85);
+    padding: 6px 12px;
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    z-index: 70;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+    letter-spacing: 0.06em;
+  }
+  #manual-cue.show { opacity: 1; }
+
+  /* ============ MOBILE LAYOUT ============ */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: visible; }
+    body {
+      flex-direction: column-reverse !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 0;
+      gap: 0;
+    }
+    main, #main, #stage, #stage-wrap, .stage, .stage-wrap, .preview, .page-wrap {
+      width: 100% !important;
+      height: 60vh !important;
+      min-height: 320px;
+      flex: 0 0 auto !important;
+      position: relative !important;
+    }
+    aside, #controls, .controls, #sidebar {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: 1px solid #25252a !important;
+      margin: 0 !important;
+      position: relative !important;
+    }
+    body.hide-controls #controls { margin-left: 0 !important; margin-top: -100vh !important; }
+    #tabs, .tabs {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap !important;
+      scroll-snap-type: x proximity;
+    }
+    .tab-btn, .tab {
+      flex: 0 0 auto !important;
+      min-height: 36px;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+      scroll-snap-align: start;
+    }
+    button, .btn {
+      min-height: 38px;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+    }
+    .row { gap: 12px; margin: 4px 0; }
+    .row label { flex: 0 0 110px; font-size: 12px; }
+    .row input[type="text"], .row input[type="number"], .row input[type="url"], .row select, .row textarea {
+      min-height: 38px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+    .row input[type="range"] { min-height: 36px; }
+    .row input[type="color"] { width: 44px; height: 36px; }
+    .row input[type="checkbox"] { width: 22px; height: 22px; }
+    /* Don't let the phone preview overflow horizontally on small screens */
+    .phone-wrap { transform-origin: top center; }
+  }
+  @media (max-width: 600px) {
+    main, #stage, #stage-wrap, .page-wrap { height: 55vh !important; }
+    .row label { flex: 0 0 95px; font-size: 11px; }
+  }
+</style>
+</head>
+<body class="tr-fade">
+<div id="bg-media-layer" style="position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;">
+  <video id="bg-video" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:1;" playsinline preload="auto"></video>
+  <video id="bg-video-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" playsinline preload="auto"></video>
+  <img id="bg-image" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;" alt="">
+  <audio id="bg-audio-only" style="display:none;"></audio>
+</div>
+<div id="page-bg-tint"></div>
+
+<aside id="controls">
+  <h1>Corporate · Essay Composer</h1>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="tab-script">Script</button>
+    <button class="tab-btn" data-tab="tab-srt-script">Script SRT</button>
+    <button class="tab-btn" data-tab="tab-phone">Phone</button>
+    <button class="tab-btn" data-tab="tab-page">Page</button>
+    <button class="tab-btn" data-tab="tab-body">Body</button>
+    <button class="tab-btn" data-tab="tab-head">Heads</button>
+    <button class="tab-btn" data-tab="tab-quote">Quote</button>
+    <button class="tab-btn" data-tab="tab-title">Title</button>
+    <button class="tab-btn" data-tab="tab-footer">Footer</button>
+    <button class="tab-btn" data-tab="tab-colors">Colors</button>
+    <button class="tab-btn" data-tab="tab-anim">Anim</button>
+    <button class="tab-btn" data-tab="tab-timing">Timing</button>
+    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+    <button class="tab-btn" data-tab="tab-tts">Sync</button>
+    <button class="tab-btn" data-tab="tab-sound">Sound</button>
+  </div>
+
+  <!-- ========== SCRIPT TAB ========== -->
+  <div class="tab-content active" id="tab-script">
+    <textarea id="script" spellcheck="false">[[title:Future of Work]]
+[[subtitle:March 2024 · Essay]]
+[[byline:by your name]]
+
+[[h1:The Office Is a Habit, Not a Place]]
+
+For most of the last century, the office was a fixed coordinate. You went there. You sat. You worked. The building itself was the proof that work was happening — its rent, its receptionist, its potted plants.
+
+[[h2:What changed]]
+
+The pandemic broke that proof. Suddenly the building wasn't necessary, and the work still happened. Some companies discovered this and quietly kept the floors empty. Others panicked, mandated returns, and watched their best people leave.
+
+[[quote:The office is a habit, not a place — and habits are easier to break than buildings.|Anonymous, 2024]]
+
+[[h2:Where it leaves us]]
+
+The honest answer is: in the middle. Hybrid is messy. Fully remote is lonely. Fully in-office is increasingly hard to justify when half the team lives three time zones away.
+
+But the conversation has shifted. It's no longer *whether* to be flexible — it's *how*. And the companies still arguing about it are the ones that will look slow ten years from now.
+
+[[h3:Closing]]
+
+The next decade isn't about offices. It's about trust.</textarea>
+
+    <div class="btn-row">
+      <button id="start" class="primary">Start ▶</button>
+      <button id="stop" class="danger">Stop</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="hide">Hide panel (H)</button>
+    </div>
+
+    <h2>Presets</h2>
+    <div class="btn-row">
+      <button data-preset="fast">Fast</button>
+      <button data-preset="natural">Natural</button>
+      <button data-preset="slow">Slow</button>
+    </div>
+
+    <h2>Themes</h2>
+    <div class="btn-row">
+      <button data-theme="paper">Paper</button>
+      <button data-theme="editorial">Editorial</button>
+    </div>
+    <div class="btn-row">
+      <button data-theme="modern">Modern</button>
+      <button data-theme="academic">Academic</button>
+    </div>
+    <div class="btn-row">
+      <button data-theme="midnight">Midnight</button>
+      <button data-theme="sepia">Sepia</button>
+    </div>
+
+    <details class="help" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Markup cheatsheet</summary>
+      <div style="margin-top:8px">
+        <b>Top-of-script metadata</b>:<br>
+        <code>[[title:Future of Work]]</code> · <code>[[subtitle:March 2024]]</code> · <code>[[byline:by name]]</code><br>
+        <br>
+        <b>Inside the body</b>:<br>
+        <code>[[h1:Heading]]</code> · <code>[[h2:Subheading]]</code> · <code>[[h3:Kicker]]</code><br>
+        <code>[[quote:Quoted text|Source]]</code> or <code>[[quote:Just the text]]</code><br>
+        <code>[[hl:highlighted bit]]</code> · <code>**bold**</code> · <code>*italic*</code><br>
+        <code>[[dropcap]]</code> at start of paragraph for dropped first letter<br>
+        <code>[[page]]</code> — force a page break (otherwise auto-paginates)<br>
+        <br>
+        <b>Inline</b>: <code>[[pause:1500]]</code> · <code>[[wrong|right]]</code> typo<br>
+        <br>
+        Blank line = paragraph break. Pages flow automatically based on what fits on screen.
+      </div>
+    </details>
+  </div>
+
+  <!-- ========== PHONE TAB ========== -->
+  <div class="tab-content" id="tab-phone">
+    <h2>Lens / zoom</h2>
+    <div class="row"><label>Zoom into screen</label><input type="checkbox" id="lens-on" checked></div>
+    <div class="row">
+      <label>Magnification (×)</label>
+      <input type="range" id="lens-mag" min="100" max="180" value="110">
+      <span class="val" id="lens-mag-val">1.1×</span>
+    </div>
+    <div class="row">
+      <label>Vignette strength</label>
+      <input type="range" id="lens-vignette" min="0" max="100" value="50">
+      <span class="val" id="lens-vignette-val">50%</span>
+    </div>
+
+    <h2>Screen</h2>
+    <div class="row"><label>Width (px)</label><input type="number" id="phone-w" value="540" min="200" max="1600"></div>
+    <div class="row"><label>Height (px)</label><input type="number" id="phone-h" value="960" min="300" max="2400"></div>
+    <div class="btn-row">
+      <button data-size="tiktok">9:16 · 540×960</button>
+      <button data-size="iphone">iPhone · 390×844</button>
+    </div>
+    <div class="btn-row">
+      <button data-size="square">1:1 · 720×720</button>
+      <button data-size="reels">Reels · 1080×1920</button>
+    </div>
+    <div class="row">
+      <label>Display scale</label>
+      <input type="range" id="phone-scale" min="20" max="200" value="90">
+      <span class="val" id="phone-scale-val">90%</span>
+    </div>
+    <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--screen-radius" data-unit="px" value="38" min="0" max="120"></div>
+    <div class="row"><label>Screen background</label><input type="color" data-css="--screen-bg" value="#f7f5f0"></div>
+    <div class="row"><label>Show screen frame</label><input type="checkbox" id="show-frame" checked></div>
+    <div class="row"><label>Show phone bezel</label><input type="checkbox" id="bezel"></div>
+    <div class="row"><label>Show progress bar</label><input type="checkbox" id="show-progress" checked></div>
+
+    <h2>Screen shadow</h2>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--screen-shadow-y" data-unit="px" value="20" min="-50" max="200"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--screen-shadow-blur" data-unit="px" value="60" min="0" max="400"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="screen-shadow-alpha" min="0" max="100" value="45">
+      <span class="val" id="screen-shadow-alpha-val">45%</span>
+    </div>
+
+    <h2>Bezel</h2>
+    <div class="row"><label>Padding (px)</label><input type="number" data-css="--bezel-pad" data-unit="px" value="14" min="0" max="60"></div>
+    <div class="row"><label>Outer radius (px)</label><input type="number" data-css="--bezel-radius" data-unit="px" value="54" min="0" max="120"></div>
+    <div class="row"><label>Bezel color</label><input type="color" data-css="--bezel-bg" value="#0a0a0c"></div>
+    <div class="row"><label>Inner border</label><input type="color" data-css="--bezel-inner" value="#2a2a2e"></div>
+
+    <h2>Stage</h2>
+    <div class="row"><label>Stage background</label><input type="color" data-css="--stage-bg" value="#20232a"></div>
+
+    <h2>Progress bar</h2>
+    <div class="row"><label>Height (px)</label><input type="number" data-css="--progress-h" data-unit="px" value="2" min="0" max="20"></div>
+    <div class="row"><label>Track color</label><input type="color" id="progress-bg-color" value="#000000"></div>
+    <div class="row">
+      <label>Track opacity</label>
+      <input type="range" id="progress-bg-alpha" min="0" max="100" value="8">
+      <span class="val" id="progress-bg-alpha-val">8%</span>
+    </div>
+    <div class="row"><label>Fill color</label><input type="color" data-css="--progress-fill" value="#c2410c"></div>
+  </div>
+
+  <!-- ========== PAGE TAB ========== -->
+  <div class="tab-content" id="tab-page">
+    <h2>Geometry</h2>
+    <div class="row"><label>Top padding (px)</label><input type="number" data-css="--page-pad-top" data-unit="px" value="110" min="0" max="400"></div>
+    <div class="row"><label>Bottom padding (px)</label><input type="number" data-css="--page-pad-bottom" data-unit="px" value="96" min="0" max="400"></div>
+    <div class="row"><label>Side padding (px)</label><input type="number" data-css="--page-pad-x" data-unit="px" value="40" min="0" max="200"></div>
+
+    <h2>Pagination</h2>
+    <div class="row">
+      <label>Mode</label>
+      <select id="paginate-mode">
+        <option value="auto" selected>Auto-fit (height-based)</option>
+        <option value="words">Every N words</option>
+        <option value="sentences">Every N sentences</option>
+        <option value="manual">Manual only (uses [[page]])</option>
+        <option value="single">Single page (no breaks)</option>
+      </select>
+    </div>
+    <div class="row" id="row-paginate-words" style="display:none;">
+      <label>Words per page</label>
+      <input type="number" id="paginate-words" value="8" min="1" max="500">
+    </div>
+    <div class="row" id="row-paginate-sentences" style="display:none;">
+      <label>Sentences per page</label>
+      <input type="number" id="paginate-sentences" value="2" min="1" max="50">
+    </div>
+    <div class="row" id="row-paginate-safety">
+      <label>Auto-fit safety margin (px)</label>
+      <input type="number" id="paginate-safety" value="8" min="0" max="80">
+    </div>
+    <div class="row">
+      <label>Live overflow rescue</label>
+      <input type="checkbox" id="paginate-rescue" checked>
+    </div>
+    <div class="row" id="row-rescue-mode">
+      <label>Rescue check on</label>
+      <select id="paginate-rescue-mode">
+        <option value="word" selected>Word boundaries (faster)</option>
+        <option value="char">Every character (precise)</option>
+      </select>
+    </div>
+    <div class="help" style="margin-top:6px">
+      <b>Auto-fit</b> pre-measures and splits to fit the page. <b>Every N words/sentences</b> caps each page (great for short impact pages or lyric-style content). <code>[[page]]</code> always forces a break in any mode. <b>Live overflow rescue</b> turns the page mid-typing if the next word would push off-screen — works even when pre-pagination couldn't predict the break (typo loops, custom inline styling, etc.).
+    </div>
+
+    <h2>Page transition</h2>
+    <div class="row">
+      <label>Style</label>
+      <select id="page-transition">
+        <option value="fade" selected>Fade</option>
+        <option value="slide-left">Slide left</option>
+        <option value="slide-up">Slide up</option>
+        <option value="flip">Page flip</option>
+        <option value="none">None (hard cut)</option>
+      </select>
+    </div>
+    <div class="row"><label>Duration (ms)</label><input type="number" data-css="--page-anim-ms" data-unit="ms" value="480" min="0" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--page-anim-easing">
+        <option value="cubic-bezier(0.4, 0, 0.2, 1)" selected>Material standard</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="linear">Linear</option>
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)">Pop</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+      </select>
+    </div>
+
+    <h2>Per-page trigger (when to advance)</h2>
+    <div class="row">
+      <label>Mode</label>
+      <select id="advance-mode">
+        <option value="typed" selected>Auto: just after typing</option>
+        <option value="delay">Auto: delay after typing</option>
+        <option value="manual">Manual (press SPACE)</option>
+        <option value="audio">Track audio time</option>
+      </select>
+    </div>
+    <div class="row"><label>Delay (ms)</label><input type="number" id="advance-delay" value="1200" min="0" max="30000"></div>
+    <div class="row"><label>Pause between pages (ms)</label><input type="number" id="page-gap" value="400" min="0" max="5000"></div>
+  </div>
+
+  <!-- ========== BODY TAB ========== -->
+  <div class="tab-content" id="tab-body">
+    <h2>Body font</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--body-font">
+        <option value='"Georgia", "EB Garamond", "Crimson Text", "Times New Roman", serif' selected>Georgia / serif</option>
+        <option value='"Times New Roman", Times, serif'>Times New Roman</option>
+        <option value='"Crimson Text", Georgia, serif'>Crimson Text</option>
+        <option value='"EB Garamond", Garamond, serif'>EB Garamond</option>
+        <option value='"Iowan Old Style", Georgia, serif'>Iowan Old Style</option>
+        <option value='"Charter", Georgia, serif'>Charter</option>
+        <option value='"Inter", -apple-system, sans-serif'>Inter (sans)</option>
+        <option value='-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'>System sans-serif</option>
+        <option value='"Helvetica Neue", Helvetica, Arial, sans-serif'>Helvetica</option>
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="body-font-custom" placeholder='e.g. "Charter", serif'></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--body-size" data-unit="px" value="19" min="8" max="80"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--body-weight">
+        <option value="300">300 Light</option>
+        <option value="400" selected>400 Regular</option>
+        <option value="500">500 Medium</option>
+        <option value="600">600 SemiBold</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--body-line-h" value="1.55" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--body-letter" data-unit="em" value="0.005" min="-0.05" max="0.2" step="0.005"></div>
+    <div class="row">
+      <label>Alignment</label>
+      <select data-css="--body-align">
+        <option value="left" selected>Left</option>
+        <option value="justify">Justified</option>
+        <option value="center">Center</option>
+        <option value="right">Right</option>
+      </select>
+    </div>
+    <div class="row"><label>Paragraph spacing (px)</label><input type="number" data-css="--body-mb" data-unit="px" value="14" min="0" max="80"></div>
+    <div class="row"><label>First-line indent (em)</label><input type="number" data-css="--body-first-indent" data-unit="em" value="0" min="0" max="4" step="0.25"></div>
+
+    <h2>Cursor</h2>
+    <div class="row">
+      <label>Style</label>
+      <select id="cursor-style">
+        <option value="bar" selected>Bar (│)</option>
+        <option value="block">Block (█)</option>
+        <option value="underline">Underline (_)</option>
+        <option value="none">None</option>
+      </select>
+    </div>
+    <div class="row"><label>Bar width (px)</label><input type="number" data-css="--cursor-w" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Height (em)</label><input type="number" data-css="--cursor-h" data-unit="em" value="1.05" min="0.4" max="3" step="0.05"></div>
+    <div class="row"><label>Block/underline (em)</label><input type="number" data-css="--cursor-block-w" data-unit="em" value="0.55" min="0.1" max="3" step="0.05"></div>
+    <div class="row"><label>Vertical offset (px)</label><input type="number" data-css="--cursor-offset" data-unit="px" value="2" min="-20" max="20"></div>
+    <div class="row"><label>Blink when idle</label><input type="checkbox" id="cursor-blink"></div>
+
+    <h2>Dropcap (first letter)</h2>
+    <div class="row"><label>Size (em)</label><input type="number" data-css="--dropcap-size" data-unit="em" value="4" min="1" max="10" step="0.1"></div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--dropcap-line-h" value="0.85" min="0.5" max="2" step="0.05"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--dropcap-weight">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600">600</option><option value="700" selected>700</option>
+        <option value="800">800</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Right margin (px)</label><input type="number" data-css="--dropcap-mr" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Top margin (px)</label><input type="number" data-css="--dropcap-mt" data-unit="px" value="4" min="-20" max="40"></div>
+
+    <h2>Highlight marker</h2>
+    <div class="row"><label>Background</label><input type="color" id="hl-bg-color" value="#ffeb3b"></div>
+    <div class="row">
+      <label>Opacity</label>
+      <input type="range" id="hl-bg-alpha" min="0" max="100" value="55">
+      <span class="val" id="hl-bg-alpha-val">55%</span>
+    </div>
+    <div class="row"><label>Pad Y (px)</label><input type="number" data-css="--hl-pad-y" data-unit="px" value="1" min="0" max="20"></div>
+    <div class="row"><label>Pad X (px)</label><input type="number" data-css="--hl-pad-x" data-unit="px" value="3" min="0" max="20"></div>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--hl-radius" data-unit="px" value="2" min="0" max="20"></div>
+  </div>
+
+  <!-- ========== HEADINGS TAB ========== -->
+  <div class="tab-content" id="tab-head">
+    <h2>H1 — main heading</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--h1-font">
+        <option value='"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' selected>Inter / system</option>
+        <option value='"Helvetica Neue", Helvetica, sans-serif'>Helvetica</option>
+        <option value='Georgia, "Times New Roman", serif'>Georgia / serif</option>
+        <option value='"Playfair Display", Georgia, serif'>Playfair (display serif)</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--h1-size" data-unit="px" value="34" min="10" max="120"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--h1-weight">
+        <option value="400">400</option><option value="600">600</option>
+        <option value="700">700</option><option value="800" selected>800</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--h1-line-h" value="1.1" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--h1-letter" data-unit="em" value="-0.02" min="-0.1" max="0.3" step="0.005"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--h1-color" value="#0a0a0a"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--h1-mt" data-unit="px" value="14" min="0" max="80"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--h1-mb" data-unit="px" value="18" min="0" max="80"></div>
+
+    <h2>H2 — subheading</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--h2-font">
+        <option value='"Inter", -apple-system, sans-serif' selected>Inter / system</option>
+        <option value='"Helvetica Neue", Helvetica, sans-serif'>Helvetica</option>
+        <option value='Georgia, "Times New Roman", serif'>Georgia / serif</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--h2-size" data-unit="px" value="24" min="10" max="80"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--h2-weight">
+        <option value="400">400</option><option value="600">600</option>
+        <option value="700" selected>700</option><option value="800">800</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--h2-line-h" value="1.15" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--h2-letter" data-unit="em" value="-0.015" min="-0.1" max="0.3" step="0.005"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--h2-color" value="#1a1a1a"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--h2-mt" data-unit="px" value="24" min="0" max="80"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--h2-mb" data-unit="px" value="12" min="0" max="80"></div>
+
+    <h2>H3 — kicker / small label</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--h3-font">
+        <option value='"Inter", -apple-system, sans-serif' selected>Inter / system</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+        <option value='Georgia, serif'>Serif</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--h3-size" data-unit="px" value="16" min="6" max="60"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--h3-weight">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600" selected>600</option><option value="700">700</option><option value="800">800</option>
+      </select>
+    </div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--h3-letter" data-unit="em" value="0.06" min="-0.05" max="0.5" step="0.005"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--h3-color" value="#555555"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--h3-mt" data-unit="px" value="20" min="0" max="80"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--h3-mb" data-unit="px" value="8" min="0" max="80"></div>
+    <div class="row">
+      <label>Text transform</label>
+      <select data-css="--h3-transform">
+        <option value="uppercase" selected>UPPERCASE</option>
+        <option value="none">As written</option>
+        <option value="lowercase">lowercase</option>
+        <option value="capitalize">Capitalize</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ========== QUOTE TAB ========== -->
+  <div class="tab-content" id="tab-quote">
+    <h2>Quote block</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--quote-font">
+        <option value='var(--body-font)' selected>Match body</option>
+        <option value='Georgia, "Times New Roman", serif'>Georgia / serif</option>
+        <option value='"Playfair Display", Georgia, serif'>Playfair</option>
+        <option value='"Inter", -apple-system, sans-serif'>Inter / sans-serif</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--quote-size" data-unit="px" value="22" min="8" max="80"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--quote-weight">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Style</label>
+      <select data-css="--quote-style">
+        <option value="italic" selected>Italic</option>
+        <option value="normal">Normal</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--quote-line-h" value="1.4" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--quote-color" value="#2a2a2a"></div>
+
+    <h2>Border</h2>
+    <div class="row"><label>Border width (px)</label><input type="number" data-css="--quote-border-w" data-unit="px" value="3" min="0" max="20"></div>
+    <div class="row"><label>Border color</label><input type="color" data-css="--quote-border-color" value="#c2410c"></div>
+    <div class="row"><label>Left padding (px)</label><input type="number" data-css="--quote-pad-l" data-unit="px" value="16" min="0" max="80"></div>
+    <div class="row"><label>Vertical padding (px)</label><input type="number" data-css="--quote-pad-y" data-unit="px" value="6" min="0" max="40"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--quote-mt" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--quote-mb" data-unit="px" value="18" min="0" max="80"></div>
+
+    <h2>Source line</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--quote-source-size" data-unit="px" value="14" min="6" max="40"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--quote-source-color" value="#6a6a6a"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--quote-source-mt" data-unit="px" value="8" min="0" max="40"></div>
+  </div>
+
+  <!-- ========== TITLE TAB ========== -->
+  <div class="tab-content" id="tab-title">
+    <h2>Visibility</h2>
+    <div class="row"><label>Show title bar</label><input type="checkbox" id="show-title" checked></div>
+    <div class="row"><label>Show accent line</label><input type="checkbox" id="show-accent" checked></div>
+
+    <h2>Title</h2>
+    <div class="row"><label>Default text</label><input type="text" id="title-default" value="Future of Work"></div>
+    <div class="row"><label>Top offset (px)</label><input type="number" data-css="--title-top" data-unit="px" value="56" min="0" max="300"></div>
+    <div class="row"><label>Side padding (px)</label><input type="number" data-css="--title-pad-x" data-unit="px" value="40" min="0" max="200"></div>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--title-font">
+        <option value='"Inter", -apple-system, sans-serif' selected>Inter / system</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+        <option value='Georgia, serif'>Serif</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--title-size" data-unit="px" value="12" min="6" max="60"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--title-weight">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600">600</option><option value="700" selected>700</option>
+        <option value="800">800</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--title-letter" data-unit="em" value="0.18" min="-0.05" max="0.5" step="0.005"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--title-color" value="#555555"></div>
+    <div class="row">
+      <label>Transform</label>
+      <select data-css="--title-transform">
+        <option value="uppercase" selected>UPPERCASE</option>
+        <option value="none">As written</option>
+        <option value="lowercase">lowercase</option>
+      </select>
+    </div>
+
+    <h2>Subtitle</h2>
+    <div class="row"><label>Default text</label><input type="text" id="subtitle-default" value="March 2024 · Essay"></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--subtitle-size" data-unit="px" value="11" min="6" max="40"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--subtitle-weight">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option>
+      </select>
+    </div>
+    <div class="row"><label>Color</label><input type="color" data-css="--subtitle-color" value="#888888"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--subtitle-mt" data-unit="px" value="4" min="0" max="40"></div>
+
+    <h2>Accent line</h2>
+    <div class="row"><label>Width (px)</label><input type="number" data-css="--accent-w" data-unit="px" value="36" min="0" max="400"></div>
+    <div class="row"><label>Height (px)</label><input type="number" data-css="--accent-h" data-unit="px" value="2" min="0" max="20"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--accent-color" value="#c2410c"></div>
+    <div class="row"><label>Margin top (px)</label><input type="number" data-css="--accent-mt" data-unit="px" value="0" min="0" max="80"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--accent-mb" data-unit="px" value="22" min="0" max="80"></div>
+  </div>
+
+  <!-- ========== FOOTER TAB ========== -->
+  <div class="tab-content" id="tab-footer">
+    <h2>Footer bar</h2>
+    <div class="row"><label>Show footer</label><input type="checkbox" id="show-footer" checked></div>
+    <div class="row"><label>Bottom offset (px)</label><input type="number" data-css="--footer-bottom" data-unit="px" value="32" min="0" max="300"></div>
+    <div class="row"><label>Side padding (px)</label><input type="number" data-css="--footer-pad-x" data-unit="px" value="40" min="0" max="200"></div>
+
+    <h2>Page counter</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--counter-font">
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace' selected>Monospace</option>
+        <option value='"Inter", sans-serif'>Inter</option>
+        <option value='Georgia, serif'>Serif</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--counter-size" data-unit="px" value="12" min="6" max="40"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--counter-weight">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600" selected>600</option><option value="700">700</option>
+      </select>
+    </div>
+    <div class="row"><label>Color</label><input type="color" data-css="--counter-color" value="#555555"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--counter-letter" data-unit="em" value="0.08" min="-0.05" max="0.5" step="0.005"></div>
+    <div class="row">
+      <label>Format</label>
+      <select id="counter-format">
+        <option value="01-of-NN" selected>01 / 12</option>
+        <option value="01-slash-NN">01 / 12 (zero-pad)</option>
+        <option value="1-of-NN">1 of 12</option>
+        <option value="bullet">• 03</option>
+        <option value="bar">— 03 —</option>
+        <option value="hide">Hide counter</option>
+      </select>
+    </div>
+
+    <h2>Byline (left side)</h2>
+    <div class="row"><label>Default byline</label><input type="text" id="byline-default" value="by your name"></div>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--byline-font">
+        <option value='"Inter", -apple-system, sans-serif' selected>Inter / system</option>
+        <option value='Georgia, serif'>Serif</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--byline-size" data-unit="px" value="11" min="6" max="40"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--byline-color" value="#888888"></div>
+  </div>
+
+  <!-- ========== COLORS TAB ========== -->
+  <div class="tab-content" id="tab-colors">
+    <h2>Quick themes</h2>
+    <div class="btn-row">
+      <button data-theme="paper">Paper</button>
+      <button data-theme="editorial">Editorial</button>
+    </div>
+    <div class="btn-row">
+      <button data-theme="modern">Modern</button>
+      <button data-theme="academic">Academic</button>
+    </div>
+    <div class="btn-row">
+      <button data-theme="midnight">Midnight</button>
+      <button data-theme="sepia">Sepia</button>
+    </div>
+    <div class="btn-row">
+      <button data-theme="newspaper">Newspaper</button>
+      <button data-theme="zine">Zine</button>
+    </div>
+
+    <h2>Background</h2>
+    <div class="row"><label>Screen background</label><input type="color" data-css="--screen-bg" value="#f7f5f0"></div>
+    <div class="row"><label>Stage background</label><input type="color" data-css="--stage-bg" value="#20232a"></div>
+
+    <h2>Text</h2>
+    <div class="row"><label>Body color</label><input type="color" data-css="--body-color" value="#1a1a1a"></div>
+    <div class="row"><label>H1 color</label><input type="color" data-css="--h1-color" value="#0a0a0a"></div>
+    <div class="row"><label>H2 color</label><input type="color" data-css="--h2-color" value="#1a1a1a"></div>
+    <div class="row"><label>H3 color</label><input type="color" data-css="--h3-color" value="#555555"></div>
+    <div class="row"><label>Quote color</label><input type="color" data-css="--quote-color" value="#2a2a2a"></div>
+    <div class="row"><label>Cursor color</label><input type="color" data-css="--cursor-color" value="#1a1a1a"></div>
+
+    <h2>Accents</h2>
+    <div class="row"><label>Accent color</label><input type="color" data-css="--accent-color" value="#c2410c"></div>
+    <div class="row"><label>Quote border</label><input type="color" data-css="--quote-border-color" value="#c2410c"></div>
+    <div class="row"><label>Progress fill</label><input type="color" data-css="--progress-fill" value="#c2410c"></div>
+  </div>
+
+  <!-- ========== ANIM TAB ========== -->
+  <div class="tab-content" id="tab-anim">
+    <h2>Page transition</h2>
+    <div class="help" style="margin-top:0">Transition style is set in the <b>Page</b> tab.</div>
+    <div class="row"><label>Duration (ms)</label><input type="number" data-css="--page-anim-ms" data-unit="ms" value="480" min="0" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--page-anim-easing">
+        <option value="cubic-bezier(0.4, 0, 0.2, 1)" selected>Material standard</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="linear">Linear</option>
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)">Pop</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ========== TIMING TAB ========== -->
+  <div class="tab-content" id="tab-timing">
+    <h2>Typing feel</h2>
+    <div class="row">
+      <label>Avg ms / char</label>
+      <input type="range" id="base-ms" min="5" max="500" value="55">
+      <span class="val" id="base-ms-val">55</span>
+    </div>
+    <div class="row">
+      <label>Variance ±</label>
+      <input type="range" id="variance-ms" min="0" max="300" value="38">
+      <span class="val" id="variance-ms-val">38</span>
+    </div>
+    <div class="row">
+      <label>Think pause chance</label>
+      <input type="range" id="think-chance" min="0" max="100" value="6">
+      <span class="val" id="think-chance-val">6%</span>
+    </div>
+    <div class="row">
+      <label>Max think (ms)</label>
+      <input type="number" id="think-max" value="1600" min="0" max="20000">
+    </div>
+    <div class="row">
+      <label>Start delay (s)</label>
+      <input type="number" id="start-delay" value="0" min="0" max="60" step="0.5">
+    </div>
+
+    <h2>Punctuation pauses</h2>
+    <div class="row"><label>Sentence base (ms)</label><input type="number" id="punct-sentence" value="240" min="0" max="5000"></div>
+    <div class="row"><label>Sentence jitter (ms)</label><input type="number" id="punct-sentence-j" value="420" min="0" max="5000"></div>
+    <div class="row"><label>Comma base (ms)</label><input type="number" id="punct-comma" value="80" min="0" max="2000"></div>
+    <div class="row"><label>Comma jitter (ms)</label><input type="number" id="punct-comma-j" value="180" min="0" max="2000"></div>
+    <div class="row"><label>Paragraph break (ms)</label><input type="number" id="para-pause" value="350" min="0" max="5000"></div>
+
+    <h2>Typo handling</h2>
+    <div class="row"><label>Typo pause before bs (ms)</label><input type="number" id="typo-pause" value="280" min="0" max="3000"></div>
+    <div class="row"><label>Backspace ms / char</label><input type="number" id="bs-ms" value="45" min="5" max="500"></div>
+
+    <h2>Countdown</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--countdown-size" data-unit="px" value="140" min="20" max="600"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--countdown-color" value="#1a1a1a"></div>
+  </div>
+
+  <!-- ========== AUDIO TAB ========== -->
+  <div class="tab-content" id="tab-audio">
+    <h2>Voice-over audio</h2>
+    <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+    <div class="btn-row">
+      <button id="audio-pick">Load audio</button>
+      <button id="audio-clear">Clear</button>
+    </div>
+    <div id="audio-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No audio loaded</div>
+    <div class="row" style="margin-top:10px;">
+      <label>Sync mode</label>
+      <select id="sync-mode">
+        <option value="off">Off (no audio)</option>
+        <option value="rate">Rate-match (typing speed → audio length)</option>
+        <option value="words">Word-timed (uses Whisper timing)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Audio volume</label>
+      <input type="range" id="audio-vol" min="0" max="100" value="80">
+      <span class="val" id="audio-vol-val">80%</span>
+    </div>
+
+    <h2>Whisper timing</h2>
+    <input type="file" id="timing-input" accept=".srt,.vtt,.json" style="display:none;">
+    <div class="btn-row">
+      <button id="timing-pick">Load .srt / .vtt / .json</button>
+      <button id="timing-clear">Clear</button>
+    </div>
+    <div id="timing-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No timing file</div>
+    <div class="help" style="margin-top:8px">
+      Generate with: <code>whisper voiceover.mp3 --word_timestamps True --output_format json</code><br>
+      In <b>Word-timed</b>, each word types out at its spoken moment. Pages auto-advance as text fills up.
+    </div>
+
+    <h2>Background music (BGM)</h2>
+    <div class="row">
+      <label>Upload audio</label>
+      <input type="file" id="bgm-file" accept="audio/*">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>File</label>
+      <span id="bgm-name" style="color:#888;flex:1;">none</span>
+      <button id="bgm-clear" style="flex:0 0 auto;padding:4px 10px;font-size:11px;">clear</button>
+    </div>
+    <div class="row"><label>Auto-play with show</label><input type="checkbox" id="bgm-auto" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bgm-loop"></div>
+    <div class="row"><label>Volume</label><input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6"></div>
+    <div class="row"><label>Start offset (s)</label><input type="number" id="bgm-start" value="0" step="0.1" min="0"></div>
+    <div class="row"><label>Fade in (ms)</label><input type="number" id="bgm-fadein" value="0" min="0" step="50"></div>
+    <div class="row"><label>Fade out (ms)</label><input type="number" id="bgm-fadeout" value="0" min="0" step="50"></div>
+    <div class="btn-row">
+      <button id="bgm-test">▶ Preview 4s</button>
+      <button id="bgm-stop-test">⏹ Stop</button>
+    </div>
+
+    <h2>Background media (image / video / audio)</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Full-screen background layer. Image OR video (with or without sound), plus optional separate audio-only track. Ducks during TTS.
+    </div>
+    <div class="row"><label>Background video</label><input type="file" id="bg-video-file" accept="video/*"></div>
+    <div class="row"><label>Background image</label><input type="file" id="bg-image-file" accept="image/*"></div>
+    <div class="row"><label>Audio-only file</label><input type="file" id="bg-audio-file" accept="audio/*"></div>
+    <div class="row"><label>Video playlist (multiple)</label><input type="file" id="bg-playlist-files" accept="video/*" multiple></div>
+    <div class="row" style="align-items:flex-start;"><label>Queue</label>
+      <ol id="bg-playlist-list" style="flex:1;font-size:11px;color:#aaa;padding-left:20px;margin:0;list-style:decimal;max-height:120px;overflow-y:auto;"></ol>
+    </div>
+    <div class="row"><label>Playlist mode</label><input type="checkbox" id="bg-playlist-on" checked></div>
+    <div class="row"><label>Loop playlist</label><input type="checkbox" id="bg-playlist-loop" checked></div>
+    <div class="row"><label>Crossfade (ms)</label><input type="number" id="bg-crossfade-ms" value="250" min="0" max="3000" step="50"></div>
+    <div class="row">
+      <button id="bg-playlist-next" style="padding:4px 10px;font-size:11px;">⏭ next</button>
+      <button id="bg-playlist-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear queue</button>
+    </div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="bg-mute" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bg-loop" checked></div>
+    <div class="row"><label>Volume</label><input type="range" id="bg-volume" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="row"><label>Fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="fill">stretch (fill)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+    <div class="row"><label>Auto-start with show</label><input type="checkbox" id="bg-auto" checked></div>
+    <div class="row"><label>Duck during TTS</label><input type="checkbox" id="bg-duck-on" checked></div>
+    <div class="row"><label>Duck to (factor)</label><input type="range" id="bg-duck-to" min="0" max="1" step="0.05" value="0.3"></div>
+    <div class="row">
+      <button id="bg-play" style="padding:4px 10px;font-size:11px;">▶ play bg</button>
+      <button id="bg-stop" style="padding:4px 10px;font-size:11px;margin-left:4px;">⏹ stop</button>
+      <button id="bg-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear</button>
+    </div>
+
+    <h2>Skin transparency</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Drop these to let the bg video peep through. Text stays opaque.
+    </div>
+    <div class="row">
+      <label>Page bg opacity</label>
+      <input type="range" id="page-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="page-bg-alpha-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Skin bg opacity</label>
+      <input type="range" id="skin-alpha" min="0" max="100" value="100">
+      <span class="val" id="skin-alpha-val">100%</span>
+    </div>
+  </div>
+
+  <!-- ========== TTS TAB ========== -->
+  <div class="tab-content" id="tab-tts">
+    <h2>Marker-driven sync</h2>
+    <div class="row">
+      <label>Sync file</label>
+      <input type="file" id="sync-file" accept=".srt,.vtt,.json,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="sync-marker-count" style="color:#888;flex:1;">no markers</span>
+      <button id="sync-clear" style="flex:0 0 auto;padding:4px 10px;font-size:11px;">clear</button>
+    </div>
+    <div class="row"><label>Use sync triggers</label><input type="checkbox" id="sync-enabled"></div>
+    <div class="row">
+      <label>Sync to</label>
+      <select id="sync-source">
+        <option value="bgm" selected>BGM playhead</option>
+        <option value="clock">Wall clock from play()</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Marker → block map</label>
+      <select id="sync-map">
+        <option value="one-to-one" selected>One marker per block (in order)</option>
+        <option value="advance">Marker just advances to next block</option>
+      </select>
+    </div>
+    <div class="help">
+      Accepts <b>.srt</b>, <b>.vtt</b>, or <b>.json</b> (array of <code>{start, end, text}</code> in ms). Markers parsed for future use; the typing engine currently keeps its own pacing.
+    </div>
+
+  </div>
+
+  <!-- ========== SCRIPT SRT TAB ========== -->
+  <div class="tab-content" id="tab-srt-script">
+    <h2>Script from SRT / timestamped file</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Load an <b>.srt / .vtt / .json / .txt</b>. Each cue is rendered to fill its [start..end] window. Wall-clock from <i>Play</i>. Overrides natural pacing.
+    </div>
+    <div class="row">
+      <label>Timed script file</label>
+      <input type="file" id="srt-script-file" accept=".srt,.vtt,.json,.txt,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="srt-script-info" style="color:#888;flex:1;">no file</span>
+      <button id="srt-script-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use timed script</label><input type="checkbox" id="srt-script-on"></div>
+    <div class="row">
+      <label>Cue typing fill</label>
+      <input type="range" id="srt-script-fill" min="20" max="100" value="92">
+      <span class="val" id="srt-script-fill-val">92%</span>
+    </div>
+    <div class="row">
+      <label>Between cues</label>
+      <select id="srt-script-between">
+        <option value="keep" selected>Keep previous on screen</option>
+        <option value="clear">Clear between cues</option>
+        <option value="newline">Add newline between</option>
+      </select>
+    </div>
+  </div>
+</aside>
+
+<main id="stage">
+  <div class="phone-wrap">
+    <div class="phone-screen" id="phone-screen">
+      <div id="progress"><div id="progress-fill"></div></div>
+      <div id="title-bar">
+        <div id="title-line">FUTURE OF WORK</div>
+        <div id="subtitle-line">March 2024 · Essay</div>
+        <div id="accent-line"></div>
+      </div>
+      <div id="pages"></div>
+      <div id="lens-vignette-fx"></div>
+      <div id="footer">
+        <div id="byline">by your name</div>
+        <div id="counter">01 / 01</div>
+      </div>
+      <div id="manual-cue">press SPACE for next page →</div>
+      <div id="measure"></div>
+    </div>
+  </div>
+</main>
+
+<div class="resize-handle" id="resize-handle" title="Drag to resize"></div>
+<div id="hint">press H to show controls · Space to play / next · Esc to stop</div>
+
+<script>
+(() => {
+  // ---------- Sound ----------
+  const Sound = (() => {
+    let ctx;
+    const ensureCtx = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    let enabled = true, volume = 0.3, style = 'soft';
+    let pageOn = true, pageVol = 0.4;
+    let duckFactor = 1, duckAnim = null;
+
+    function setDuckFactor(target, durMs) {
+      if (duckAnim) cancelAnimationFrame(duckAnim);
+      duckAnim = null;
+      target = Math.max(0, Math.min(1, target));
+      if (!durMs || durMs <= 0) { duckFactor = target; return; }
+      const start = duckFactor;
+      const t0 = performance.now();
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) { duckFactor = target; duckAnim = null; return; }
+        duckFactor = start + (target - start) * t;
+        duckAnim = requestAnimationFrame(step);
+      };
+      duckAnim = requestAnimationFrame(step);
+    }
+    function duck(amountPct, fadeMs) { setDuckFactor(Math.max(0, 1 - (amountPct || 0) / 100), fadeMs); }
+    function unduck(fadeMs) { setDuckFactor(1, fadeMs); }
+
+    function noiseBurst(c, dur, decayPow = 4) {
+      const n = Math.floor(c.sampleRate * dur);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, decayPow);
+      return buf;
+    }
+    function key() {
+      if (!enabled) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      const v = volume * duckFactor;
+      if (style === 'typewriter') {
+        const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.06, 5);
+        const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2200+Math.random()*400; f.Q.value=1.2;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.5, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.08);
+        b.connect(f).connect(g).connect(c.destination); b.start(now);
+      } else if (style === 'mechanical') {
+        const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.05, 6);
+        const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1500+Math.random()*500; f.Q.value=3;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.06);
+        b.connect(f).connect(g).connect(c.destination); b.start(now);
+      } else {
+        const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.04, 4);
+        const f = c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900+Math.random()*200; f.Q.value=1;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+        b.connect(f).connect(g).connect(c.destination); b.start(now);
+      }
+    }
+    function backspace() {
+      if (!enabled) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.03, 5);
+      const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=900+Math.random()*200; f.Q.value=1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume*duckFactor*0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.04);
+      b.connect(f).connect(g).connect(c.destination); b.start(now);
+    }
+    function pageTurn() {
+      if (!pageOn) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      // paper rustle: highpass noise + subtle thud
+      const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.22, 2.5);
+      const f = c.createBiquadFilter(); f.type='highpass'; f.frequency.value=2200;
+      const g = c.createGain();
+      g.gain.setValueAtTime(pageVol*duckFactor*0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.26);
+      b.connect(f).connect(g).connect(c.destination); b.start(now);
+      const o = c.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(120, now);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.18);
+      const og = c.createGain();
+      og.gain.setValueAtTime(pageVol*duckFactor*0.18, now);
+      og.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      o.connect(og).connect(c.destination); o.start(now); o.stop(now + 0.22);
+    }
+    return {
+      key, backspace, pageTurn,
+      setEnabled: v => enabled = v,
+      setVolume: v => volume = v,
+      setStyle: v => style = v,
+      setPageOn: v => pageOn = v,
+      setPageVol: v => pageVol = v,
+      duck, unduck,
+      get duckFactor() { return duckFactor; },
+      resume: ensureCtx,
+    };
+  })();
+
+  // ---------- DOM ----------
+  const $ = id => document.getElementById(id);
+  const root = document.documentElement;
+  const body = document.body;
+  const pagesEl = $('pages');
+  const measureEl = $('measure');
+  const titleLine = $('title-line');
+  const subtitleLine = $('subtitle-line');
+  const bylineEl = $('byline');
+  const counterEl = $('counter');
+  const manualCue = $('manual-cue');
+  const progressFill = $('progress-fill');
+  const setVar = (k, v) => root.style.setProperty(k, v);
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- Generic CSS-var binding ----------
+  document.querySelectorAll('[data-css]').forEach(el => {
+    const prop = el.dataset.css;
+    const unit = el.dataset.unit || '';
+    const apply = () => {
+      let v = el.value;
+      if (unit && v !== '' && !String(v).endsWith(unit)) v = v + unit;
+      setVar(prop, v);
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+    apply();
+  });
+
+  // ---------- Lens / zoom: camera push-in on the page + vignette ----------
+  (function () {
+    const on = $('lens-on'); if (!on) return;
+    const apply = () => document.body.classList.toggle('lens-on', on.checked);
+    on.addEventListener('change', apply); apply();
+    const mag = $('lens-mag'), mv = $('lens-mag-val');
+    if (mag) { const am = () => { const m = +mag.value / 100; if (mv) mv.textContent = m.toFixed(2).replace(/0$/, '') + '×'; setVar('--lens-mag', m.toFixed(3)); }; mag.addEventListener('input', am); am(); }
+    const vg = $('lens-vignette'), vv = $('lens-vignette-val');
+    if (vg) { const av = () => { if (vv) vv.textContent = vg.value + '%'; setVar('--lens-vignette', (+vg.value / 100).toFixed(2)); }; vg.addEventListener('input', av); av(); }
+  })();
+
+  // ---------- Composite ----------
+  function hexToRgb(hex) {
+    return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+  }
+  function bindRgba(colorId, alphaId, varName) {
+    const c = $(colorId), a = $(alphaId), out = $(alphaId + '-val');
+    const apply = () => {
+      const [r,g,b] = hexToRgb(c.value);
+      const al = (+a.value / 100).toFixed(2);
+      setVar(varName, `rgba(${r},${g},${b},${al})`);
+      out.textContent = a.value + '%';
+    };
+    c.addEventListener('input', apply); a.addEventListener('input', apply);
+    apply();
+  }
+  bindRgba('progress-bg-color', 'progress-bg-alpha', '--progress-bg');
+  bindRgba('hl-bg-color', 'hl-bg-alpha', '--hl-bg');
+
+  function bindAlpha(sliderId, varName) {
+    const sl = $(sliderId), out = $(sliderId + '-val');
+    const apply = () => {
+      out.textContent = sl.value + '%';
+      setVar(varName, (+sl.value / 100).toFixed(2));
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindAlpha('screen-shadow-alpha', '--screen-shadow-alpha');
+
+  // Phone size
+  $('phone-w').addEventListener('input', e => setVar('--screen-w', e.target.value + 'px'));
+  $('phone-h').addEventListener('input', e => setVar('--screen-h', e.target.value + 'px'));
+  const phoneScale = $('phone-scale'), phoneScaleVal = $('phone-scale-val');
+  const updScale = () => {
+    phoneScaleVal.textContent = phoneScale.value + '%';
+    setVar('--screen-scale', (+phoneScale.value / 100).toString());
+  };
+  phoneScale.addEventListener('input', updScale); updScale();
+
+  document.querySelectorAll('[data-size]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sizes = {
+        tiktok: [540, 960], iphone: [390, 844], square: [720, 720], reels: [1080, 1920],
+      };
+      const [w, h] = sizes[btn.dataset.size];
+      $('phone-w').value = w; $('phone-w').dispatchEvent(new Event('input'));
+      $('phone-h').value = h; $('phone-h').dispatchEvent(new Event('input'));
+    });
+  });
+
+  $('show-frame').addEventListener('change', e => body.classList.toggle('no-frame', !e.target.checked));
+  $('bezel').addEventListener('change', e => body.classList.toggle('phone-bezel', e.target.checked));
+  $('show-progress').addEventListener('change', e => body.classList.toggle('no-progress', !e.target.checked));
+  $('show-title').addEventListener('change', e => body.classList.toggle('no-title', !e.target.checked));
+  $('show-accent').addEventListener('change', e => body.classList.toggle('no-accent', !e.target.checked));
+  $('show-footer').addEventListener('change', e => body.classList.toggle('no-footer', !e.target.checked));
+  $('cursor-blink').addEventListener('change', e => body.classList.toggle('cursor-blink', e.target.checked));
+  $('body-font-custom').addEventListener('input', e => { const v = e.target.value.trim(); if (v) setVar('--body-font', v); });
+
+  // Title / byline default text
+  $('title-default').addEventListener('input', e => titleLine.textContent = e.target.value);
+  $('subtitle-default').addEventListener('input', e => subtitleLine.textContent = e.target.value);
+  $('byline-default').addEventListener('input', e => bylineEl.textContent = e.target.value);
+
+  // Cursor style (re-applies to active cursor)
+  $('cursor-style').addEventListener('change', refreshCursorStyle);
+  function refreshCursorStyle() {
+    const cs = $('cursor-style').value;
+    document.querySelectorAll('.typed-cursor').forEach(c => {
+      c.classList.remove('block', 'underline');
+      c.style.display = '';
+      if (cs === 'block') c.classList.add('block');
+      else if (cs === 'underline') c.classList.add('underline');
+      else if (cs === 'none') c.style.display = 'none';
+    });
+  }
+
+  // Page transition class
+  function setTransitionClass() {
+    body.classList.remove('tr-fade', 'tr-slide-left', 'tr-slide-up', 'tr-flip', 'tr-none');
+    body.classList.add('tr-' + $('page-transition').value);
+  }
+  $('page-transition').addEventListener('change', setTransitionClass);
+
+  // Pagination UI — show only the input relevant to the chosen mode
+  function updatePaginateUI() {
+    const mode = $('paginate-mode').value;
+    $('row-paginate-words').style.display = (mode === 'words') ? '' : 'none';
+    $('row-paginate-sentences').style.display = (mode === 'sentences') ? '' : 'none';
+    $('row-paginate-safety').style.display = (mode === 'auto') ? '' : 'none';
+  }
+  $('paginate-mode').addEventListener('change', updatePaginateUI);
+  updatePaginateUI();
+
+  // Range labels
+  const bindRange = (id, suffix = '') => {
+    const el = $(id), out = $(id + '-val');
+    if (!el || !out) return;
+    const upd = () => out.textContent = el.value + suffix;
+    el.addEventListener('input', upd); upd();
+  };
+  bindRange('base-ms'); bindRange('variance-ms'); bindRange('think-chance', '%');
+
+  // Sound
+  $('sound-on').addEventListener('change', e => Sound.setEnabled(e.target.checked));
+  $('sound-style').addEventListener('change', e => Sound.setStyle(e.target.value));
+  const sv = $('sound-vol'), svVal = $('sound-vol-val');
+  const updSv = () => { svVal.textContent = sv.value + '%'; Sound.setVolume(+sv.value / 100); };
+  sv.addEventListener('input', updSv); updSv();
+  $('page-sound').addEventListener('change', e => Sound.setPageOn(e.target.checked));
+  const pv = $('page-sound-vol'), pvVal = $('page-sound-vol-val');
+  const updPv = () => { pvVal.textContent = pv.value + '%'; Sound.setPageVol(+pv.value / 100); };
+  pv.addEventListener('input', updPv); updPv();
+
+  // Presets
+  const presets = {
+    fast:    { base: 28, variance: 18, think: 4,  thinkMax: 700 },
+    natural: { base: 55, variance: 38, think: 6,  thinkMax: 1600 },
+    slow:    { base: 110, variance: 60, think: 14, thinkMax: 3200 },
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      $('base-ms').value = p.base; $('base-ms').dispatchEvent(new Event('input'));
+      $('variance-ms').value = p.variance; $('variance-ms').dispatchEvent(new Event('input'));
+      $('think-chance').value = p.think; $('think-chance').dispatchEvent(new Event('input'));
+      $('think-max').value = p.thinkMax;
+    });
+  });
+
+  // Themes
+  const themes = {
+    paper:      { 'screen-bg':'#f7f5f0', 'stage-bg':'#20232a', 'body-color':'#1a1a1a', 'h1-color':'#0a0a0a', 'h2-color':'#1a1a1a', 'h3-color':'#555555', 'accent-color':'#c2410c', 'cursor-color':'#1a1a1a', 'quote-color':'#2a2a2a', 'quote-border-color':'#c2410c', 'title-color':'#555555', 'subtitle-color':'#888888', 'counter-color':'#555555', 'byline-color':'#888888', 'body-font':'"Georgia", serif', 'h1-font':'"Inter", sans-serif' },
+    editorial:  { 'screen-bg':'#ffffff', 'stage-bg':'#1a1a1a', 'body-color':'#0a0a0a', 'h1-color':'#0a0a0a', 'h2-color':'#0a0a0a', 'h3-color':'#666666', 'accent-color':'#000000', 'cursor-color':'#0a0a0a', 'quote-color':'#0a0a0a', 'quote-border-color':'#000000', 'title-color':'#888888', 'subtitle-color':'#aaaaaa', 'counter-color':'#444444', 'byline-color':'#888888', 'body-font':'"Georgia", "Times New Roman", serif', 'h1-font':'"Inter", sans-serif' },
+    modern:     { 'screen-bg':'#ffffff', 'stage-bg':'#0a0a0a', 'body-color':'#1a1a1a', 'h1-color':'#0a0a0a', 'h2-color':'#1a1a1a', 'h3-color':'#0a0a0a', 'accent-color':'#0066ff', 'cursor-color':'#0066ff', 'quote-color':'#1a1a1a', 'quote-border-color':'#0066ff', 'title-color':'#0066ff', 'subtitle-color':'#666666', 'counter-color':'#0066ff', 'byline-color':'#666666', 'body-font':'"Inter", -apple-system, sans-serif', 'h1-font':'"Inter", sans-serif' },
+    academic:   { 'screen-bg':'#fafaf7', 'stage-bg':'#2a2520', 'body-color':'#1a1a1a', 'h1-color':'#1a1a1a', 'h2-color':'#1a1a1a', 'h3-color':'#5a5a5a', 'accent-color':'#8b1a1a', 'cursor-color':'#1a1a1a', 'quote-color':'#1a1a1a', 'quote-border-color':'#8b1a1a', 'title-color':'#5a5a5a', 'subtitle-color':'#8a8a8a', 'counter-color':'#5a5a5a', 'byline-color':'#8a8a8a', 'body-font':'"EB Garamond", Garamond, serif', 'h1-font':'"EB Garamond", Garamond, serif' },
+    midnight:   { 'screen-bg':'#0d1117', 'stage-bg':'#000000', 'body-color':'#e6e6e6', 'h1-color':'#ffffff', 'h2-color':'#ffffff', 'h3-color':'#a0a0a0', 'accent-color':'#58a6ff', 'cursor-color':'#ffffff', 'quote-color':'#e6e6e6', 'quote-border-color':'#58a6ff', 'title-color':'#a0a0a0', 'subtitle-color':'#666666', 'counter-color':'#a0a0a0', 'byline-color':'#666666', 'body-font':'"Georgia", serif', 'h1-font':'"Inter", sans-serif' },
+    sepia:      { 'screen-bg':'#f4ecd8', 'stage-bg':'#3a2e1f', 'body-color':'#3d2e1d', 'h1-color':'#2b1f0f', 'h2-color':'#3d2e1d', 'h3-color':'#6b5635', 'accent-color':'#8b5a2b', 'cursor-color':'#3d2e1d', 'quote-color':'#3d2e1d', 'quote-border-color':'#8b5a2b', 'title-color':'#6b5635', 'subtitle-color':'#8a7551', 'counter-color':'#6b5635', 'byline-color':'#8a7551', 'body-font':'"EB Garamond", Garamond, "Times New Roman", serif', 'h1-font':'"EB Garamond", Garamond, serif' },
+    newspaper:  { 'screen-bg':'#f5f3eb', 'stage-bg':'#1a1a1a', 'body-color':'#0a0a0a', 'h1-color':'#000000', 'h2-color':'#000000', 'h3-color':'#444444', 'accent-color':'#000000', 'cursor-color':'#000000', 'quote-color':'#0a0a0a', 'quote-border-color':'#000000', 'title-color':'#222222', 'subtitle-color':'#666666', 'counter-color':'#222222', 'byline-color':'#666666', 'body-font':'"Georgia", "Times New Roman", serif', 'h1-font':'Georgia, "Times New Roman", serif' },
+    zine:       { 'screen-bg':'#fffbea', 'stage-bg':'#1c1a14', 'body-color':'#1a1a1a', 'h1-color':'#cc0066', 'h2-color':'#1a1a1a', 'h3-color':'#cc0066', 'accent-color':'#cc0066', 'cursor-color':'#cc0066', 'quote-color':'#1a1a1a', 'quote-border-color':'#cc0066', 'title-color':'#cc0066', 'subtitle-color':'#666666', 'counter-color':'#cc0066', 'byline-color':'#666666', 'body-font':'"Inter", sans-serif', 'h1-font':'"Inter", sans-serif' },
+  };
+  document.querySelectorAll('[data-theme]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = themes[btn.dataset.theme];
+      if (!t) return;
+      Object.entries(t).forEach(([k, v]) => setVar('--' + k, v));
+    });
+  });
+
+  // Phone drag-resize
+  (() => {
+    const handle = $('resize-handle');
+    if (!handle) return;
+    let resizing = false, startX, startY, startScale;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      resizing = true; startX = e.clientX; startY = e.clientY;
+      startScale = +phoneScale.value / 100 || 1;
+      try { handle.setPointerCapture(e.pointerId); } catch {}
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!resizing) return;
+      const delta = ((e.clientX - startX) + (e.clientY - startY)) / 2;
+      const newScale = Math.max(0.2, Math.min(2.5, startScale + delta / 200));
+      phoneScale.value = Math.round(newScale * 100);
+      phoneScale.dispatchEvent(new Event('input'));
+    });
+    document.addEventListener('pointerup', (e) => {
+      if (!resizing) return; resizing = false;
+      try { handle.releasePointerCapture(e.pointerId); } catch {}
+    });
+  })();
+
+  // ---------- Audio ----------
+  const audioEl = new Audio();
+  audioEl.preload = 'auto';
+  let audioUrl = null;
+  let timingData = null;
+
+  function setAudioInfo() {
+    const info = $('audio-info');
+    if (audioUrl && audioEl.duration && !isNaN(audioEl.duration)) info.textContent = `Loaded · ${audioEl.duration.toFixed(1)}s`;
+    else if (audioUrl) info.textContent = 'Loaded · reading metadata…';
+    else info.textContent = 'No audio loaded';
+  }
+  $('audio-pick').addEventListener('click', () => $('audio-input').click());
+  $('audio-clear').addEventListener('click', () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = null; audioEl.src = ''; setAudioInfo();
+  });
+  $('audio-input').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(f); audioEl.src = audioUrl;
+    audioEl.addEventListener('loadedmetadata', setAudioInfo, { once: true });
+    setAudioInfo(); e.target.value = '';
+  });
+  const audioVol = $('audio-vol'), audioVolVal = $('audio-vol-val');
+  const updAudioVol = () => { audioVolVal.textContent = audioVol.value + '%'; audioEl.volume = +audioVol.value / 100; };
+  audioVol.addEventListener('input', updAudioVol); updAudioVol();
+
+  $('timing-pick').addEventListener('click', () => $('timing-input').click());
+  $('timing-clear').addEventListener('click', () => {
+    timingData = null; $('timing-info').textContent = 'No timing file';
+  });
+  $('timing-input').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const content = await f.text();
+      timingData = parseTimingFile(content, f.name);
+      $('timing-info').textContent = timingData ? `Loaded · ${timingData.length} items` : 'Failed to parse';
+    } catch (err) {
+      timingData = null;
+      $('timing-info').textContent = 'Read error: ' + err.message;
+    }
+    e.target.value = '';
+  });
+  function parseTimingFile(content, fname) {
+    const ext = fname.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'json') return parseWhisperJson(content);
+      if (ext === 'srt') return parseSrt(content);
+      if (ext === 'vtt') return parseVtt(content);
+    } catch (e) { console.error('Timing parse error', e); }
+    return null;
+  }
+  function parseWhisperJson(content) {
+    const data = JSON.parse(content);
+    const words = [];
+    if (Array.isArray(data.segments)) {
+      for (const s of data.segments) {
+        if (Array.isArray(s.words) && s.words.length > 0) {
+          for (const w of s.words) words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+        } else if (typeof s.text === 'string') words.push({ text: s.text, start: +s.start, end: +s.end });
+      }
+    } else if (Array.isArray(data.words)) {
+      for (const w of data.words) words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+    }
+    return words.length > 0 ? words : null;
+  }
+  function parseSrt(content) {
+    const lines = content.replace(/\r/g, '').split('\n');
+    const items = []; let i = 0;
+    while (i < lines.length) {
+      while (i < lines.length && lines[i].trim() === '') i++;
+      if (i >= lines.length) break;
+      if (/^\d+$/.test(lines[i].trim())) i++;
+      if (i >= lines.length) break;
+      const m = lines[i].match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{3})/);
+      if (!m) { i++; continue; }
+      const start = parseTimestamp(m[1]); const end = parseTimestamp(m[2]); i++;
+      const tl = [];
+      while (i < lines.length && lines[i].trim() !== '') { tl.push(lines[i]); i++; }
+      items.push({ text: tl.join(' ').trim(), start, end });
+    }
+    return items.length > 0 ? items : null;
+  }
+  function parseVtt(content) {
+    return parseSrt(content.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, ''));
+  }
+  function parseTimestamp(ts) {
+    const m = ts.match(/(\d+):(\d{2}):(\d{2})[,.](\d{3})/);
+    if (!m) return 0;
+    return +m[1]*3600 + +m[2]*60 + +m[3] + +m[4]/1000;
+  }
+
+  // ---------- Script parsing ----------
+  // Output: { meta: {title, subtitle, byline}, blocks: [...] }
+  // blocks: [{ kind:'h1'|'h2'|'h3'|'quote'|'p'|'pagebreak', text/tokens, source? }]
+  function parseScript(input) {
+    const meta = {};
+    // Top-level metadata
+    input = input.replace(/\[\[title:([^\]]*)\]\]/g, (_, v) => { meta.title = v; return ''; });
+    input = input.replace(/\[\[subtitle:([^\]]*)\]\]/g, (_, v) => { meta.subtitle = v; return ''; });
+    input = input.replace(/\[\[byline:([^\]]*)\]\]/g, (_, v) => { meta.byline = v; return ''; });
+
+    const paras = input.split(/\n[ \t]*\n+/).map(p => p.trim()).filter(Boolean);
+    const blocks = [];
+    for (const p of paras) {
+      const m = p.match(/^\[\[(h1|h2|h3):([^\]]*)\]\]\s*([\s\S]*)/);
+      if (m) {
+        blocks.push({ kind: m[1], text: m[2].trim() });
+        const rest = m[3].trim();
+        if (rest) blocks.push({ kind: 'p', tokens: parseInline(rest), text: stripMarkup(rest) });
+        continue;
+      }
+      const q = p.match(/^\[\[quote:([^\]]*)\]\]\s*([\s\S]*)/);
+      if (q) {
+        const parts = q[1].split('|');
+        blocks.push({ kind: 'quote', text: parts[0].trim(), source: parts[1] ? parts[1].trim() : '' });
+        const rest = q[2].trim();
+        if (rest) blocks.push({ kind: 'p', tokens: parseInline(rest), text: stripMarkup(rest) });
+        continue;
+      }
+      if (/^\[\[page\]\]\s*$/.test(p)) {
+        blocks.push({ kind: 'pagebreak' });
+        continue;
+      }
+      // Plain paragraph (may have inline directives + bold/italic markdown)
+      blocks.push({ kind: 'p', tokens: parseInline(p), text: stripMarkup(p) });
+    }
+    return { meta, blocks };
+  }
+
+  // Inline parsing: handles [[pause:N]], [[wrong|right]], [[hl:text]], [[dropcap]], **bold**, *italic*
+  function parseInline(input) {
+    const tokens = [];
+    let i = 0;
+    while (i < input.length) {
+      // escape \[[ → literal [[
+      if (input[i] === '\\' && input.startsWith('[[', i+1)) {
+        tokens.push({ type: 'text', char: '[' });
+        tokens.push({ type: 'text', char: '[' });
+        i += 3; continue;
+      }
+      // Directives [[...]]
+      if (input.startsWith('[[', i)) {
+        const end = input.indexOf(']]', i+2);
+        if (end !== -1) {
+          const inner = input.slice(i+2, end);
+          if (inner.startsWith('pause:') || inner.startsWith('wait:')) {
+            const ms = parseInt(inner.split(':')[1], 10);
+            if (!isNaN(ms)) tokens.push({ type: 'pause', ms });
+          } else if (inner.startsWith('hl:')) {
+            tokens.push({ type: 'mark-open' });
+            for (const c of inner.slice(3)) tokens.push({ type: 'text', char: c });
+            tokens.push({ type: 'mark-close' });
+          } else if (inner === 'dropcap') {
+            tokens.push({ type: 'dropcap' });
+          } else if (inner.includes('|') && !inner.includes(':')) {
+            const idx = inner.indexOf('|');
+            tokens.push({ type: 'typo', wrong: inner.slice(0, idx), right: inner.slice(idx+1) });
+          } else {
+            for (const c of '[[' + inner + ']]') tokens.push({ type: 'text', char: c });
+          }
+          i = end + 2; continue;
+        }
+      }
+      // **bold**
+      if (input.startsWith('**', i)) {
+        const end = input.indexOf('**', i+2);
+        if (end !== -1) {
+          tokens.push({ type: 'bold-open' });
+          for (const c of input.slice(i+2, end)) tokens.push({ type: 'text', char: c });
+          tokens.push({ type: 'bold-close' });
+          i = end + 2; continue;
+        }
+      }
+      // *italic*
+      if (input[i] === '*' && input[i+1] !== '*' && input[i-1] !== '*') {
+        const end = input.indexOf('*', i+1);
+        if (end !== -1 && input[end+1] !== '*') {
+          tokens.push({ type: 'italic-open' });
+          for (const c of input.slice(i+1, end)) tokens.push({ type: 'text', char: c });
+          tokens.push({ type: 'italic-close' });
+          i = end + 1; continue;
+        }
+      }
+      tokens.push({ type: 'text', char: input[i] }); i++;
+    }
+    return tokens;
+  }
+
+  function stripMarkup(text) {
+    return text
+      .replace(/\\?\[\[(?:pause|wait):\d+\]\]/g, '')
+      .replace(/\\?\[\[hl:([^\]]*)\]\]/g, '$1')
+      .replace(/\\?\[\[dropcap\]\]/g, '')
+      .replace(/\\?\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/\\\[\[/g, '[[');
+  }
+
+  // ---------- Pagination ----------
+  // Splits the parsed blocks into pages depending on mode.
+  function paginate(blocks) {
+    const mode = $('paginate-mode').value;
+    const pages = [];
+    let current = [];
+
+    if (mode === 'single') {
+      for (const b of blocks) {
+        if (b.kind === 'pagebreak') {
+          if (current.length) pages.push(current);
+          current = [];
+        } else current.push(b);
+      }
+      if (current.length) pages.push(current);
+      if (pages.length === 0) pages.push([]);
+      return pages;
+    }
+
+    if (mode === 'manual') {
+      for (const b of blocks) {
+        if (b.kind === 'pagebreak') {
+          if (current.length) pages.push(current);
+          current = [];
+        } else current.push(b);
+      }
+      if (current.length) pages.push(current);
+      if (pages.length === 0) pages.push([]);
+      return pages;
+    }
+
+    if (mode === 'words' || mode === 'sentences') {
+      const N = mode === 'words'
+        ? Math.max(1, +$('paginate-words').value || 8)
+        : Math.max(1, +$('paginate-sentences').value || 2);
+      let count = 0;
+      let buf = '';
+      function flushPara() {
+        if (buf.trim().length > 0) {
+          const text = buf.replace(/^\s+/, '');
+          current.push({ kind: 'p', text: text.trim(), tokens: parseInline(text.trim()) });
+          buf = '';
+        }
+      }
+      function flushPage() {
+        flushPara();
+        if (current.length) pages.push(current);
+        current = []; count = 0;
+      }
+      for (const b of blocks) {
+        if (b.kind === 'pagebreak') { flushPage(); continue; }
+        if (b.kind !== 'p') {
+          flushPara();
+          current.push(b);
+          continue;
+        }
+        if (mode === 'words') {
+          const parts = b.text.split(/(\s+)/);
+          for (const piece of parts) {
+            if (piece.length === 0) continue;
+            if (/^\s+$/.test(piece)) {
+              if (buf.length > 0) buf += piece;
+              continue;
+            }
+            buf += piece;
+            count++;
+            if (count >= N) flushPage();
+          }
+          flushPara();
+        } else {
+          // sentences
+          const sentences = b.text.match(/[^.!?]+[.!?]+["')\]]*\s*|[^.!?]+$/g) || [b.text];
+          for (const s of sentences) {
+            if (!s.trim()) continue;
+            buf += (buf.length > 0 && !/^\s/.test(s) ? ' ' : '') + s;
+            count++;
+            if (count >= N) flushPage();
+          }
+          flushPara();
+        }
+      }
+      if (current.length) pages.push(current);
+      if (pages.length === 0) pages.push([]);
+      return pages;
+    }
+
+    // auto-fit
+    const screenH = parseFloat(getComputedStyle(root).getPropertyValue('--screen-h'));
+    const padTop = parseFloat(getComputedStyle(root).getPropertyValue('--page-pad-top'));
+    const padBot = parseFloat(getComputedStyle(root).getPropertyValue('--page-pad-bottom'));
+    const safety = +$('paginate-safety').value;
+    const maxH = screenH - padTop - padBot - safety;
+
+    let usedH = 0;
+    for (const b of blocks) {
+      if (b.kind === 'pagebreak') {
+        if (current.length) pages.push(current);
+        current = []; usedH = 0;
+        continue;
+      }
+      const h = measureBlock(b);
+      // If a single block taller than the page, try splitting (paragraphs only)
+      if (h > maxH && b.kind === 'p') {
+        // emit current page first
+        if (current.length) { pages.push(current); current = []; usedH = 0; }
+        // split this paragraph into sub-paragraphs that each fit
+        const splits = splitParagraph(b, maxH);
+        for (let i = 0; i < splits.length; i++) {
+          const sh = measureBlock(splits[i]);
+          if (usedH + sh > maxH && current.length) {
+            pages.push(current); current = []; usedH = 0;
+          }
+          current.push(splits[i]); usedH += sh;
+          if (i < splits.length - 1) { // force break between splits
+            pages.push(current); current = []; usedH = 0;
+          }
+        }
+        continue;
+      }
+      if (usedH + h > maxH && current.length) {
+        pages.push(current); current = []; usedH = 0;
+      }
+      current.push(b); usedH += h;
+    }
+    if (current.length) pages.push(current);
+    if (pages.length === 0) pages.push([]);
+    return pages;
+  }
+
+  function measureBlock(block) {
+    measureEl.innerHTML = '';
+    const el = renderBlock(block, /*forMeasure*/ true);
+    measureEl.appendChild(el);
+    const h = el.offsetHeight;
+    measureEl.innerHTML = '';
+    return h;
+  }
+
+  function splitParagraph(block, maxH) {
+    const words = block.text.split(/(\s+)/); // keep whitespace
+    const parts = [];
+    let cur = '';
+    for (const w of words) {
+      const trial = cur + w;
+      const sub = { kind: 'p', text: trial.trim(), tokens: parseInline(trial.trim()) };
+      const h = measureBlock(sub);
+      if (h > maxH && cur.trim().length > 0) {
+        parts.push({ kind: 'p', text: cur.trim(), tokens: parseInline(cur.trim()) });
+        cur = w.trimStart();
+      } else {
+        cur = trial;
+      }
+    }
+    if (cur.trim().length > 0) parts.push({ kind: 'p', text: cur.trim(), tokens: parseInline(cur.trim()) });
+    return parts.length > 0 ? parts : [block];
+  }
+
+  // ---------- Rendering ----------
+  function renderBlock(block, forMeasure) {
+    if (block.kind === 'h1' || block.kind === 'h2' || block.kind === 'h3') {
+      const el = document.createElement('div');
+      el.className = block.kind;
+      el.textContent = block.text;
+      return el;
+    }
+    if (block.kind === 'quote') {
+      const el = document.createElement('div');
+      el.className = 'quote';
+      el.textContent = block.text;
+      if (block.source) {
+        const s = document.createElement('span');
+        s.className = 'quote-source';
+        s.textContent = '— ' + block.source;
+        el.appendChild(s);
+      }
+      return el;
+    }
+    // p
+    const p = document.createElement('div');
+    p.className = 'p';
+    if (forMeasure) {
+      // Render full text for accurate measurement
+      // Include dropcap if first token is dropcap directive
+      let text = block.text;
+      let hasDrop = false;
+      const tokens = block.tokens || parseInline(text);
+      if (tokens[0] && tokens[0].type === 'dropcap') hasDrop = true;
+      if (hasDrop && text.length > 0) {
+        const dc = document.createElement('span');
+        dc.className = 'dropcap';
+        dc.textContent = text[0];
+        p.appendChild(dc);
+        p.appendChild(document.createTextNode(text.slice(1)));
+      } else {
+        p.textContent = text;
+      }
+      return p;
+    }
+    // For playback we type into it; start empty
+    return p;
+  }
+
+  // ---------- Live overflow rescue helpers ----------
+  function isPageOverflowing(pageEl) {
+    if (!pageEl) return false;
+    return pageEl.scrollHeight > pageEl.clientHeight + 2;
+  }
+
+  // Pop characters back to the last word boundary inside `host` (excluding `cursor`).
+  // Returns the popped string (the unfinished word). Also strips trailing whitespace
+  // before the popped word so the page ends cleanly.
+  function popLastWord(host, cursor) {
+    function findLastTextNode(node) {
+      for (let i = node.childNodes.length - 1; i >= 0; i--) {
+        const n = node.childNodes[i];
+        if (n === cursor) continue;
+        if (n.nodeType === Node.TEXT_NODE && n.textContent.length > 0) return n;
+        if (n.nodeType === Node.ELEMENT_NODE) {
+          const found = findLastTextNode(n);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+    let safety = 1000;
+
+    // Strip trailing whitespace first (anything that pushed the overflow).
+    while (safety-- > 0) {
+      const tn = findLastTextNode(host);
+      if (!tn) break;
+      const lastCh = tn.textContent.slice(-1);
+      if (!/\s/.test(lastCh)) break;
+      tn.textContent = tn.textContent.slice(0, -1);
+      if (tn.textContent.length === 0 && tn.parentNode) tn.parentNode.removeChild(tn);
+    }
+
+    // Now pop the trailing word (chars until next whitespace).
+    let popped = '';
+    while (safety-- > 0) {
+      const tn = findLastTextNode(host);
+      if (!tn) break;
+      const lastCh = tn.textContent.slice(-1);
+      if (/\s/.test(lastCh)) break;
+      popped = lastCh + popped;
+      tn.textContent = tn.textContent.slice(0, -1);
+      if (tn.textContent.length === 0 && tn.parentNode) tn.parentNode.removeChild(tn);
+    }
+    return popped;
+  }
+
+  // Given the full token list and the index where overflow happened, determine which
+  // formatting wrappers (bold / italic / mark) were still open at that point — these
+  // need to be re-opened on the continuation page so the rescued chars keep their style.
+  function openWrappersAt(tokens, tokIdx) {
+    const stack = [];
+    for (let j = 0; j <= tokIdx; j++) {
+      const t = tokens[j];
+      if (!t) continue;
+      if (t.type === 'bold-open') stack.push({ type: 'bold-open' });
+      else if (t.type === 'bold-close') stack.pop();
+      else if (t.type === 'italic-open') stack.push({ type: 'italic-open' });
+      else if (t.type === 'italic-close') stack.pop();
+      else if (t.type === 'mark-open') stack.push({ type: 'mark-open' });
+      else if (t.type === 'mark-close') stack.pop();
+    }
+    return stack;
+  }
+
+  // ---------- Typing engine ----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let abortFlag = false;
+  let playing = false;
+  let manualResolver = null;
+
+  function settings() {
+    return {
+      base: +$('base-ms').value,
+      variance: +$('variance-ms').value,
+      thinkChance: (+$('think-chance').value) / 100,
+      thinkMax: +$('think-max').value,
+      sentence: +$('punct-sentence').value,
+      sentenceJ: +$('punct-sentence-j').value,
+      comma: +$('punct-comma').value,
+      commaJ: +$('punct-comma-j').value,
+    };
+  }
+  function jitter() { return (Math.random()+Math.random()+Math.random())/3 - 0.5; }
+  // Estimate total natural typing time for a token list (mean — variance/jitter zero out).
+  function estimateTypingMs(tokens, s) {
+    const typoPause = +($('typo-pause')?.value) || 0;
+    const bsMs = +($('bs-ms')?.value) || 50;
+    const sentenceMean = (s.sentence || 0) + (s.sentenceJ || 0) / 2;
+    const commaMean = (s.comma || 0) + (s.commaJ || 0) / 2;
+    const thinkMean = (s.thinkChance || 0) * (400 + Math.max(0, (s.thinkMax || 0) - 400) / 2);
+    const nlMean = 275;
+    let total = 0, prevCh;
+    const contrib = (ch) => {
+      let d = s.base;
+      if (/[.!?]/.test(ch)) d += sentenceMean;
+      else if (/[,;:]/.test(ch)) d += commaMean;
+      if (ch === '\n') d += nlMean;
+      if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) d += thinkMean;
+      return Math.max(5, d);
+    };
+    for (const tok of tokens) {
+      if (tok.type === 'pause') { total += tok.ms; continue; }
+      if (tok.type === 'typo') {
+        for (const c of tok.wrong) { total += contrib(c); prevCh = c; }
+        total += typoPause * 1.75;
+        total += tok.wrong.length * bsMs * 1.3;
+        total += bsMs * 2;
+        for (const c of tok.right) { total += contrib(c); prevCh = c; }
+        continue;
+      }
+      total += contrib(tok.char);
+      prevCh = tok.char;
+    }
+    return total;
+  }
+  // Set audio.playbackRate so audio finishes in targetMs. Preserves pitch. Clamped 0.5–2.0.
+  function fitAudioToWindow(audio, targetMs, opts) {
+    opts = opts || {};
+    const minR = opts.minRate || 0.5;
+    const maxR = opts.maxRate || 2.0;
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0 || targetMs <= 0) return 1;
+    const desiredSec = targetMs / 1000;
+    let rate = audio.duration / desiredSec;
+    rate = Math.min(maxR, Math.max(minR, rate));
+    audio.playbackRate = rate;
+    try { audio.preservesPitch = true; } catch {}
+    try { audio.mozPreservesPitch = true; } catch {}
+    try { audio.webkitPreservesPitch = true; } catch {}
+    return rate;
+  }
+  function charDelay(ch, prevCh, s) {
+    let d = s.base + jitter() * 2 * s.variance;
+    if (/[.!?]/.test(ch)) d += s.sentence + Math.random() * s.sentenceJ;
+    else if (/[,;:]/.test(ch)) d += s.comma + Math.random() * s.commaJ;
+    if (ch === '\n') d += 150 + Math.random() * 250;
+    if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) {
+      if (Math.random() < s.thinkChance) d += 400 + Math.random() * Math.max(0, s.thinkMax - 400);
+    }
+    return Math.max(5, d);
+  }
+
+  // Add character into the active paragraph (handles bold/italic/highlight nesting via stack)
+  function appendCharToHost(host, c, state) {
+    let target = host;
+    // Walk down open formatting wrappers
+    if (state.openStack.length) target = state.openStack[state.openStack.length - 1];
+    target.appendChild(document.createTextNode(c));
+  }
+
+  async function typeBlock(host, tokens, s, pageEl) {
+    const typoPause = +$('typo-pause').value;
+    const bsMs = +$('bs-ms').value;
+    const rescueOn = !!pageEl && $('paginate-rescue') && $('paginate-rescue').checked;
+    const rescueMode = $('paginate-rescue-mode') ? $('paginate-rescue-mode').value : 'word';
+    let prevCh;
+    const state = { openStack: [], dropcapPending: false };
+
+    // Cursor inside this block while typing
+    const cursor = document.createElement('span');
+    cursor.className = 'typed-cursor';
+    const cs = $('cursor-style').value;
+    if (cs === 'block') cursor.classList.add('block');
+    else if (cs === 'underline') cursor.classList.add('underline');
+    else if (cs === 'none') cursor.style.display = 'none';
+    host.appendChild(cursor);
+
+    function bsChar() {
+      function popLastChar(node) {
+        for (let i = node.childNodes.length - 1; i >= 0; i--) {
+          const n = node.childNodes[i];
+          if (n === cursor) continue;
+          if (n.nodeType === Node.TEXT_NODE && n.textContent.length > 0) {
+            n.textContent = n.textContent.slice(0, -1);
+            if (n.textContent.length === 0) node.removeChild(n);
+            return true;
+          }
+          if (n.nodeType === Node.ELEMENT_NODE) {
+            if (popLastChar(n)) return true;
+          }
+        }
+        return false;
+      }
+      popLastChar(host);
+    }
+
+    // Build a "rescue" return value carrying the tokens that still need typing on the next page
+    function buildRescue(tokIdx) {
+      const popped = popLastWord(host, cursor);
+      if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
+      const wrappers = openWrappersAt(tokens, tokIdx);
+      const rescued = [];
+      // Re-open the formatting wrappers that were active when overflow hit
+      for (const w of wrappers) rescued.push(w);
+      // Then the popped chars (the word that got pushed off)
+      for (const c of popped) rescued.push({ type: 'text', char: c });
+      // Then everything still ahead in the original token stream
+      for (let j = tokIdx + 1; j < tokens.length; j++) rescued.push(tokens[j]);
+      return { overflowed: true, rescuedTokens: rescued };
+    }
+
+    // Check overflow at the current point. If rescuing should fire, returns a rescue object;
+    // otherwise returns null. `lastCh` is the char that was just typed (used to decide
+    // whether we're at a word boundary in 'word' mode).
+    function checkOverflow(tokIdx, lastCh) {
+      if (!rescueOn) return null;
+      if (rescueMode === 'word' && lastCh && !/\s/.test(lastCh)) return null;
+      if (!isPageOverflowing(pageEl)) return null;
+      return buildRescue(tokIdx);
+    }
+
+    for (let tokIdx = 0; tokIdx < tokens.length; tokIdx++) {
+      if (abortFlag) {
+        if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
+        return { overflowed: false, aborted: true };
+      }
+      const tok = tokens[tokIdx];
+
+      if (tok.type === 'pause') { await sleep(tok.ms); continue; }
+      if (tok.type === 'dropcap') { state.dropcapPending = true; continue; }
+      if (tok.type === 'bold-open') {
+        const b = document.createElement('b');
+        const parent = state.openStack.length ? state.openStack[state.openStack.length - 1] : host;
+        if (parent === host) host.insertBefore(b, cursor);
+        else parent.appendChild(b);
+        state.openStack.push(b); continue;
+      }
+      if (tok.type === 'bold-close') { state.openStack.pop(); continue; }
+      if (tok.type === 'italic-open') {
+        const i = document.createElement('i');
+        const parent = state.openStack.length ? state.openStack[state.openStack.length - 1] : host;
+        if (parent === host) host.insertBefore(i, cursor);
+        else parent.appendChild(i);
+        state.openStack.push(i); continue;
+      }
+      if (tok.type === 'italic-close') { state.openStack.pop(); continue; }
+      if (tok.type === 'mark-open') {
+        const m = document.createElement('mark');
+        const parent = state.openStack.length ? state.openStack[state.openStack.length - 1] : host;
+        if (parent === host) host.insertBefore(m, cursor);
+        else parent.appendChild(m);
+        state.openStack.push(m); continue;
+      }
+      if (tok.type === 'mark-close') { state.openStack.pop(); continue; }
+
+      if (tok.type === 'typo') {
+        // Wrong chars
+        for (const c of tok.wrong) {
+          if (abortFlag) { if (cursor.parentNode) cursor.parentNode.removeChild(cursor); return { overflowed: false, aborted: true }; }
+          await sleep(charDelay(c, prevCh, s));
+          await appendCharWithDropcap(host, cursor, state, c);
+          Sound.key(); prevCh = c;
+        }
+        await sleep(typoPause + Math.random() * typoPause * 1.5);
+        for (let i = 0; i < tok.wrong.length; i++) {
+          if (abortFlag) { if (cursor.parentNode) cursor.parentNode.removeChild(cursor); return { overflowed: false, aborted: true }; }
+          await sleep(bsMs + Math.random() * bsMs * 0.6);
+          bsChar(); Sound.backspace();
+        }
+        prevCh = undefined;
+        await sleep(bsMs * 2);
+        // Right chars — check overflow after each
+        for (const c of tok.right) {
+          if (abortFlag) { if (cursor.parentNode) cursor.parentNode.removeChild(cursor); return { overflowed: false, aborted: true }; }
+          await sleep(charDelay(c, prevCh, s));
+          await appendCharWithDropcap(host, cursor, state, c);
+          Sound.key(); prevCh = c;
+          const rescue = checkOverflow(tokIdx, c);
+          if (rescue) return rescue;
+        }
+        continue;
+      }
+
+      // Plain text char
+      await sleep(charDelay(tok.char, prevCh, s));
+      if (abortFlag) {
+        if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
+        return { overflowed: false, aborted: true };
+      }
+      await appendCharWithDropcap(host, cursor, state, tok.char);
+      Sound.key();
+      prevCh = tok.char;
+      const rescue = checkOverflow(tokIdx, tok.char);
+      if (rescue) return rescue;
+    }
+    // Normal completion
+    if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
+    return { overflowed: false };
+  }
+
+  async function appendCharWithDropcap(host, cursor, state, c) {
+    if (state.dropcapPending && c.trim().length > 0) {
+      const dc = document.createElement('span');
+      dc.className = 'dropcap';
+      dc.textContent = c;
+      host.insertBefore(dc, cursor);
+      state.dropcapPending = false;
+      return;
+    }
+    let target = state.openStack.length ? state.openStack[state.openStack.length - 1] : host;
+    const tn = document.createTextNode(c);
+    if (target === host) host.insertBefore(tn, cursor);
+    else target.appendChild(tn);
+  }
+
+  // ---------- Page-level orchestration ----------
+  let allPages = [];
+  let currentPageIdx = 0;
+
+  function buildPageDOM(blocks, idx) {
+    const page = document.createElement('div');
+    page.className = 'page';
+    for (const b of blocks) {
+      // We render an empty container for typing; the text appears char-by-char
+      if (b.kind === 'h1' || b.kind === 'h2' || b.kind === 'h3') {
+        const el = document.createElement('div');
+        el.className = b.kind;
+        page.appendChild(el);
+      } else if (b.kind === 'quote') {
+        const el = document.createElement('div');
+        el.className = 'quote';
+        // Source appears alongside; we'll type the quote into a span and append source after
+        const qtext = document.createElement('span');
+        qtext.className = 'quote-text';
+        el.appendChild(qtext);
+        if (b.source) {
+          const s = document.createElement('span');
+          s.className = 'quote-source';
+          s.textContent = '— ' + b.source;
+          s.style.opacity = '0';
+          el.appendChild(s);
+        }
+        page.appendChild(el);
+      } else if (b.kind === 'p') {
+        const el = document.createElement('div');
+        el.className = 'p';
+        page.appendChild(el);
+      }
+    }
+    return page;
+  }
+
+  async function playPage(pageEl, blocks, s) {
+    const children = pageEl.children;
+    const ttsOn = $('tts-on')?.checked;
+    const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+    const mode = ttsOn ? ($('tts-sync-mode')?.value || 'off') : 'off';
+    const padMs = +($('tts-sync-pad')?.value) || 0;
+
+    for (let i = 0; i < blocks.length; i++) {
+      if (abortFlag) return null;
+      const b = blocks[i];
+      const host = children[i];
+      if (!host) continue;
+
+      // Determine per-block sync behavior
+      let blockSettings = s;
+      let stretchHandle = null;
+      if (mode === 'stretch' && useEdge) {
+        const blockText = (b.text || '').trim();
+        if (blockText) {
+          stopEdgeTts();
+          stretchHandle = await edgeTtsSynth(blockText);
+          if (stretchHandle && isFinite(stretchHandle.audio.duration) && stretchHandle.audio.duration > 0) {
+            const blockTokens = b.tokens || parseInline(blockText);
+            const typingMs = estimateTypingMs(blockTokens, s);
+            const targetMs = Math.max(500, typingMs - padMs);
+            fitAudioToWindow(stretchHandle.audio, targetMs);
+            edgeTtsAudio = stretchHandle.audio; edgeTtsAudioUrl = stretchHandle.url;
+            await stretchHandle.play();
+          }
+        }
+      }
+      // sentence mode: don't pre-speak; we'll speak per-sentence after the block is typed
+
+      let result = null;
+      if (b.kind === 'h1' || b.kind === 'h2' || b.kind === 'h3') {
+        result = await typeBlock(host, parseInline(b.text), blockSettings, null);
+      } else if (b.kind === 'quote') {
+        const target = host.querySelector('.quote-text');
+        result = await typeBlock(target, parseInline(b.text), blockSettings, pageEl);
+        if (result && !result.overflowed && !result.aborted) {
+          const src = host.querySelector('.quote-source');
+          if (src) {
+            src.style.transition = 'opacity 320ms ease';
+            src.style.opacity = '1';
+          }
+        }
+      } else if (b.kind === 'p') {
+        result = await typeBlock(host, b.tokens, blockSettings, pageEl);
+      }
+
+      if (result && result.aborted) return null;
+
+      // Post-typing sync handling
+      if (!result || (!result.overflowed && !result.aborted)) {
+        if (mode === 'stretch' && stretchHandle) {
+          await Promise.race([stretchHandle.donePromise, sleep(stretchHandle.audio.duration * 1000 + 1000)]);
+          await stretchHandle.postDelayWait();
+        } else if (mode === 'sentence' && ttsOn && b.text && b.text.trim()) {
+          const sentences = String(b.text).split(/(?<=[.!?])\s+/).filter(s => s.trim());
+          for (const sent of sentences) {
+            if (abortFlag) return null;
+            await speakAndAwaitCorp(sent);
+          }
+        }
+      }
+      if (result && result.overflowed) {
+        // Build continuation: the rescued portion becomes a paragraph,
+        // and all subsequent blocks of this page come after it on the new page.
+        const continuation = [{ kind: 'p', text: '', tokens: result.rescuedTokens }];
+        for (let j = i + 1; j < blocks.length; j++) continuation.push(blocks[j]);
+        return { overflowed: true, continuation };
+      }
+
+      const paraPause = +$('para-pause').value;
+      if (i < blocks.length - 1) await sleep(paraPause);
+    }
+    return null;
+  }
+
+  function formatCounter(idx, total) {
+    const fmt = $('counter-format').value;
+    if (fmt === 'hide') return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    const t = Math.max(total, 1);
+    if (fmt === '01-of-NN' || fmt === '01-slash-NN') return `${pad(idx)} / ${pad(t)}`;
+    if (fmt === '1-of-NN') return `${idx} of ${t}`;
+    if (fmt === 'bullet') return `• ${pad(idx)}`;
+    if (fmt === 'bar') return `— ${pad(idx)} —`;
+    return `${pad(idx)} / ${pad(t)}`;
+  }
+
+  // ---------- Rate-match ----------
+  function applyRateMatch(blocks) {
+    if (!audioEl.src || !audioEl.duration || isNaN(audioEl.duration)) return;
+    let totalChars = 0;
+    let overhead = 0;
+    const paraPause = +$('para-pause').value;
+    for (const b of blocks) {
+      if (b.kind === 'pagebreak') { overhead += 600; continue; }
+      const text = b.text || '';
+      totalChars += text.length;
+      overhead += paraPause;
+    }
+    if (totalChars === 0) return;
+    const totalMs = audioEl.duration * 1000;
+    const typingMs = Math.max(1000, totalMs - overhead);
+    const msPerChar = typingMs / totalChars;
+    const base = $('base-ms');
+    base.value = Math.max(+base.min, Math.min(+base.max, Math.round(msPerChar)));
+    base.dispatchEvent(new Event('input'));
+    const v = $('variance-ms');
+    v.value = Math.max(0, Math.min(+v.max, Math.round(msPerChar * 0.25)));
+    v.dispatchEvent(new Event('input'));
+  }
+
+  // ---------- Manual wait ----------
+  function waitForManual() {
+    manualCue.classList.add('show');
+    return new Promise(r => { manualResolver = r; });
+  }
+  function fireManual() {
+    if (manualResolver) {
+      manualCue.classList.remove('show');
+      manualResolver(); manualResolver = null;
+    }
+  }
+
+  // ---------- Progress ----------
+  let progressTimer = null;
+  function startProgressAudio() {
+    cancelAnimationFrame(progressTimer);
+    const tick = () => {
+      if (!audioEl.duration || isNaN(audioEl.duration)) { progressTimer = requestAnimationFrame(tick); return; }
+      const pct = Math.min(100, (audioEl.currentTime / audioEl.duration) * 100);
+      progressFill.style.width = pct + '%';
+      if (!audioEl.ended && !audioEl.paused) progressTimer = requestAnimationFrame(tick);
+    };
+    progressTimer = requestAnimationFrame(tick);
+  }
+  function setProgressFraction(f) {
+    progressFill.style.width = (f * 100) + '%';
+  }
+  function resetProgress() {
+    cancelAnimationFrame(progressTimer);
+    progressFill.style.width = '0%';
+  }
+
+  // ---------- Play / Stop / Reset ----------
+  async function play() {
+    if (playing) return;
+    playing = true; abortFlag = false;
+    Sound.resume();
+    setTransitionClass();
+    audioState.playStartWall = performance.now();
+    startBgm();
+
+    // Timed-script override: drives #pages from cues, then exits.
+    if (typeof SrtScript !== 'undefined' && SrtScript.enabled && SrtScript.enabled()) {
+      try { await playSrtScript(); }
+      finally { playing = false; }
+      return;
+    }
+
+    pagesEl.innerHTML = '';
+    resetProgress();
+
+    // Start delay countdown
+    const startDelay = (+$('start-delay').value) * 1000;
+    if (startDelay > 0) await sleep(startDelay);   // silent pre-roll (no countdown overlay)
+
+    const parsed = parseScript($('script').value);
+    if (parsed.meta.title) titleLine.textContent = parsed.meta.title;
+    if (parsed.meta.subtitle) subtitleLine.textContent = parsed.meta.subtitle;
+    if (parsed.meta.byline) bylineEl.textContent = parsed.meta.byline;
+
+    // Paginate
+    allPages = paginate(parsed.blocks);
+    const total = allPages.length;
+    currentPageIdx = 0;
+    counterEl.textContent = formatCounter(1, total);
+
+    const syncMode = $('sync-mode').value;
+    const audioReady = !!audioEl.src && audioEl.duration && !isNaN(audioEl.duration);
+
+    if (syncMode === 'rate' && audioReady) applyRateMatch(parsed.blocks);
+    if ((syncMode === 'rate' || syncMode === 'words') && audioReady) {
+      try { audioEl.currentTime = 0; await audioEl.play(); }
+      catch (e) { console.warn('audio play blocked:', e); }
+      startProgressAudio();
+    }
+
+    const s = settings();
+    const advanceMode = $('advance-mode').value;
+    const advanceDelay = +$('advance-delay').value;
+    const pageGap = +$('page-gap').value;
+
+    for (let i = 0; i < allPages.length; i++) {
+      if (abortFlag) break;
+      currentPageIdx = i;
+      counterEl.textContent = formatCounter(i + 1, allPages.length);
+      if (!audioReady) setProgressFraction((i + 1) / allPages.length);
+
+      // Previous page slides out
+      const prevActive = pagesEl.querySelector('.page.active');
+      if (prevActive) {
+        prevActive.classList.remove('active');
+        prevActive.classList.add('prev');
+      }
+      const page = buildPageDOM(allPages[i], i);
+      pagesEl.appendChild(page);
+      // Ensure transition triggers
+      requestAnimationFrame(() => {
+        if (prevActive) {
+          // Clean up old prev pages on next tick after transition
+          setTimeout(() => prevActive.remove(), 800);
+        }
+        page.classList.add('active');
+      });
+      if (i > 0) Sound.pageTurn();
+
+      // Wait for entrance transition
+      await sleep(120);
+
+      // Play the page (type each block). If a block overflows mid-typing, we get a
+      // continuation back — splice it in as the next page and let the loop pick it up.
+      const result = await playPage(page, allPages[i], s);
+      if (abortFlag) break;
+
+      if (result && result.overflowed) {
+        allPages.splice(i + 1, 0, result.continuation);
+        // Update counter to reflect new total immediately
+        counterEl.textContent = formatCounter(i + 1, allPages.length);
+      }
+
+      // Wait for advance trigger
+      if (i < allPages.length - 1) {
+        if (advanceMode === 'manual') {
+          await waitForManual();
+        } else if (advanceMode === 'delay') {
+          await sleep(advanceDelay);
+        } else if (advanceMode === 'audio') {
+          if (audioReady) {
+            const target = audioEl.duration * ((i + 1) / allPages.length);
+            while (!abortFlag && !audioEl.ended && audioEl.currentTime < target) await sleep(40);
+          } else {
+            await sleep(advanceDelay);
+          }
+        } else {
+          // typed: just immediate
+        }
+        if (abortFlag) break;
+        await sleep(pageGap);
+      }
+    }
+
+    if (audioReady) audioEl.pause();
+    const naturalEnd = !abortFlag;
+    playing = false;
+    // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+    // (present/render/audiocap) does one take — refresh the source for a fresh take.
+    if (naturalEnd && !(window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash))) setTimeout(() => { if (!abortFlag) play(); }, 800);
+  }
+
+  function stop() {
+    abortFlag = true;
+    if (audioEl.src) audioEl.pause();
+    stopBgm();
+    cancelAnimationFrame(progressTimer);
+    if (manualResolver) { manualResolver(); manualResolver = null; manualCue.classList.remove('show'); }
+  }
+  function reset() {
+    stop();
+    pagesEl.innerHTML = '';
+    resetProgress();
+    counterEl.textContent = formatCounter(1, 1);
+    if (audioEl.src) audioEl.currentTime = 0;
+  }
+
+  $('start').addEventListener('click', play);
+  $('stop').addEventListener('click', stop);
+  $('reset').addEventListener('click', reset);
+  $('hide').addEventListener('click', () => body.classList.toggle('hide-controls'));
+
+  // Keyboard
+  document.addEventListener('keydown', e => {
+    const t = e.target;
+    const inField = t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT');
+    if (inField) return;
+    if (e.key === 'h' || e.key === 'H') {
+      body.classList.toggle('hide-controls');
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      if (manualResolver) { fireManual(); e.preventDefault(); }
+      else if (!playing) { play(); e.preventDefault(); }
+      else { stop(); e.preventDefault(); }
+    } else if (e.key === 'Escape') {
+      stop();
+    }
+  });
+
+  /* ============ BGM / TTS / SYNC ============ */
+  const audioState = {
+    bgm: null,
+    bgmUrl: null,
+    bgmName: '',
+    markers: [],
+    playStartWall: 0,
+    fadeTimer: null,
+  };
+
+  function setBgmFile(file) {
+    clearBgm();
+    audioState.bgmUrl = URL.createObjectURL(file);
+    audioState.bgmName = file.name;
+    audioState.bgm = new Audio(audioState.bgmUrl);
+    audioState.bgm.preload = 'auto';
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.volume = parseFloat($('bgm-volume').value) || 0;
+    $('bgm-name').textContent = file.name;
+  }
+
+  function clearBgm() {
+    if (audioState.bgm) {
+      audioState.bgm.pause();
+      audioState.bgm.src = '';
+    }
+    if (audioState.bgmUrl) URL.revokeObjectURL(audioState.bgmUrl);
+    audioState.bgm = null;
+    audioState.bgmUrl = null;
+    audioState.bgmName = '';
+    $('bgm-name').textContent = 'none';
+  }
+
+  function startBgm(opts) {
+    if (!audioState.bgm) return;
+    if (!$('bgm-auto').checked && !opts?.force) return;
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.currentTime = parseFloat($('bgm-start').value) || 0;
+    const targetVol = parseFloat($('bgm-volume').value) || 0;
+    const fadeIn = parseFloat($('bgm-fadein').value) || 0;
+    if (fadeIn > 0) {
+      audioState.bgm.volume = 0;
+      audioState.bgm.play().catch(() => {});
+      const steps = 20;
+      const stepMs = fadeIn / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.min(targetVol, (i / steps) * targetVol);
+        if (i >= steps) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+      }, stepMs);
+    } else {
+      audioState.bgm.volume = targetVol;
+      audioState.bgm.play().catch(() => {});
+    }
+  }
+
+  function stopBgm() {
+    if (!audioState.bgm) return;
+    if (audioState.fadeTimer) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+    const fadeOut = parseFloat($('bgm-fadeout').value) || 0;
+    if (fadeOut > 0) {
+      const startVol = audioState.bgm.volume;
+      const steps = 20;
+      const stepMs = fadeOut / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.max(0, startVol * (1 - i / steps));
+        if (i >= steps) {
+          clearInterval(audioState.fadeTimer); audioState.fadeTimer = null;
+          audioState.bgm.pause();
+        }
+      }, stepMs);
+    } else {
+      audioState.bgm.pause();
+    }
+  }
+
+  $('bgm-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) setBgmFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('bgm-clear')?.addEventListener('click', clearBgm);
+  $('bgm-volume')?.addEventListener('input', e => {
+    if (audioState.bgm) audioState.bgm.volume = parseFloat(e.target.value);
+  });
+  $('bgm-loop')?.addEventListener('change', e => {
+    if (audioState.bgm) audioState.bgm.loop = e.target.checked;
+  });
+  $('bgm-test')?.addEventListener('click', () => {
+    if (!audioState.bgm) return;
+    startBgm({ force: true });
+    setTimeout(() => stopBgm(), 4000);
+  });
+  $('bgm-stop-test')?.addEventListener('click', () => stopBgm());
+
+  async function playSrtScript() {
+    if (!SrtScript.cues || !SrtScript.cues.length) return;
+    const fill = (+(document.getElementById('srt-script-fill')?.value) || 92) / 100;
+    const between = document.getElementById('srt-script-between')?.value || 'keep';
+    const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+    const pagesEl = document.getElementById('pages');
+
+    if (pagesEl) pagesEl.innerHTML = '';
+    const t0 = performance.now();
+    // Pre-create a single "active" page that we type into, switching between cues per `between` mode.
+    let page = document.createElement('div');
+    page.className = 'page active';
+    if (pagesEl) pagesEl.appendChild(page);
+    for (let i = 0; i < SrtScript.cues.length; i++) {
+      if (typeof abortFlag !== 'undefined' && abortFlag) break;
+      const cue = SrtScript.cues[i];
+      const waitMs = cue.start * 1000 - (window.__srtElapsed ? window.__srtElapsed(t0) : (performance.now() - t0));
+      if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+      if (i > 0 && between === 'clear') {
+        if (pagesEl) pagesEl.innerHTML = '';
+        page = document.createElement('div');
+        page.className = 'page active';
+        if (pagesEl) pagesEl.appendChild(page);
+      }
+      if (i > 0 && between === 'newline') page.appendChild(document.createElement('br'));
+      const winMs = Math.max(80, (cue.end - cue.start) * 1000 * fill);
+      const perChar = cue.text.length ? winMs / cue.text.length : 0;
+      const cueStartAt = performance.now();
+      for (let k = 0; k < cue.text.length; k++) {
+        if (typeof abortFlag !== 'undefined' && abortFlag) break;
+        const elapsed = performance.now() - cueStartAt;
+        const drift = ((k + 1) * perChar) - elapsed;
+        if (drift > 0) await new Promise(r => setTimeout(r, drift));
+        page.appendChild(document.createTextNode(cue.text[k]));
+      }
+    }
+  }
+  window.playSrtScript = playSrtScript;
+
+  const BgPlaylist = {
+    list: [], urls: [], idx: -1, videoA: null, videoB: null, activeKey: 'A', _crossfading: false,
+    init() {
+      this.videoA = document.getElementById('bg-video');
+      this.videoB = document.getElementById('bg-video-next');
+      if (!this.videoA || !this.videoB) return;
+      $('bg-playlist-files')?.addEventListener('change', e => { for (const f of e.target.files) this.list.push(f); this.refreshUI(); e.target.value = ''; if (this.list.length && this.idx < 0 && $('bg-playlist-on')?.checked) this.start(); });
+      $('bg-playlist-clear')?.addEventListener('click', () => { this.stop(); this.urls.forEach(u => { try { URL.revokeObjectURL(u); } catch{} }); this.list = []; this.urls = []; this.idx = -1; if (this.videoA) { this.videoA.removeAttribute('src'); this.videoA.style.display = 'none'; } if (this.videoB) { this.videoB.removeAttribute('src'); this.videoB.style.display = 'none'; } this.refreshUI(); });
+      $('bg-playlist-next')?.addEventListener('click', () => this.advance());
+      [this.videoA, this.videoB].forEach((v, k) => {
+        v.addEventListener('ended', () => { if (!$('bg-playlist-on')?.checked) return; const isActive = (this.activeKey === 'A' && k === 0) || (this.activeKey === 'B' && k === 1); if (isActive) this.advance(); });
+        v.addEventListener('timeupdate', () => { if (!$('bg-playlist-on')?.checked) return; const fadeMs = +$('bg-crossfade-ms')?.value || 0; if (fadeMs <= 0) return; const isActive = (this.activeKey === 'A' && k === 0) || (this.activeKey === 'B' && k === 1); if (!isActive || this._crossfading) return; if (!v.duration || isNaN(v.duration)) return; if ((v.duration - v.currentTime) * 1000 <= fadeMs + 50) { this._crossfading = true; this.advance(); setTimeout(() => { this._crossfading = false; }, fadeMs + 200); } });
+      });
+    },
+    _getActive() { return this.activeKey === 'A' ? this.videoA : this.videoB; },
+    _getInactive() { return this.activeKey === 'A' ? this.videoB : this.videoA; },
+    start() {
+      if (!this.list.length) return;
+      this.idx = 0; this.activeKey = 'A';
+      document.body.style.background = 'transparent';
+      this.videoA.style.display = ''; this.videoB.style.display = '';
+      this.videoA.style.opacity = '1'; this.videoB.style.opacity = '0';
+      this._loadInto(this.videoA, this.list[0], 0);
+      this.videoA.muted = !!$('bg-mute')?.checked; this.videoA.loop = false;
+      this.videoA.play().catch(()=>{});
+      if (this.list[1]) this._loadInto(this.videoB, this.list[1], 1);
+      this.refreshUI();
+    },
+    stop() { [this.videoA, this.videoB].forEach(v => { if (v) try { v.pause(); } catch{} }); },
+    async advance() {
+      if (!this.list.length) return;
+      let nextIdx = this.idx + 1;
+      if (nextIdx >= this.list.length) { if ($('bg-playlist-loop')?.checked) nextIdx = 0; else { this.stop(); return; } }
+      let fadeMs = +$('bg-crossfade-ms')?.value || 0;
+      if (fadeMs <= 0) fadeMs = 80;
+      const current = this._getActive(); const next = this._getInactive();
+      if (this.urls[nextIdx] === undefined || next.src !== this.urls[nextIdx]) this._loadInto(next, this.list[nextIdx], nextIdx);
+      next.muted = !!$('bg-mute')?.checked;
+      try { next.currentTime = 0; } catch{}
+      next.play().catch(()=>{});
+      await this._waitReady(next);
+      current.style.transition = `opacity ${fadeMs}ms linear`;
+      next.style.transition    = `opacity ${fadeMs}ms linear`;
+      requestAnimationFrame(() => { current.style.opacity = '0'; next.style.opacity = '1'; });
+      this.activeKey = (this.activeKey === 'A') ? 'B' : 'A'; this.idx = nextIdx;
+      setTimeout(() => { try { current.pause(); current.currentTime = 0; } catch{} }, fadeMs + 50);
+      const after = (nextIdx + 1) % this.list.length;
+      if (after !== nextIdx && this.list[after]) this._loadInto(this._getInactive(), this.list[after], after);
+      this.refreshUI();
+    },
+    _waitReady(v) {
+      return new Promise(res => {
+        if (v.readyState >= 2 && !v.paused) return res();
+        const ok = () => { cleanup(); res(); };
+        const cleanup = () => {
+          v.removeEventListener('playing', ok);
+          v.removeEventListener('loadeddata', ok);
+          v.removeEventListener('canplay', ok);
+        };
+        v.addEventListener('playing', ok, { once: true });
+        v.addEventListener('loadeddata', ok, { once: true });
+        v.addEventListener('canplay', ok, { once: true });
+        setTimeout(() => { cleanup(); res(); }, 800);
+      });
+    },
+    _loadInto(vidEl, file, idx) { if (this.urls[idx]) { try { URL.revokeObjectURL(this.urls[idx]); } catch{} } const url = URL.createObjectURL(file); this.urls[idx] = url; vidEl.src = url; vidEl.load(); },
+    refreshUI() { const ul = $('bg-playlist-list'); if (!ul) return; ul.innerHTML = ''; this.list.forEach((f, i) => { const li = document.createElement('li'); li.textContent = `${f.name}${i === this.idx ? '   ▶' : ''}`; li.style.color = (i === this.idx) ? '#ffe066' : ''; ul.appendChild(li); }); }
+  };
+  BgPlaylist.init();
+  window.BgPlaylist = BgPlaylist;
+
+  /* ===== SYNC FILE ===== */
+  function parseTimestamp(s) {
+    const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+    if (m) return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
+    const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+    if (m2) return (+m2[1]) * 60000 + (+m2[2]) * 1000 + (+m2[3]);
+    return parseFloat(s) || 0;
+  }
+
+  function parseSrt(text) {
+    const out = [];
+    text = text.replace(/^WEBVTT.*?\n\n/s, '');
+    const blocks = text.split(/\n\s*\n/);
+    for (const block of blocks) {
+      const lines = block.trim().split(/\r?\n/);
+      if (!lines.length) continue;
+      const tIdx = lines.findIndex(l => l.includes('-->'));
+      if (tIdx < 0) continue;
+      const [s, e] = lines[tIdx].split('-->').map(x => parseTimestamp(x.trim()));
+      const txt = lines.slice(tIdx + 1).join(' ').trim();
+      out.push({ start: s, end: e, text: txt });
+    }
+    return out;
+  }
+
+  function loadSyncFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      let markers = [];
+      try {
+        if (/\.json$/i.test(file.name) || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+          const parsed = JSON.parse(text);
+          markers = Array.isArray(parsed) ? parsed : parsed.markers || [];
+        } else {
+          markers = parseSrt(text);
+        }
+      } catch (err) {
+        markers = parseSrt(text);
+      }
+      audioState.markers = markers;
+      $('sync-marker-count').textContent = `${markers.length} markers loaded from ${file.name}`;
+    };
+    reader.readAsText(file);
+  }
+
+  $('sync-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) loadSyncFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('sync-clear')?.addEventListener('click', () => {
+    audioState.markers = [];
+    $('sync-marker-count').textContent = 'no markers';
+  });
+
+  function getPlayElapsed() {
+    if ($('sync-source').value === 'bgm' && audioState.bgm && !audioState.bgm.paused) {
+      return audioState.bgm.currentTime * 1000;
+    }
+    return performance.now() - audioState.playStartWall;
+  }
+
+  // Initial counter render
+  counterEl.textContent = formatCounter(1, 1);
+})();
+</script>
+<!-- ===== Universal OBS present mode (#present) — shared across sims ===== -->
+<style>
+  body.present { background: #000 !important; overflow: hidden !important; }
+  body.present, body.present * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  body.present *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  body.present #controls { display: none !important; }
+  body.present #stage { padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+  body.present .present-frame {
+    position: fixed !important; inset: 0 !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; min-height: 0 !important;
+    max-width: none !important; max-height: none !important;
+    margin: 0 !important; border: none !important; border-radius: 0 !important;
+    transform: none !important; box-shadow: none !important;
+    overflow: hidden !important;
+  }
+  body.present .present-frame .phone-screen {
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; margin: 0 !important; border: none !important;
+  }
+  body.present .frame-handle,
+  body.present .frame-size-readout,
+  body.present #hint, body.present #focus-banner,
+  body.present #resize-handle, body.present #controls-toggle,
+  body.present #drop-hint, body.present #rec-indicator,
+  body.present #stage-meta, body.present #stage-scale-info,
+  body.present #tt-drag-bar, body.present #tt-resize-grip, body.present #tt-size-pill,
+  body.present .tt-grip, body.present #controls-toggle { display: none !important; }
+  #obs-link-btn {
+    position: fixed; left: 12px; bottom: 12px; z-index: 99999;
+    background: #c2410c; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 12px; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.92;
+  }
+  #obs-link-btn:hover { opacity: 1; }
+  body.present #obs-link-btn { display: none !important; }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'sim:script:' + (location.pathname.split('/').pop() || 'sim');
+  var scriptEl = $('script');
+  function buildLink() {
+    var base = location.href.replace(/[#?].*$/, '');
+    var s = scriptEl ? scriptEl.value : '';
+    return base + '#present' + (s && s.trim() ? '&s=' + encodeURIComponent(s) : '');
+  }
+  function copyText(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); } catch (e) {} }
+  }
+  if (scriptEl) {
+    scriptEl.addEventListener('input', function () { try { localStorage.setItem(KEY, scriptEl.value); } catch (e) {} });
+  }
+  var params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (params.has('present')) {
+    var s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem(KEY); } catch (e) {} }
+    if (s && scriptEl) scriptEl.value = s;
+    var stage = $('stage');
+    var frame = (stage && stage.querySelector('#gmail-frame, #tt-frame, #frame, .phone-wrap')) || stage;
+    if (frame) frame.classList.add('present-frame');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('present', 'hide-controls');
+    setTimeout(function () {
+      var b = $('start') || $('btn-play');
+      if (b) b.click();
+    }, 1200);
+  } else {
+    var btn = document.createElement('button');
+    btn.id = 'obs-link-btn'; btn.type = 'button'; btn.textContent = '📋 OBS link';
+    btn.title = 'Copy a present-mode link (with your current script) to paste into an OBS Browser Source';
+    btn.addEventListener('click', function () {
+      copyText(buildLink());
+      var t = btn.textContent; btn.textContent = '✓ Copied!';
+      setTimeout(function () { btn.textContent = t; }, 1600);
+    });
+    document.body.appendChild(btn);
+  }
+})();
+</script>
+</body>
+</html>

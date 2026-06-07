@@ -1,0 +1,13 @@
+{
+  "name": "sim-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sim Hub — the recording hub (all 9 sims in one file) deployed as a static app on Vercel, used as an OBS Browser Source.",
+  "scripts": {
+    "build": "node vercel-build.js",
+    "dev": "node vercel-build.js && node serve.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

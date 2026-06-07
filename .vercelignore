@@ -1,0 +1,34 @@
+# Keep the Vercel upload lean. The build only needs the 9 sim *.html sources
+# plus build-hub.js / vercel-build.js — everything below is local-only or rebuilt.
+
+# heavy local media / inputs (not used by the hub at runtime)
+raw/
+srt/
+*.mp4
+*.mp3
+*.webm
+*.mkv
+*.jpeg
+*.jpg
+*.png
+Sim Hub.json
+
+# the Remotion render project is a separate tool, not part of the hub
+template/
+
+# rebuilt on Vercel — don't ship stale copies
+hub.html
+dist/
+
+# tooling / local-only
+node_modules/
+.claude/
+remux.js
+build-obs-scenes.js
+start-edge-tts.bat
+edge-tts-helper.py
+
+# but DO ship a journal doodle if one is placed next to the hub
+!doodle.png
+!doodle.jpg
+!doodle.jpeg

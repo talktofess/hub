@@ -1,0 +1,2934 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TikTok Comparison Typer</title>
+<style>
+  :root {
+    /* Lens / zoom (camera push-in on the caption + vignette) */
+    --lens-mag: 1.1;
+    --lens-vignette: 0.5;
+    /* Phone screen */
+    --screen-w: 540px;
+    --screen-h: 960px;
+    --screen-scale: 0.9;
+    --screen-radius: 38px;
+    --screen-bg: #000000;
+    --screen-shadow-y: 20px;
+    --screen-shadow-blur: 60px;
+    --screen-shadow-alpha: 0.5;
+
+    /* Bezel */
+    --bezel-pad: 14px;
+    --bezel-radius: 54px;
+    --bezel-bg: #0a0a0c;
+    --bezel-inner: #2a2a2e;
+
+    /* Stage (outside the phone) */
+    --stage-bg: #1a1a1d;
+
+    /* Notes — base */
+    --note-radius: 18px;
+    --note-pad-y: 18px;
+    --note-pad-x: 18px;
+    --note-bg: rgba(0,0,0,0.55);
+    --note-text: #ffffff;
+    --note-shadow-y: 12px;
+    --note-shadow-blur: 36px;
+    --note-shadow-alpha: 0.45;
+    --note-border-w: 0px;
+    --note-border-color: rgba(255,255,255,0.1);
+    --note-backdrop-blur: 12px;
+    --note-anim-fade: 360ms;
+    --note-anim-scale: 520ms;
+    --note-anim-easing: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --note-anim-scale-from: 0.92;
+    --note-anim-translate: 14px;
+
+    /* Note media */
+    --media-radius: 14px;
+    --media-mb: 12px;
+    --media-fit: cover;
+    --media-max-h: 70%;
+
+    /* Note caption (typed text) */
+    --cap-font: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --cap-size: 22px;
+    --cap-weight: 700;
+    --cap-line-h: 1.25;
+    --cap-letter: -0.01em;
+    --cap-color: #ffffff;
+    --cap-shadow-y: 2px;
+    --cap-shadow-blur: 6px;
+    --cap-shadow-alpha: 0.6;
+    --cap-mb: 10px;
+    --cap-align: left;
+
+    /* Cursor */
+    --cursor-color: #ffffff;
+    --cursor-w: 2px;
+    --cursor-h: 1.05em;
+    --cursor-offset: 2px;
+    --cursor-block-w: 0.55em;
+    --cursor-underline-h: 2px;
+    --cursor-blink: 0; /* 1 to enable blink while idle */
+
+    /* Hashtags */
+    --tag-font: "Inter", "Segoe UI", system-ui, sans-serif;
+    --tag-size: 14px;
+    --tag-weight: 600;
+    --tag-color: #00f2ea;
+    --tag-bg: rgba(0,242,234,0.0);
+    --tag-pad-y: 4px;
+    --tag-pad-x: 8px;
+    --tag-radius: 6px;
+    --tag-gap: 6px;
+    --tag-letter: 0.01em;
+    --tag-shadow-y: 1px;
+    --tag-shadow-blur: 4px;
+    --tag-shadow-alpha: 0.6;
+    --tag-align: flex-start;
+
+    /* TikTok chrome (handle, icons, etc.) */
+    --chrome-handle-fz: 16px;
+    --chrome-handle-weight: 700;
+    --chrome-handle-color: #ffffff;
+    --chrome-handle-bottom: 76px;
+    --chrome-handle-left: 16px;
+    --chrome-icons-right: 12px;
+    --chrome-icons-bottom: 92px;
+    --chrome-icon-size: 44px;
+    --chrome-icon-bg: rgba(255,255,255,0.08);
+    --chrome-icon-color: #ffffff;
+
+    /* Progress bar */
+    --progress-h: 3px;
+    --progress-bg: rgba(255,255,255,0.18);
+    --progress-fill: #ffffff;
+
+    /* Hook overlay (sticky text at top) */
+    --hook-fz: 28px;
+    --hook-weight: 900;
+    --hook-color: #ffffff;
+    --hook-bg: rgba(0,0,0,0.0);
+    --hook-pad-y: 16px;
+    --hook-pad-x: 20px;
+    --hook-top: 64px;
+    --hook-line-h: 1.05;
+    --hook-letter: -0.02em;
+
+
+    /* Skin/page transparency (so bg-video can peep through chrome) */
+    --page-bg-alpha: 1;
+    --skin-alpha:    1;
+    --bg-page: #1a1a1d;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: transparent !important;
+    color: #d6d7df;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    display: flex;
+    min-height: 100%;
+  }
+  #page-bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--bg-page, #1a1a1d);
+    opacity: var(--page-bg-alpha);
+    pointer-events: none;
+  }
+
+  /* ---------- Controls panel ---------- */
+  #controls {
+    width: 380px;
+    flex: 0 0 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #15161a;
+    border-right: 1px solid #2a2c33;
+    padding: 18px 18px 28px;
+    font-size: 13px;
+    transition: margin-left 200ms ease;
+    z-index: 10;
+    color: #c4c6cd;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+
+  #controls h1 {
+    font-size: 14px;
+    margin: 0 0 14px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #controls h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8a8d96;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #2a2c33;
+    padding-bottom: 4px;
+  }
+
+  #tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a2c33;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #8a8d96;
+    padding: 7px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab-btn:hover { color: #c4c6cd; }
+  .tab-btn.active { color: #fff; border-bottom-color: #00f2ea; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tab-fade 160ms ease; }
+  @keyframes tab-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { flex: 1; color: #c4c6cd; }
+  .row input[type="number"], .row select, .row input[type="text"] {
+    width: 150px; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 6px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px;
+  }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="color"] {
+    width: 40px; height: 28px; padding: 0;
+    border: 1px solid #2a2c33; border-radius: 6px; background: #0e0f12;
+  }
+  .row .val { width: 56px; text-align: right; color: #8a8d96; font-variant-numeric: tabular-nums; }
+  .row input[type="checkbox"] { accent-color: #00f2ea; }
+
+  textarea#script {
+    width: 100%;
+    height: 320px;
+    background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    resize: vertical;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    background: #2b2f3a; color: #ececf1;
+    border: 1px solid #3a3f4c; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #353a47; }
+  button.primary { background: #00f2ea; border-color: #00f2ea; color: #000; font-weight: 600; }
+  button.primary:hover { background: #20fff7; }
+  button.danger { background: #ff3b6b; border-color: #ff3b6b; color: #fff; }
+  button.danger:hover { background: #ff5680; }
+
+  .help {
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+    color: #a8abb3; font-size: 12px; line-height: 1.6;
+  }
+  .help code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+  }
+
+  /* Media list in controls */
+  #image-list, #video-list {
+    display: flex; flex-direction: column; gap: 4px; margin-top: 8px;
+  }
+  .img-item {
+    display: flex; align-items: center; gap: 8px;
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 6px;
+    padding: 4px 8px;
+  }
+  .img-item .idx {
+    width: 18px; text-align: center; font-weight: 600;
+    color: #00f2ea; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  }
+  .img-item video, .img-item img {
+    width: 36px; height: 36px; object-fit: cover; border-radius: 4px; background: #000;
+  }
+  .img-item .name {
+    flex: 1; color: #c4c6cd; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .img-item .remove {
+    flex: 0 0 24px; background: none; border: none; color: #888;
+    font-size: 18px; cursor: pointer; padding: 0; line-height: 1;
+  }
+  .img-item .remove:hover { color: #fff; background: none; }
+
+  /* ---------- Stage / phone ---------- */
+  #stage {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--stage-bg);
+    overflow: hidden;
+  }
+  .phone-wrap {
+    transform: scale(var(--screen-scale));
+    transform-origin: center center;
+    transition: transform 200ms ease;
+  }
+  body.phone-bezel .phone-wrap {
+    padding: var(--bezel-pad);
+    background: var(--bezel-bg);
+    border-radius: var(--bezel-radius);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.65), inset 0 0 0 2px var(--bezel-inner);
+  }
+
+  .phone-screen {
+    width: var(--screen-w);
+    height: var(--screen-h);
+    background: transparent;
+    border-radius: var(--screen-radius);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 var(--screen-shadow-y) var(--screen-shadow-blur) rgba(0,0,0,var(--screen-shadow-alpha));
+  }
+  .phone-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--screen-bg);
+    border-radius: inherit;
+    opacity: var(--skin-alpha);
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  .phone-screen > * { position: relative; z-index: 1; }
+  body.no-frame .phone-screen { border-radius: 0; box-shadow: none; }
+
+  /* Layer where notes live */
+  #stack {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  /* ---------- Lens / zoom: enlarge the caption text (reflows in place, no cropping) + vignette ---------- */
+  .tt-text { transition: font-size 500ms cubic-bezier(.22,1,.36,1); }
+  body.lens-on .tt-text { font-size: calc(var(--cap-size) * var(--lens-mag, 1.1)); }
+  #lens-vignette-fx {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    z-index: 35; opacity: 0; transition: opacity 600ms ease;
+    background: radial-gradient(ellipse 82% 76% at 50% 48%,
+      rgba(0,0,0,0) 40%,
+      rgba(0,0,0,calc(var(--lens-vignette, 0.5) * 0.5)) 72%,
+      rgba(0,0,0,var(--lens-vignette, 0.5)) 100%);
+  }
+  body.lens-on #lens-vignette-fx { opacity: 1; }
+
+  /* ---------- Note ---------- */
+  .tt-note {
+    position: absolute;
+    background: var(--note-bg);
+    color: var(--note-text);
+    border-radius: var(--note-radius);
+    padding: var(--note-pad-y) var(--note-pad-x);
+    box-shadow: 0 var(--note-shadow-y) var(--note-shadow-blur) rgba(0,0,0,var(--note-shadow-alpha));
+    border: var(--note-border-w) solid var(--note-border-color);
+    backdrop-filter: blur(var(--note-backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--note-backdrop-blur));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transform: scale(var(--note-anim-scale-from)) translateY(var(--note-anim-translate));
+    transition: opacity var(--note-anim-fade) ease,
+                transform var(--note-anim-scale) var(--note-anim-easing);
+  }
+  .tt-note.appear {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  .tt-note.exit {
+    opacity: 0;
+    transform: scale(0.96) translateY(-8px);
+    transition: opacity 260ms ease, transform 320ms ease;
+  }
+
+  /* Placement presets */
+  .tt-note[data-place="full"]         { top: 0; left: 0; width: 100%; height: 100%; }
+  .tt-note[data-place="top-half"]     { top: 0; left: 0; width: 100%; height: 50%; }
+  .tt-note[data-place="bottom-half"]  { top: 50%; left: 0; width: 100%; height: 50%; }
+  .tt-note[data-place="top-third"]    { top: 0; left: 0; width: 100%; height: 33.34%; }
+  .tt-note[data-place="mid-third"]    { top: 33.33%; left: 0; width: 100%; height: 33.34%; }
+  .tt-note[data-place="bot-third"]    { top: 66.66%; left: 0; width: 100%; height: 33.34%; }
+  .tt-note[data-place="left-half"]    { top: 0; left: 0; width: 50%; height: 100%; }
+  .tt-note[data-place="right-half"]   { top: 0; left: 50%; width: 50%; height: 100%; }
+  .tt-note[data-place="top-left"]     { top: 0; left: 0; width: 50%; height: 50%; }
+  .tt-note[data-place="top-right"]    { top: 0; left: 50%; width: 50%; height: 50%; }
+  .tt-note[data-place="bot-left"]     { top: 50%; left: 0; width: 50%; height: 50%; }
+  .tt-note[data-place="bot-right"]    { top: 50%; left: 50%; width: 50%; height: 50%; }
+  .tt-note[data-place="center-card"]  { top: 12%; left: 8%; width: 84%; height: 60%; }
+  .tt-note[data-place="hero"]         { top: 8%; left: 6%; width: 88%; height: 76%; }
+  .tt-note[data-place="banner-top"]   { top: 0; left: 0; width: 100%; height: 25%; }
+  .tt-note[data-place="banner-bot"]   { top: 75%; left: 0; width: 100%; height: 25%; }
+  .tt-note[data-place="pip-tr"]       { top: 8%; left: 56%; width: 38%; height: 30%; }
+  .tt-note[data-place="pip-tl"]       { top: 8%; left: 6%; width: 38%; height: 30%; }
+  .tt-note[data-place="pip-br"]       { top: 60%; left: 56%; width: 38%; height: 30%; }
+  .tt-note[data-place="pip-bl"]       { top: 60%; left: 6%; width: 38%; height: 30%; }
+
+  /* Media */
+  .tt-media {
+    flex: 1 1 auto;
+    min-height: 0;
+    border-radius: var(--media-radius);
+    overflow: hidden;
+    margin-bottom: var(--media-mb);
+    background: #000;
+    position: relative;
+    max-height: var(--media-max-h);
+  }
+  .tt-media img, .tt-media video {
+    display: block;
+    width: 100%; height: 100%;
+    object-fit: var(--media-fit);
+  }
+  .tt-note.no-media .tt-media { display: none; }
+  .tt-note.no-media .tt-text { flex: 1 1 auto; display: flex; align-items: center; justify-content: var(--cap-align); }
+
+  .tt-mute {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 28px; height: 28px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 5;
+  }
+  .tt-media.unmuted .tt-mute { display: none; }
+
+  /* Caption + cursor */
+  .tt-text {
+    flex: 0 0 auto;
+    font-family: var(--cap-font);
+    font-size: var(--cap-size);
+    font-weight: var(--cap-weight);
+    line-height: var(--cap-line-h);
+    letter-spacing: var(--cap-letter);
+    color: var(--cap-color);
+    text-shadow: 0 var(--cap-shadow-y) var(--cap-shadow-blur) rgba(0,0,0,var(--cap-shadow-alpha));
+    text-align: var(--cap-align);
+    margin-bottom: var(--cap-mb);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .tt-cursor {
+    display: inline-block;
+    width: var(--cursor-w);
+    height: var(--cursor-h);
+    background: var(--cursor-color);
+    vertical-align: text-bottom;
+    margin-left: 2px;
+    transform: translateY(var(--cursor-offset));
+  }
+  .tt-cursor.block { width: var(--cursor-block-w); opacity: 0.85; }
+  .tt-cursor.underline { width: var(--cursor-block-w); height: var(--cursor-underline-h); transform: translateY(0); }
+  body.cursor-blink .tt-cursor { animation: cursor-blink 1s steps(2, start) infinite; }
+  @keyframes cursor-blink { 50% { opacity: 0; } }
+
+  /* Hashtags */
+  .tt-tags {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--tag-gap);
+    justify-content: var(--tag-align);
+    margin-top: auto;
+  }
+  .tt-tag {
+    display: inline-block;
+    font-family: var(--tag-font);
+    font-size: var(--tag-size);
+    font-weight: var(--tag-weight);
+    color: var(--tag-color);
+    background: var(--tag-bg);
+    padding: var(--tag-pad-y) var(--tag-pad-x);
+    border-radius: var(--tag-radius);
+    letter-spacing: var(--tag-letter);
+    text-shadow: 0 var(--tag-shadow-y) var(--tag-shadow-blur) rgba(0,0,0,var(--tag-shadow-alpha));
+    white-space: nowrap;
+  }
+
+  /* TikTok chrome overlay */
+  #chrome {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+  }
+  body.no-chrome #chrome { display: none; }
+
+  .ch-handle {
+    position: absolute;
+    bottom: var(--chrome-handle-bottom);
+    left: var(--chrome-handle-left);
+    color: var(--chrome-handle-color);
+    font-size: var(--chrome-handle-fz);
+    font-weight: var(--chrome-handle-weight);
+    font-family: var(--cap-font);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.55);
+    max-width: 60%;
+  }
+  .ch-handle .ch-handle-name { display: block; }
+  .ch-handle .ch-handle-caption {
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 0.92;
+    margin-top: 4px;
+    max-width: 220px;
+  }
+
+  .ch-icons {
+    position: absolute;
+    right: var(--chrome-icons-right);
+    bottom: var(--chrome-icons-bottom);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+    pointer-events: auto;
+  }
+  .ch-icon {
+    width: var(--chrome-icon-size);
+    height: var(--chrome-icon-size);
+    border-radius: 50%;
+    background: var(--chrome-icon-bg);
+    color: var(--chrome-icon-color);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .ch-icon-label {
+    font-size: 11px;
+    color: var(--chrome-icon-color);
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    margin-top: 2px;
+    text-align: center;
+  }
+  .ch-icon-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+  /* Progress bar (top) */
+  #progress {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: var(--progress-h);
+    background: var(--progress-bg);
+    z-index: 60;
+  }
+  body.no-progress #progress { display: none; }
+  #progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--progress-fill);
+    transition: width 100ms linear;
+  }
+
+  /* Hook overlay */
+  #hook {
+    position: absolute;
+    top: var(--hook-top);
+    left: 0; right: 0;
+    text-align: center;
+    padding: var(--hook-pad-y) var(--hook-pad-x);
+    background: var(--hook-bg);
+    color: var(--hook-color);
+    font-family: var(--cap-font);
+    font-size: var(--hook-fz);
+    font-weight: var(--hook-weight);
+    line-height: var(--hook-line-h);
+    letter-spacing: var(--hook-letter);
+    text-shadow: 0 3px 12px rgba(0,0,0,0.7);
+    z-index: 40;
+    pointer-events: none;
+    word-wrap: break-word;
+  }
+  body.no-hook #hook { display: none; }
+
+  /* Phone resize handle */
+  .resize-handle {
+    position: fixed;
+    bottom: 28px; right: 28px;
+    width: 48px; height: 48px;
+    background: rgba(0, 242, 234, 0.92);
+    border: 3px solid white;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    color: #000;
+    font-size: 22px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    touch-action: none;
+    user-select: none;
+  }
+  .resize-handle::before { content: '⇲'; line-height: 1; }
+  body.hide-controls .resize-handle { display: none; }
+
+  /* Hint */
+  #hint {
+    position: fixed; bottom: 12px; right: 16px;
+    color: rgba(255,255,255,0.35); font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace;
+    opacity: 0; transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  body.hide-controls #hint { opacity: 1; }
+
+
+  /* Manual-trigger banner */
+  #manual-cue {
+    position: absolute;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-family: var(--cap-font);
+    font-size: 13px;
+    background: rgba(0,0,0,0.55);
+    padding: 8px 14px;
+    border-radius: 16px;
+    backdrop-filter: blur(8px);
+    z-index: 70;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  #manual-cue.show { opacity: 1; }
+
+  /* ============ MOBILE LAYOUT ============ */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: visible; }
+    body {
+      flex-direction: column-reverse !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 0;
+      gap: 0;
+      min-height: 100vh;
+    }
+    body.hide-controls #controls { margin-left: 0 !important; margin-top: -100vh; }
+    main, #main, #stage, #stage-wrap, .stage, .stage-wrap, .phone, #phone, .preview {
+      width: 100% !important;
+      height: 60vh !important;
+      min-height: 320px;
+      flex: 0 0 auto !important;
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
+    }
+    .phone-wrap {
+      transform: scale(calc(var(--screen-scale) * 0.55)) !important;
+    }
+    aside, #controls, .controls, #sidebar {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: 1px solid #25252a !important;
+      margin: 0 !important;
+      position: relative !important;
+    }
+    #tabs, .tabs {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap !important;
+      scroll-snap-type: x proximity;
+    }
+    .tab-btn, .tab {
+      flex: 0 0 auto !important;
+      min-height: 36px;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+      scroll-snap-align: start;
+    }
+    button, .btn {
+      min-height: 38px;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+    }
+    .row { gap: 12px; margin: 4px 0; }
+    .row label { flex: 0 0 110px; font-size: 12px; }
+    .row input[type="text"], .row input[type="number"], .row input[type="url"], .row select, .row textarea {
+      min-height: 38px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+    .row input[type="range"] { min-height: 36px; }
+    .row input[type="color"] { width: 44px; height: 36px; }
+    .row input[type="checkbox"] { width: 22px; height: 22px; }
+  }
+  @media (max-width: 600px) {
+    main, #stage, #stage-wrap, .phone, .preview { height: 55vh !important; }
+    .phone-wrap { transform: scale(calc(var(--screen-scale) * 0.45)) !important; }
+    .row label { flex: 0 0 95px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="bg-media-layer" style="position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;">
+  <video id="bg-video" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:1;" playsinline preload="auto"></video>
+  <video id="bg-video-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" playsinline preload="auto"></video>
+  <img id="bg-image" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;" alt="">
+  <audio id="bg-audio-only" style="display:none;"></audio>
+</div>
+<div id="page-bg-tint"></div>
+
+<aside id="controls">
+  <h1>TikTok Comparison Typer</h1>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="tab-script">Script</button>
+    <button class="tab-btn" data-tab="tab-phone">Phone</button>
+    <button class="tab-btn" data-tab="tab-note">Notes</button>
+    <button class="tab-btn" data-tab="tab-text">Text</button>
+    <button class="tab-btn" data-tab="tab-tags">Tags</button>
+    <button class="tab-btn" data-tab="tab-chrome">Chrome</button>
+    <button class="tab-btn" data-tab="tab-hook">Hook</button>
+    <button class="tab-btn" data-tab="tab-colors">Colors</button>
+    <button class="tab-btn" data-tab="tab-anim">Anim</button>
+    <button class="tab-btn" data-tab="tab-timing">Timing</button>
+    <button class="tab-btn" data-tab="tab-media">Media</button>
+    <button class="tab-btn" data-tab="tab-sound">Sound</button>
+    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+    <button class="tab-btn" data-tab="tab-srt-script">Script SRT</button>
+  </div>
+
+  <!-- ========== SCRIPT TAB ========== -->
+  <div class="tab-content active" id="tab-script">
+    <textarea id="script" spellcheck="false">[[hook:trends, ranked]][[handle:@you|comparing trends today]]
+
+[[place:top-half]][[video:1]][[tags:fyp,trend2023,og]][[trigger:end]]
+this trend started it all
+back when everyone tried it
+
+[[place:bottom-half]][[video:2]][[tags:trend2024,knockoff]][[trigger:end]]
+but the 2024 version
+hits different though
+
+[[place:full]][[image:1]][[tags:my-take,verdict]][[trigger:2500]]
+honestly though
+the original wins. every time.</textarea>
+
+    <div class="btn-row">
+      <button id="start" class="primary">Start ▶</button>
+      <button id="stop" class="danger">Stop</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="hide">Hide panel (H)</button>
+    </div>
+
+    <h2>Presets</h2>
+    <div class="btn-row">
+      <button data-preset="fast">Fast</button>
+      <button data-preset="natural">Natural</button>
+      <button data-preset="slow">Slow</button>
+    </div>
+
+    <h2>Audio sync</h2>
+    <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+    <div class="btn-row">
+      <button id="audio-pick">Load audio</button>
+      <button id="audio-clear">Clear</button>
+    </div>
+    <div id="audio-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No audio loaded</div>
+    <div class="row" style="margin-top:10px;">
+      <label>Sync mode</label>
+      <select id="sync-mode">
+        <option value="off">Off</option>
+        <option value="rate">Rate-match (whole script to audio length)</option>
+        <option value="words">Word-timed (uses timing file)</option>
+      </select>
+    </div>
+    <div class="row"><label>Audio volume</label>
+      <input type="range" id="audio-vol" min="0" max="100" value="80">
+      <span class="val" id="audio-vol-val">80%</span>
+    </div>
+
+    <h2>Timing file (.srt / .vtt / Whisper JSON)</h2>
+    <input type="file" id="timing-input" accept=".srt,.vtt,.json" style="display:none;">
+    <div class="btn-row">
+      <button id="timing-pick">Load timing file</button>
+      <button id="timing-clear">Clear</button>
+    </div>
+    <div id="timing-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No timing file</div>
+    <div class="row">
+      <label>Paragraph gap (ms)</label>
+      <input type="number" id="paragraph-gap" value="1200" min="100" max="20000" step="100">
+    </div>
+    <div class="help" style="margin-top:8px">
+      In <b>Word-timed</b>, each script note is matched to a paragraph of words (silence-gap detection). Place/tags/trigger come from your script.
+    </div>
+
+    <details class="help" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Markup cheatsheet</summary>
+      <div style="margin-top:8px">
+        <b>Per-note directives</b> (one note = paragraph block, separated by blank lines):<br>
+        <code>[[image:1]]</code> · <code>[[video:2]]</code> — drop media #N from the pool<br>
+        <code>[[place:top-half]]</code> — placement preset (see Layout below)<br>
+        <code>[[place:x=10,y=20,w=80,h=40]]</code> — custom % rectangle<br>
+        <code>[[tags:fyp,trend,2024]]</code> — hashtags (# auto-prefixed)<br>
+        <code>[[trigger:end]]</code> · <code>[[trigger:2500]]</code> · <code>[[trigger:manual]]</code> · <code>[[trigger:typed]]</code><br>
+        <code>[[muted:false]]</code> · <code>[[loop:false]]</code> · <code>[[fit:contain]]</code> · <code>[[z:10]]</code> · <code>[[behind]]</code><br>
+        <code>[[exit:previous]]</code> — remove the previous note when this one appears<br>
+        <code>[[exit:all]]</code> — clear all prior notes<br>
+        <br>
+        <b>Inline (inside body text)</b>:<br>
+        <code>[[pause:1500]]</code> · <code>[[wrong|right]]</code> typo<br>
+        <br>
+        <b>Top-level (anywhere)</b>:<br>
+        <code>[[hook:Trends, ranked]]</code> — sticky big text at top<br>
+        <code>[[handle:@user|caption]]</code> — TikTok handle + caption overlay<br>
+        <br>
+        <b>Placements</b>: <code>full</code>, <code>top-half</code>, <code>bottom-half</code>, <code>top-third</code>, <code>mid-third</code>, <code>bot-third</code>, <code>left-half</code>, <code>right-half</code>, <code>top-left</code>, <code>top-right</code>, <code>bot-left</code>, <code>bot-right</code>, <code>center-card</code>, <code>hero</code>, <code>banner-top</code>, <code>banner-bot</code>, <code>pip-tr</code>, <code>pip-tl</code>, <code>pip-br</code>, <code>pip-bl</code>
+      </div>
+    </details>
+  </div>
+
+  <!-- ========== PHONE TAB ========== -->
+  <div class="tab-content" id="tab-phone">
+    <h2>Screen</h2>
+    <div class="row"><label>Width (px)</label><input type="number" id="phone-w" value="540" min="200" max="1600"></div>
+    <div class="row"><label>Height (px)</label><input type="number" id="phone-h" value="960" min="300" max="2400"></div>
+    <div class="btn-row">
+      <button data-size="tiktok">9:16 · 540×960</button>
+      <button data-size="iphone">iPhone · 390×844</button>
+    </div>
+    <div class="btn-row">
+      <button data-size="square">1:1 · 720×720</button>
+      <button data-size="reels">Reels · 1080×1920</button>
+    </div>
+    <div class="row">
+      <label>Display scale</label>
+      <input type="range" id="phone-scale" min="20" max="200" value="90">
+      <span class="val" id="phone-scale-val">90%</span>
+    </div>
+    <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--screen-radius" data-unit="px" value="38" min="0" max="120"></div>
+    <div class="row"><label>Background</label><input type="color" data-css="--screen-bg" value="#000000"></div>
+    <div class="row"><label>Show screen frame</label><input type="checkbox" id="show-frame" checked></div>
+    <div class="row"><label>Show phone bezel</label><input type="checkbox" id="bezel"></div>
+    <div class="row"><label>Show progress bar</label><input type="checkbox" id="show-progress" checked></div>
+
+    <h2>Screen shadow</h2>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--screen-shadow-y" data-unit="px" value="20" min="-50" max="200"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--screen-shadow-blur" data-unit="px" value="60" min="0" max="400"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="screen-shadow-alpha" min="0" max="100" value="50">
+      <span class="val" id="screen-shadow-alpha-val">50%</span>
+    </div>
+
+    <h2>Bezel</h2>
+    <div class="row"><label>Padding (px)</label><input type="number" data-css="--bezel-pad" data-unit="px" value="14" min="0" max="60"></div>
+    <div class="row"><label>Outer radius (px)</label><input type="number" data-css="--bezel-radius" data-unit="px" value="54" min="0" max="120"></div>
+    <div class="row"><label>Bezel color</label><input type="color" data-css="--bezel-bg" value="#0a0a0c"></div>
+    <div class="row"><label>Inner border</label><input type="color" data-css="--bezel-inner" value="#2a2a2e"></div>
+
+    <h2>Stage</h2>
+    <div class="row"><label>Stage background</label><input type="color" data-css="--stage-bg" value="#1a1a1d"></div>
+
+    <h2>Progress bar</h2>
+    <div class="row"><label>Height (px)</label><input type="number" data-css="--progress-h" data-unit="px" value="3" min="0" max="20"></div>
+    <div class="row"><label>Track color</label><input type="color" id="progress-bg-color" value="#444444"></div>
+    <div class="row">
+      <label>Track opacity</label>
+      <input type="range" id="progress-bg-alpha" min="0" max="100" value="18">
+      <span class="val" id="progress-bg-alpha-val">18%</span>
+    </div>
+    <div class="row"><label>Fill color</label><input type="color" data-css="--progress-fill" value="#ffffff"></div>
+  </div>
+
+  <!-- ========== NOTE TAB ========== -->
+  <div class="tab-content" id="tab-note">
+    <h2>Geometry</h2>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--note-radius" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--note-pad-y" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Padding X (px)</label><input type="number" data-css="--note-pad-x" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Border width (px)</label><input type="number" data-css="--note-border-w" data-unit="px" value="0" min="0" max="20"></div>
+    <div class="row"><label>Border color</label><input type="color" id="note-border-color" value="#ffffff"></div>
+    <div class="row">
+      <label>Border opacity</label>
+      <input type="range" id="note-border-alpha" min="0" max="100" value="10">
+      <span class="val" id="note-border-alpha-val">10%</span>
+    </div>
+
+    <h2>Background</h2>
+    <div class="row"><label>Color</label><input type="color" id="note-bg-color" value="#000000"></div>
+    <div class="row">
+      <label>Opacity</label>
+      <input type="range" id="note-bg-alpha" min="0" max="100" value="55">
+      <span class="val" id="note-bg-alpha-val">55%</span>
+    </div>
+    <div class="row"><label>Backdrop blur (px)</label><input type="number" data-css="--note-backdrop-blur" data-unit="px" value="12" min="0" max="60"></div>
+
+    <h2>Shadow</h2>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--note-shadow-y" data-unit="px" value="12" min="0" max="100"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--note-shadow-blur" data-unit="px" value="36" min="0" max="200"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="note-shadow-alpha" min="0" max="100" value="45">
+      <span class="val" id="note-shadow-alpha-val">45%</span>
+    </div>
+
+    <h2>Media (image / video)</h2>
+    <div class="row"><label>Inner radius (px)</label><input type="number" data-css="--media-radius" data-unit="px" value="14" min="0" max="60"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--media-mb" data-unit="px" value="12" min="0" max="60"></div>
+    <div class="row">
+      <label>Fit</label>
+      <select data-css="--media-fit">
+        <option value="cover" selected>Cover (crop)</option>
+        <option value="contain">Contain (fit)</option>
+        <option value="fill">Fill (stretch)</option>
+      </select>
+    </div>
+    <div class="row"><label>Max height (% of note)</label><input type="number" id="media-max-pct" value="70" min="10" max="100"></div>
+
+    <h2>Video defaults</h2>
+    <div class="row"><label>Default muted</label><input type="checkbox" id="vid-muted-default" checked></div>
+    <div class="row"><label>Default loop</label><input type="checkbox" id="vid-loop-default" checked></div>
+    <div class="row"><label>Default autoplay</label><input type="checkbox" id="vid-autoplay-default" checked></div>
+    <div class="row"><label>Tap to unmute</label><input type="checkbox" id="vid-tap-unmute" checked></div>
+  </div>
+
+  <!-- ========== TEXT TAB ========== -->
+  <div class="tab-content" id="tab-text">
+    <h2>Lens / zoom</h2>
+    <div class="row"><label>Zoom into screen</label><input type="checkbox" id="lens-on" checked></div>
+    <div class="row">
+      <label>Magnification (×)</label>
+      <input type="range" id="lens-mag" min="100" max="200" value="110">
+      <span class="val" id="lens-mag-val">1.1×</span>
+    </div>
+    <div class="row">
+      <label>Vignette strength</label>
+      <input type="range" id="lens-vignette" min="0" max="100" value="50">
+      <span class="val" id="lens-vignette-val">50%</span>
+    </div>
+
+    <h2>Caption typography</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--cap-font">
+        <option value='"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' selected>Inter / system</option>
+        <option value='"SF Pro Display", -apple-system, BlinkMacSystemFont, sans-serif'>SF Pro</option>
+        <option value='"Helvetica Neue", Helvetica, Arial, sans-serif'>Helvetica</option>
+        <option value='"Bebas Neue", Impact, sans-serif'>Bebas Neue / Impact</option>
+        <option value='Impact, "Arial Black", sans-serif'>Impact (classic meme)</option>
+        <option value='"Arial Black", Helvetica, sans-serif'>Arial Black</option>
+        <option value='Georgia, "Times New Roman", serif'>Serif</option>
+        <option value='"Courier New", Courier, monospace'>Courier</option>
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="cap-font-custom" placeholder='e.g. "Inter", sans-serif'></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--cap-size" data-unit="px" value="22" min="8" max="120"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--cap-weight">
+        <option value="300">300</option><option value="400">400</option>
+        <option value="500">500</option><option value="600">600</option>
+        <option value="700" selected>700</option><option value="800">800</option>
+        <option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--cap-line-h" value="1.25" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--cap-letter" data-unit="em" value="-0.01" min="-0.1" max="0.3" step="0.005"></div>
+    <div class="row">
+      <label>Alignment</label>
+      <select data-css="--cap-align">
+        <option value="left" selected>Left</option>
+        <option value="center">Center</option>
+        <option value="right">Right</option>
+      </select>
+    </div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--cap-mb" data-unit="px" value="10" min="0" max="60"></div>
+
+    <h2>Text shadow</h2>
+    <div class="row"><label>Offset Y (px)</label><input type="number" data-css="--cap-shadow-y" data-unit="px" value="2" min="-20" max="20"></div>
+    <div class="row"><label>Blur (px)</label><input type="number" data-css="--cap-shadow-blur" data-unit="px" value="6" min="0" max="40"></div>
+    <div class="row">
+      <label>Opacity</label>
+      <input type="range" id="cap-shadow-alpha" min="0" max="100" value="60">
+      <span class="val" id="cap-shadow-alpha-val">60%</span>
+    </div>
+
+    <h2>Cursor</h2>
+    <div class="row">
+      <label>Style</label>
+      <select id="cursor-style">
+        <option value="bar" selected>Bar (│)</option>
+        <option value="block">Block (█)</option>
+        <option value="underline">Underline (_)</option>
+        <option value="none">None</option>
+      </select>
+    </div>
+    <div class="row"><label>Bar width (px)</label><input type="number" data-css="--cursor-w" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Height (em)</label><input type="number" data-css="--cursor-h" data-unit="em" value="1.05" min="0.4" max="3" step="0.05"></div>
+    <div class="row"><label>Block/underline (em)</label><input type="number" data-css="--cursor-block-w" data-unit="em" value="0.55" min="0.1" max="3" step="0.05"></div>
+    <div class="row"><label>Underline thickness (px)</label><input type="number" data-css="--cursor-underline-h" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Vertical offset (px)</label><input type="number" data-css="--cursor-offset" data-unit="px" value="2" min="-20" max="20"></div>
+    <div class="row"><label>Blink when idle</label><input type="checkbox" id="cursor-blink"></div>
+  </div>
+
+  <!-- ========== TAGS TAB ========== -->
+  <div class="tab-content" id="tab-tags">
+    <h2>Hashtag styling</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--tag-font">
+        <option value='"Inter", "Segoe UI", system-ui, sans-serif' selected>Inter / system</option>
+        <option value='"SF Pro Display", -apple-system, sans-serif'>SF Pro</option>
+        <option value='"Helvetica Neue", Helvetica, sans-serif'>Helvetica</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+        <option value='"Bebas Neue", Impact, sans-serif'>Bebas Neue</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="tag-font-custom" placeholder='e.g. "Inter", sans-serif'></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--tag-size" data-unit="px" value="14" min="6" max="60"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--tag-weight">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600" selected>600</option><option value="700">700</option>
+        <option value="800">800</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--tag-letter" data-unit="em" value="0.01" min="-0.1" max="0.3" step="0.005"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--tag-color" value="#00f2ea"></div>
+
+    <h2>Background chip</h2>
+    <div class="row"><label>Background color</label><input type="color" id="tag-bg-color" value="#00f2ea"></div>
+    <div class="row">
+      <label>Background opacity</label>
+      <input type="range" id="tag-bg-alpha" min="0" max="100" value="0">
+      <span class="val" id="tag-bg-alpha-val">0%</span>
+    </div>
+    <div class="row"><label>Pad Y (px)</label><input type="number" data-css="--tag-pad-y" data-unit="px" value="4" min="0" max="40"></div>
+    <div class="row"><label>Pad X (px)</label><input type="number" data-css="--tag-pad-x" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Chip radius (px)</label><input type="number" data-css="--tag-radius" data-unit="px" value="6" min="0" max="30"></div>
+    <div class="row"><label>Gap between (px)</label><input type="number" data-css="--tag-gap" data-unit="px" value="6" min="0" max="40"></div>
+
+    <h2>Alignment</h2>
+    <div class="row">
+      <label>Justify</label>
+      <select data-css="--tag-align">
+        <option value="flex-start" selected>Left</option>
+        <option value="center">Center</option>
+        <option value="flex-end">Right</option>
+        <option value="space-between">Spaced</option>
+      </select>
+    </div>
+
+    <h2>Shadow</h2>
+    <div class="row"><label>Offset Y (px)</label><input type="number" data-css="--tag-shadow-y" data-unit="px" value="1" min="-20" max="20"></div>
+    <div class="row"><label>Blur (px)</label><input type="number" data-css="--tag-shadow-blur" data-unit="px" value="4" min="0" max="40"></div>
+    <div class="row">
+      <label>Opacity</label>
+      <input type="range" id="tag-shadow-alpha" min="0" max="100" value="60">
+      <span class="val" id="tag-shadow-alpha-val">60%</span>
+    </div>
+  </div>
+
+  <!-- ========== CHROME TAB ========== -->
+  <div class="tab-content" id="tab-chrome">
+    <h2>Visibility</h2>
+    <div class="row"><label>Show TikTok chrome</label><input type="checkbox" id="show-chrome" checked></div>
+    <div class="help" style="margin-top:6px">
+      Adds the @handle + side icons (like / comment / share) over the screen. Set via <code>[[handle:@user|caption]]</code> in the script.
+    </div>
+
+    <h2>Handle (bottom-left)</h2>
+    <div class="row"><label>Default handle</label><input type="text" id="chrome-handle-text" value="@yourname"></div>
+    <div class="row"><label>Default caption</label><input type="text" id="chrome-caption-text" value="comparing trends · part 1"></div>
+    <div class="row"><label>Handle font size (px)</label><input type="number" data-css="--chrome-handle-fz" data-unit="px" value="16" min="8" max="40"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--chrome-handle-weight">
+        <option value="500">500</option><option value="600">600</option>
+        <option value="700" selected>700</option><option value="800">800</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Color</label><input type="color" data-css="--chrome-handle-color" value="#ffffff"></div>
+    <div class="row"><label>Bottom offset (px)</label><input type="number" data-css="--chrome-handle-bottom" data-unit="px" value="76" min="0" max="400"></div>
+    <div class="row"><label>Left offset (px)</label><input type="number" data-css="--chrome-handle-left" data-unit="px" value="16" min="0" max="200"></div>
+
+    <h2>Side icons</h2>
+    <div class="row"><label>Right offset (px)</label><input type="number" data-css="--chrome-icons-right" data-unit="px" value="12" min="0" max="200"></div>
+    <div class="row"><label>Bottom offset (px)</label><input type="number" data-css="--chrome-icons-bottom" data-unit="px" value="92" min="0" max="400"></div>
+    <div class="row"><label>Icon size (px)</label><input type="number" data-css="--chrome-icon-size" data-unit="px" value="44" min="20" max="120"></div>
+    <div class="row"><label>Icon color</label><input type="color" data-css="--chrome-icon-color" value="#ffffff"></div>
+    <div class="row"><label>Icon background</label><input type="color" id="chrome-icon-bg-color" value="#ffffff"></div>
+    <div class="row">
+      <label>Bg opacity</label>
+      <input type="range" id="chrome-icon-bg-alpha" min="0" max="100" value="8">
+      <span class="val" id="chrome-icon-bg-alpha-val">8%</span>
+    </div>
+    <div class="row"><label>Likes count</label><input type="text" id="chrome-likes" value="124K"></div>
+    <div class="row"><label>Comments count</label><input type="text" id="chrome-comments" value="2.4K"></div>
+    <div class="row"><label>Shares count</label><input type="text" id="chrome-shares" value="892"></div>
+  </div>
+
+  <!-- ========== HOOK TAB ========== -->
+  <div class="tab-content" id="tab-hook">
+    <h2>Sticky hook (top of screen)</h2>
+    <div class="row"><label>Show hook</label><input type="checkbox" id="show-hook" checked></div>
+    <div class="row"><label>Default text</label><input type="text" id="hook-text" value="trends, ranked"></div>
+    <div class="help" style="margin-top:6px">
+      Override per-script with <code>[[hook:My title]]</code> at the top of the script.
+    </div>
+
+    <h2>Style</h2>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--hook-fz" data-unit="px" value="28" min="8" max="120"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--hook-weight">
+        <option value="400">400</option><option value="600">600</option>
+        <option value="700">700</option><option value="800">800</option>
+        <option value="900" selected>900</option>
+      </select>
+    </div>
+    <div class="row"><label>Color</label><input type="color" data-css="--hook-color" value="#ffffff"></div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--hook-line-h" value="1.05" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--hook-letter" data-unit="em" value="-0.02" min="-0.1" max="0.3" step="0.005"></div>
+    <div class="row"><label>Top offset (px)</label><input type="number" data-css="--hook-top" data-unit="px" value="64" min="0" max="400"></div>
+    <div class="row"><label>Pad Y (px)</label><input type="number" data-css="--hook-pad-y" data-unit="px" value="16" min="0" max="60"></div>
+    <div class="row"><label>Pad X (px)</label><input type="number" data-css="--hook-pad-x" data-unit="px" value="20" min="0" max="80"></div>
+
+    <h2>Background</h2>
+    <div class="row"><label>Background</label><input type="color" id="hook-bg-color" value="#000000"></div>
+    <div class="row">
+      <label>Bg opacity</label>
+      <input type="range" id="hook-bg-alpha" min="0" max="100" value="0">
+      <span class="val" id="hook-bg-alpha-val">0%</span>
+    </div>
+  </div>
+
+  <!-- ========== COLORS TAB ========== -->
+  <div class="tab-content" id="tab-colors">
+    <h2>Quick palettes</h2>
+    <div class="btn-row">
+      <button data-palette="tiktok">TikTok teal</button>
+      <button data-palette="hot-pink">Hot pink</button>
+    </div>
+    <div class="btn-row">
+      <button data-palette="lime">Lime burst</button>
+      <button data-palette="mono">Pure mono</button>
+    </div>
+    <div class="btn-row">
+      <button data-palette="sunset">Sunset</button>
+      <button data-palette="cyber">Cyber</button>
+    </div>
+
+    <h2>Text</h2>
+    <div class="row"><label>Caption color</label><input type="color" data-css="--cap-color" value="#ffffff"></div>
+    <div class="row"><label>Hashtag color</label><input type="color" data-css="--tag-color" value="#00f2ea"></div>
+    <div class="row"><label>Cursor color</label><input type="color" data-css="--cursor-color" value="#ffffff"></div>
+
+    <h2>Surfaces</h2>
+    <div class="row"><label>Screen background</label><input type="color" data-css="--screen-bg" value="#000000"></div>
+    <div class="row"><label>Stage background</label><input type="color" data-css="--stage-bg" value="#1a1a1d"></div>
+  </div>
+
+  <!-- ========== ANIM TAB ========== -->
+  <div class="tab-content" id="tab-anim">
+    <h2>Note entrance</h2>
+    <div class="row"><label>Fade duration (ms)</label><input type="number" data-css="--note-anim-fade" data-unit="ms" value="360" min="0" max="3000"></div>
+    <div class="row"><label>Transform duration (ms)</label><input type="number" data-css="--note-anim-scale" data-unit="ms" value="520" min="0" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--note-anim-easing">
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)" selected>Pop</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="linear">Linear</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+        <option value="cubic-bezier(0.68, -0.55, 0.27, 1.55)">Bouncy</option>
+      </select>
+    </div>
+    <div class="row"><label>Scale from</label><input type="number" data-css="--note-anim-scale-from" value="0.92" min="0" max="2" step="0.01"></div>
+    <div class="row"><label>Slide up (px)</label><input type="number" data-css="--note-anim-translate" data-unit="px" value="14" min="-200" max="200"></div>
+  </div>
+
+  <!-- ========== TIMING TAB ========== -->
+  <div class="tab-content" id="tab-timing">
+    <h2>Typing feel</h2>
+    <div class="row">
+      <label>Avg ms / char</label>
+      <input type="range" id="base-ms" min="5" max="500" value="55">
+      <span class="val" id="base-ms-val">55</span>
+    </div>
+    <div class="row">
+      <label>Variance ±</label>
+      <input type="range" id="variance-ms" min="0" max="300" value="38">
+      <span class="val" id="variance-ms-val">38</span>
+    </div>
+    <div class="row">
+      <label>Think pause chance</label>
+      <input type="range" id="think-chance" min="0" max="100" value="8">
+      <span class="val" id="think-chance-val">8%</span>
+    </div>
+    <div class="row">
+      <label>Max think (ms)</label>
+      <input type="number" id="think-max" value="1800" min="0" max="20000">
+    </div>
+    <div class="row">
+      <label>Start delay (s)</label>
+      <input type="number" id="start-delay" value="0" min="0" max="60" step="0.5">
+    </div>
+
+    <h2>Punctuation pauses</h2>
+    <div class="row"><label>Sentence base (ms)</label><input type="number" id="punct-sentence" value="220" min="0" max="5000"></div>
+    <div class="row"><label>Sentence jitter (ms)</label><input type="number" id="punct-sentence-j" value="380" min="0" max="5000"></div>
+    <div class="row"><label>Comma base (ms)</label><input type="number" id="punct-comma" value="70" min="0" max="2000"></div>
+    <div class="row"><label>Comma jitter (ms)</label><input type="number" id="punct-comma-j" value="160" min="0" max="2000"></div>
+
+    <h2>Default trigger</h2>
+    <div class="row"><label>Default delay (ms)</label><input type="number" id="default-trigger" value="1500" min="0" max="30000"></div>
+    <div class="row"><label>Video fallback delay (ms)</label><input type="number" id="video-fallback" value="3500" min="0" max="60000"></div>
+    <div class="help" style="margin-top:6px">
+      Used when a note's <code>[[trigger:N]]</code> isn't specified. <code>[[trigger:end]]</code> on a video note waits for the video to end (or this fallback if it loops endlessly).
+    </div>
+
+    <h2>Typo handling</h2>
+    <div class="row"><label>Typo pause before bs (ms)</label><input type="number" id="typo-pause" value="280" min="0" max="3000"></div>
+    <div class="row"><label>Backspace ms / char</label><input type="number" id="bs-ms" value="45" min="5" max="500"></div>
+
+    <h2>Countdown</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--countdown-size" data-unit="px" value="140" min="20" max="600"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--countdown-color" value="#ffffff"></div>
+  </div>
+
+  <!-- ========== MEDIA TAB ========== -->
+  <div class="tab-content" id="tab-media">
+    <h2>Images</h2>
+    <input type="file" id="image-input" accept="image/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-images">＋ Add image(s)</button>
+      <button id="clear-images">Clear all</button>
+    </div>
+    <div id="image-list"></div>
+    <div class="help" style="margin-top:8px">
+      Drop into a note with <code>[[image:1]]</code>.
+    </div>
+
+    <h2>Videos</h2>
+    <input type="file" id="video-input" accept="video/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-videos">＋ Add video(s)</button>
+      <button id="clear-videos">Clear all</button>
+    </div>
+    <div id="video-list"></div>
+    <div class="help" style="margin-top:8px">
+      Drop into a note with <code>[[video:1]]</code>. Loops muted by default. Per-note overrides: <code>[[muted:false]]</code>, <code>[[loop:false]]</code>.
+    </div>
+  </div>
+
+  <!-- ========== SOUND TAB ========== -->
+  <div class="tab-content" id="tab-sound">
+    <h2>Typing sound</h2>
+    <div class="row"><label>Enable typing sound</label><input type="checkbox" id="sound-on" checked></div>
+    <div class="row">
+      <label>Style</label>
+      <select id="sound-style">
+        <option value="soft" selected>Soft tock</option>
+        <option value="mechanical">Mechanical click</option>
+        <option value="typewriter">Typewriter</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Volume</label>
+      <input type="range" id="sound-vol" min="0" max="100" value="35">
+      <span class="val" id="sound-vol-val">35%</span>
+    </div>
+
+    <h2>Event sounds</h2>
+    <div class="row"><label>Note appear chime</label><input type="checkbox" id="note-chime" checked></div>
+    <div class="row">
+      <label>Chime volume</label>
+      <input type="range" id="chime-vol" min="0" max="100" value="50">
+      <span class="val" id="chime-vol-val">50%</span>
+    </div>
+  </div>
+
+  <!-- ===== AUDIO (BGM + TTS) ===== -->
+  <div class="tab-content" id="tab-audio">
+    <h2>Background music (BGM)</h2>
+    <div class="row">
+      <label>Upload audio</label>
+      <input type="file" id="bgm-file" accept="audio/*">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>File</label>
+      <span id="bgm-name" style="color:#888;flex:1;">none</span>
+      <button id="bgm-clear" style="padding:3px 8px;font-size:10px;">clear</button>
+    </div>
+    <div class="row"><label>Auto-play with show</label><input type="checkbox" id="bgm-auto" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bgm-loop"></div>
+    <div class="row"><label>Volume</label><input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6"></div>
+    <div class="row"><label>Start offset (s)</label><input type="number" id="bgm-start" value="0" step="0.1" min="0"></div>
+    <div class="row"><label>Fade in (ms)</label><input type="number" id="bgm-fadein" value="0" min="0" step="50"></div>
+    <div class="row"><label>Fade out (ms)</label><input type="number" id="bgm-fadeout" value="0" min="0" step="50"></div>
+    <div class="row">
+      <label>Test</label>
+      <button id="bgm-test" style="padding:5px 12px;font-size:11px;">▶ Preview 4s</button>
+      <button id="bgm-stop-test" style="padding:5px 12px;font-size:11px;margin-left:6px;">⏹ Stop</button>
+    </div>
+
+    <h2>Background media (image / video / audio)</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Full-screen background layer behind the stage. Image OR video (with or without sound), plus optional separate audio-only track. Ducks automatically when TTS plays.
+    </div>
+    <div class="row"><label>Background video</label><input type="file" id="bg-video-file" accept="video/*"></div>
+    <div class="row"><label>Background image</label><input type="file" id="bg-image-file" accept="image/*"></div>
+    <div class="row"><label>Audio-only file</label><input type="file" id="bg-audio-file" accept="audio/*"></div>
+    <div class="row"><label>Video playlist (multiple)</label><input type="file" id="bg-playlist-files" accept="video/*" multiple></div>
+    <div class="row" style="align-items:flex-start;"><label>Queue</label>
+      <ol id="bg-playlist-list" style="flex:1;font-size:11px;color:#aaa;padding-left:20px;margin:0;list-style:decimal;max-height:120px;overflow-y:auto;"></ol>
+    </div>
+    <div class="row"><label>Playlist mode</label><input type="checkbox" id="bg-playlist-on" checked></div>
+    <div class="row"><label>Loop playlist</label><input type="checkbox" id="bg-playlist-loop" checked></div>
+    <div class="row"><label>Crossfade (ms)</label><input type="number" id="bg-crossfade-ms" value="250" min="0" max="3000" step="50"></div>
+    <div class="row">
+      <button id="bg-playlist-next" style="padding:4px 10px;font-size:11px;">⏭ next</button>
+      <button id="bg-playlist-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear queue</button>
+    </div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;">
+      Upload multiple videos to build a seamless playlist. Set <b>Crossfade</b> &gt; 0 for a fade between clips; 0 = hard cut. Uses two preloaded video elements for frame-accurate handoff.
+    </div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="bg-mute" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bg-loop" checked></div>
+    <div class="row"><label>Volume</label><input type="range" id="bg-volume" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="row"><label>Fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="fill">stretch (fill)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+    <div class="row"><label>Auto-start with show</label><input type="checkbox" id="bg-auto" checked></div>
+    <div class="row"><label>Duck during TTS</label><input type="checkbox" id="bg-duck-on" checked></div>
+    <div class="row"><label>Duck to (factor)</label><input type="range" id="bg-duck-to" min="0" max="1" step="0.05" value="0.3"></div>
+    <div class="row">
+      <button id="bg-play" style="padding:4px 10px;font-size:11px;">▶ play bg</button>
+      <button id="bg-stop" style="padding:4px 10px;font-size:11px;margin-left:4px;">⏹ stop</button>
+      <button id="bg-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear</button>
+    </div>
+
+    <h2>Skin transparency</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Drop these to let the bg video peep through the chrome. Bubble text stays opaque.
+    </div>
+    <div class="row">
+      <label>Page bg opacity</label>
+      <input type="range" id="page-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="page-bg-alpha-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Skin bg opacity</label>
+      <input type="range" id="skin-alpha" min="0" max="100" value="100">
+      <span class="val" id="skin-alpha-val">100%</span>
+    </div>
+  </div>
+
+  <!-- ========== TTS TAB ========== -->
+  <!-- ========== SCRIPT SRT TAB ========== -->
+  <div class="tab-content" id="tab-srt-script">
+    <h2>Script from SRT / timestamped file</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Load an <b>.srt / .vtt / .json / .txt</b>. Each cue is shown so its body lands during its [start..end] window. Wall-clock from <i>Play</i>. Overrides natural pacing.
+    </div>
+    <div class="row">
+      <label>Timed script file</label>
+      <input type="file" id="srt-script-file" accept=".srt,.vtt,.json,.txt,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="srt-script-info" style="color:#888;flex:1;">no file</span>
+      <button id="srt-script-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use timed script</label><input type="checkbox" id="srt-script-on"></div>
+    <div class="row">
+      <label>Cue typing fill</label>
+      <input type="range" id="srt-script-fill" min="20" max="100" value="92">
+      <span class="val" id="srt-script-fill-val">92%</span>
+    </div>
+    <div class="row">
+      <label>Between cues</label>
+      <select id="srt-script-between">
+        <option value="keep" selected>Keep previous on screen</option>
+        <option value="clear">Clear between cues</option>
+        <option value="newline">Add newline between</option>
+      </select>
+    </div>
+  </div>
+</aside>
+
+<main id="stage">
+  <div class="phone-wrap">
+    <div class="phone-screen" id="phone-screen">
+      <div id="progress"><div id="progress-fill"></div></div>
+      <div id="hook"></div>
+      <div id="stack"></div>
+      <div id="lens-vignette-fx"></div>
+      <div id="chrome">
+        <div class="ch-handle">
+          <span class="ch-handle-name" id="ch-handle-name">@yourname</span>
+          <span class="ch-handle-caption" id="ch-handle-caption">comparing trends</span>
+        </div>
+        <div class="ch-icons">
+          <div class="ch-icon-group">
+            <div class="ch-icon">♡</div>
+            <div class="ch-icon-label" id="ch-likes">124K</div>
+          </div>
+          <div class="ch-icon-group">
+            <div class="ch-icon">💬</div>
+            <div class="ch-icon-label" id="ch-comments">2.4K</div>
+          </div>
+          <div class="ch-icon-group">
+            <div class="ch-icon">↗</div>
+            <div class="ch-icon-label" id="ch-shares">892</div>
+          </div>
+        </div>
+      </div>
+      <div id="manual-cue">press <b>SPACE</b> for next →</div>
+    </div>
+  </div>
+</main>
+
+<div class="resize-handle" id="resize-handle" title="Drag to resize"></div>
+<div id="hint">press H to show controls · Space to play / advance · Esc to stop</div>
+
+<script>
+(() => {
+  // ---------- Sound engine ----------
+  const Sound = (() => {
+    let ctx;
+    const ensureCtx = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    let enabled = true, volume = 0.35, style = 'soft';
+    let chimeOn = true, chimeVol = 0.5;
+    let duckFactor = 1, duckAnim = null;
+
+    function setDuckFactor(target, durMs) {
+      if (duckAnim) cancelAnimationFrame(duckAnim);
+      duckAnim = null;
+      target = Math.max(0, Math.min(1, target));
+      if (!durMs || durMs <= 0) { duckFactor = target; return; }
+      const start = duckFactor;
+      const t0 = performance.now();
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) { duckFactor = target; duckAnim = null; return; }
+        duckFactor = start + (target - start) * t;
+        duckAnim = requestAnimationFrame(step);
+      };
+      duckAnim = requestAnimationFrame(step);
+    }
+    function duck(amountPct, fadeMs) { setDuckFactor(Math.max(0, 1 - (amountPct || 0) / 100), fadeMs); }
+    function unduck(fadeMs) { setDuckFactor(1, fadeMs); }
+
+    function noiseBurst(c, dur, decayPow = 4) {
+      const n = Math.floor(c.sampleRate * dur);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/n, decayPow);
+      return buf;
+    }
+
+    function key() {
+      if (!enabled) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      const v = volume * duckFactor;
+      if (style === 'typewriter') {
+        const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.06, 5);
+        const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=2200+Math.random()*400; f.Q.value=1.2;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.5, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.08);
+        b.connect(f).connect(g).connect(c.destination); b.start(now);
+      } else if (style === 'mechanical') {
+        const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.05, 6);
+        const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1500+Math.random()*500; f.Q.value=3;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.06);
+        b.connect(f).connect(g).connect(c.destination); b.start(now);
+      } else {
+        const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.04, 4);
+        const f = c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900+Math.random()*200; f.Q.value=1;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+        b.connect(f).connect(g).connect(c.destination); b.start(now);
+      }
+    }
+    function backspace() {
+      if (!enabled) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      const b = c.createBufferSource(); b.buffer = noiseBurst(c, 0.03, 5);
+      const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=900+Math.random()*200; f.Q.value=1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume*duckFactor*0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.04);
+      b.connect(f).connect(g).connect(c.destination); b.start(now);
+    }
+    function chime() {
+      if (!chimeOn) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      [880, 1320].forEach((f, i) => {
+        const o = c.createOscillator(); o.type='sine';
+        o.frequency.setValueAtTime(f, now + i*0.06);
+        const g = c.createGain();
+        g.gain.setValueAtTime(0, now + i*0.06);
+        g.gain.linearRampToValueAtTime(chimeVol*duckFactor*0.3, now + i*0.06 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i*0.06 + 0.35);
+        o.connect(g).connect(c.destination); o.start(now + i*0.06); o.stop(now + i*0.06 + 0.4);
+      });
+    }
+    return {
+      key, backspace, chime,
+      setEnabled: v => enabled = v,
+      setVolume: v => volume = v,
+      setStyle: v => style = v,
+      setChimeOn: v => chimeOn = v,
+      setChimeVol: v => chimeVol = v,
+      duck, unduck,
+      get duckFactor() { return duckFactor; },
+      resume: ensureCtx,
+    };
+  })();
+
+  // ---------- DOM refs ----------
+  const $ = id => document.getElementById(id);
+  const root = document.documentElement;
+  const body = document.body;
+  const stack = $('stack');
+  const hookEl = $('hook');
+  const chHandleName = $('ch-handle-name');
+  const chHandleCaption = $('ch-handle-caption');
+  const manualCue = $('manual-cue');
+  const progressFill = $('progress-fill');
+  const setVar = (k, v) => root.style.setProperty(k, v);
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- Generic CSS-var binding ----------
+  document.querySelectorAll('[data-css]').forEach(el => {
+    const prop = el.dataset.css;
+    const unit = el.dataset.unit || '';
+    const apply = () => {
+      let v = el.value;
+      if (unit && v !== '' && !String(v).endsWith(unit)) v = v + unit;
+      setVar(prop, v);
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+    apply();
+  });
+
+  // ---------- Lens / zoom: camera push-in on the caption + vignette ----------
+  (function () {
+    const on = $('lens-on'); if (!on) return;
+    const apply = () => document.body.classList.toggle('lens-on', on.checked);
+    on.addEventListener('change', apply); apply();
+    const mag = $('lens-mag'), mv = $('lens-mag-val');
+    if (mag) { const am = () => { const m = +mag.value / 100; if (mv) mv.textContent = m.toFixed(2).replace(/0$/, '') + '×'; setVar('--lens-mag', m.toFixed(3)); }; mag.addEventListener('input', am); am(); }
+    const vg = $('lens-vignette'), vv = $('lens-vignette-val');
+    if (vg) { const av = () => { if (vv) vv.textContent = vg.value + '%'; setVar('--lens-vignette', (+vg.value / 100).toFixed(2)); }; vg.addEventListener('input', av); av(); }
+  })();
+
+  // ---------- Composite controls ----------
+  function hexToRgb(hex) {
+    return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+  }
+  function bindRgba(colorId, alphaId, varName) {
+    const c = $(colorId), a = $(alphaId), out = $(alphaId + '-val');
+    const apply = () => {
+      const [r,g,b] = hexToRgb(c.value);
+      const alpha = (+a.value / 100).toFixed(2);
+      setVar(varName, `rgba(${r},${g},${b},${alpha})`);
+      out.textContent = a.value + '%';
+    };
+    c.addEventListener('input', apply);
+    a.addEventListener('input', apply);
+    apply();
+  }
+  bindRgba('note-bg-color', 'note-bg-alpha', '--note-bg');
+  bindRgba('note-border-color', 'note-border-alpha', '--note-border-color');
+  bindRgba('tag-bg-color', 'tag-bg-alpha', '--tag-bg');
+  bindRgba('hook-bg-color', 'hook-bg-alpha', '--hook-bg');
+  bindRgba('progress-bg-color', 'progress-bg-alpha', '--progress-bg');
+  bindRgba('chrome-icon-bg-color', 'chrome-icon-bg-alpha', '--chrome-icon-bg');
+
+  function bindAlpha(sliderId, varName) {
+    const sl = $(sliderId), out = $(sliderId + '-val');
+    const apply = () => {
+      out.textContent = sl.value + '%';
+      setVar(varName, (+sl.value / 100).toFixed(2));
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindAlpha('screen-shadow-alpha', '--screen-shadow-alpha');
+  bindAlpha('note-shadow-alpha', '--note-shadow-alpha');
+  bindAlpha('cap-shadow-alpha', '--cap-shadow-alpha');
+  bindAlpha('tag-shadow-alpha', '--tag-shadow-alpha');
+
+  // Media max-height
+  $('media-max-pct').addEventListener('input', e => setVar('--media-max-h', e.target.value + '%'));
+  setVar('--media-max-h', $('media-max-pct').value + '%');
+
+  // Phone size
+  $('phone-w').addEventListener('input', e => setVar('--screen-w', e.target.value + 'px'));
+  $('phone-h').addEventListener('input', e => setVar('--screen-h', e.target.value + 'px'));
+  const phoneScale = $('phone-scale'), phoneScaleVal = $('phone-scale-val');
+  const updScale = () => {
+    phoneScaleVal.textContent = phoneScale.value + '%';
+    setVar('--screen-scale', (+phoneScale.value / 100).toString());
+  };
+  phoneScale.addEventListener('input', updScale); updScale();
+
+  document.querySelectorAll('[data-size]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sizes = {
+        tiktok: [540, 960],
+        iphone: [390, 844],
+        square: [720, 720],
+        reels: [1080, 1920],
+      };
+      const [w, h] = sizes[btn.dataset.size];
+      $('phone-w').value = w; $('phone-w').dispatchEvent(new Event('input'));
+      $('phone-h').value = h; $('phone-h').dispatchEvent(new Event('input'));
+    });
+  });
+
+  $('show-frame').addEventListener('change', e => body.classList.toggle('no-frame', !e.target.checked));
+  $('bezel').addEventListener('change', e => body.classList.toggle('phone-bezel', e.target.checked));
+  $('show-progress').addEventListener('change', e => body.classList.toggle('no-progress', !e.target.checked));
+  $('show-chrome').addEventListener('change', e => body.classList.toggle('no-chrome', !e.target.checked));
+  $('show-hook').addEventListener('change', e => body.classList.toggle('no-hook', !e.target.checked));
+  $('cursor-blink').addEventListener('change', e => body.classList.toggle('cursor-blink', e.target.checked));
+
+  // Custom font fields
+  $('cap-font-custom').addEventListener('input', e => { const v = e.target.value.trim(); if (v) setVar('--cap-font', v); });
+  $('tag-font-custom').addEventListener('input', e => { const v = e.target.value.trim(); if (v) setVar('--tag-font', v); });
+
+  // Cursor style toggling — applied to all cursors via class
+  $('cursor-style').addEventListener('change', e => {
+    document.querySelectorAll('.tt-cursor').forEach(c => {
+      c.classList.remove('block', 'underline', 'hidden');
+      if (e.target.value === 'block') c.classList.add('block');
+      if (e.target.value === 'underline') c.classList.add('underline');
+      if (e.target.value === 'none') c.style.display = 'none';
+      else c.style.display = '';
+    });
+  });
+
+  // Chrome handle / icons defaults
+  $('chrome-handle-text').addEventListener('input', e => chHandleName.textContent = e.target.value);
+  $('chrome-caption-text').addEventListener('input', e => chHandleCaption.textContent = e.target.value);
+  $('chrome-likes').addEventListener('input', e => $('ch-likes').textContent = e.target.value);
+  $('chrome-comments').addEventListener('input', e => $('ch-comments').textContent = e.target.value);
+  $('chrome-shares').addEventListener('input', e => $('ch-shares').textContent = e.target.value);
+
+  $('hook-text').addEventListener('input', e => hookEl.textContent = e.target.value);
+  hookEl.textContent = $('hook-text').value;
+  chHandleName.textContent = $('chrome-handle-text').value;
+  chHandleCaption.textContent = $('chrome-caption-text').value;
+
+  // ---------- Range labels ----------
+  const bindRange = (id, suffix = '') => {
+    const el = $(id), out = $(id + '-val');
+    if (!el || !out) return;
+    const upd = () => out.textContent = el.value + suffix;
+    el.addEventListener('input', upd); upd();
+  };
+  bindRange('base-ms');
+  bindRange('variance-ms');
+  bindRange('think-chance', '%');
+
+  // ---------- Sound bindings ----------
+  $('sound-on').addEventListener('change', e => Sound.setEnabled(e.target.checked));
+  $('sound-style').addEventListener('change', e => Sound.setStyle(e.target.value));
+  const sv = $('sound-vol'), svVal = $('sound-vol-val');
+  const updSv = () => { svVal.textContent = sv.value + '%'; Sound.setVolume(+sv.value / 100); };
+  sv.addEventListener('input', updSv); updSv();
+  $('note-chime').addEventListener('change', e => Sound.setChimeOn(e.target.checked));
+  const cv = $('chime-vol'), cvVal = $('chime-vol-val');
+  const updCv = () => { cvVal.textContent = cv.value + '%'; Sound.setChimeVol(+cv.value / 100); };
+  cv.addEventListener('input', updCv); updCv();
+
+  // ---------- Presets ----------
+  const presets = {
+    fast:    { base: 28, variance: 18, think: 4,  thinkMax: 700 },
+    natural: { base: 55, variance: 38, think: 8,  thinkMax: 1800 },
+    slow:    { base: 110, variance: 60, think: 18, thinkMax: 3500 },
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      $('base-ms').value = p.base; $('base-ms').dispatchEvent(new Event('input'));
+      $('variance-ms').value = p.variance; $('variance-ms').dispatchEvent(new Event('input'));
+      $('think-chance').value = p.think; $('think-chance').dispatchEvent(new Event('input'));
+      $('think-max').value = p.thinkMax;
+    });
+  });
+
+  // ---------- Palettes ----------
+  const palettes = {
+    tiktok:   { cap: '#ffffff', tag: '#00f2ea', cursor: '#ffffff', screen: '#000000', stage: '#1a1a1d' },
+   'hot-pink':{ cap: '#ffffff', tag: '#ff3b6b', cursor: '#ffffff', screen: '#0a0010', stage: '#1f0418' },
+    lime:     { cap: '#0a0a0a', tag: '#c9ff3b', cursor: '#0a0a0a', screen: '#ffffff', stage: '#0a0a0a' },
+    mono:     { cap: '#ffffff', tag: '#888888', cursor: '#ffffff', screen: '#000000', stage: '#0a0a0a' },
+    sunset:   { cap: '#ffffff', tag: '#ffb347', cursor: '#ffffff', screen: '#1a0e2e', stage: '#0a0418' },
+    cyber:    { cap: '#00ffff', tag: '#ff00aa', cursor: '#00ffff', screen: '#070218', stage: '#020108' },
+  };
+  document.querySelectorAll('[data-palette]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = palettes[btn.dataset.palette];
+      setVar('--cap-color', p.cap);
+      setVar('--tag-color', p.tag);
+      setVar('--cursor-color', p.cursor);
+      setVar('--screen-bg', p.screen);
+      setVar('--stage-bg', p.stage);
+    });
+  });
+
+  // ---------- Phone drag-resize ----------
+  (() => {
+    const handle = $('resize-handle');
+    if (!handle) return;
+    let resizing = false, startX, startY, startScale;
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      resizing = true; startX = e.clientX; startY = e.clientY;
+      startScale = +phoneScale.value / 100 || 1;
+      try { handle.setPointerCapture(e.pointerId); } catch {}
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!resizing) return;
+      const delta = ((e.clientX - startX) + (e.clientY - startY)) / 2;
+      const newScale = Math.max(0.2, Math.min(2.5, startScale + delta / 200));
+      phoneScale.value = Math.round(newScale * 100);
+      phoneScale.dispatchEvent(new Event('input'));
+    });
+    document.addEventListener('pointerup', (e) => {
+      if (!resizing) return; resizing = false;
+      try { handle.releasePointerCapture(e.pointerId); } catch {}
+    });
+  })();
+
+  // ---------- Media management ----------
+  const images = [], videos = [];
+  const imageList = $('image-list'), videoList = $('video-list');
+  const imageInput = $('image-input'), videoInput = $('video-input');
+
+  $('add-images').addEventListener('click', () => imageInput.click());
+  $('clear-images').addEventListener('click', () => { images.length = 0; renderImageList(); });
+  imageInput.addEventListener('change', async e => {
+    for (const f of e.target.files) {
+      try { images.push({ dataUrl: await fileToDataUrl(f), name: f.name }); }
+      catch (err) { console.error(err); }
+    }
+    renderImageList(); e.target.value = '';
+  });
+  $('add-videos').addEventListener('click', () => videoInput.click());
+  $('clear-videos').addEventListener('click', () => {
+    for (const v of videos) URL.revokeObjectURL(v.url);
+    videos.length = 0; renderVideoList();
+  });
+  videoInput.addEventListener('change', e => {
+    for (const f of e.target.files) videos.push({ url: URL.createObjectURL(f), name: f.name });
+    renderVideoList(); e.target.value = '';
+  });
+  function fileToDataUrl(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+  function renderList(list, arr, mediaTag) {
+    list.innerHTML = '';
+    arr.forEach((m, i) => {
+      const item = document.createElement('div'); item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement(mediaTag);
+      thumb.src = mediaTag === 'img' ? m.dataUrl : m.url;
+      if (mediaTag === 'video') thumb.muted = true;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = m.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => {
+        if (mediaTag === 'video') URL.revokeObjectURL(arr[i].url);
+        arr.splice(i, 1);
+        renderList(list, arr, mediaTag);
+      });
+      item.append(idx, thumb, name, rm);
+      list.appendChild(item);
+    });
+  }
+  const renderImageList = () => renderList(imageList, images, 'img');
+  const renderVideoList = () => renderList(videoList, videos, 'video');
+
+  // ---------- Audio sync ----------
+  const audioEl = new Audio();
+  audioEl.preload = 'auto';
+  let audioUrl = null;
+  let timingData = null;
+
+  function setAudioInfo() {
+    const info = $('audio-info');
+    if (audioUrl && audioEl.duration && !isNaN(audioEl.duration)) {
+      info.textContent = `Loaded · ${audioEl.duration.toFixed(1)}s`;
+    } else if (audioUrl) info.textContent = 'Loaded · reading metadata…';
+    else info.textContent = 'No audio loaded';
+  }
+  $('audio-pick').addEventListener('click', () => $('audio-input').click());
+  $('audio-clear').addEventListener('click', () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = null; audioEl.src = ''; setAudioInfo();
+  });
+  $('audio-input').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(f); audioEl.src = audioUrl;
+    audioEl.addEventListener('loadedmetadata', setAudioInfo, { once: true });
+    setAudioInfo(); e.target.value = '';
+  });
+  const audioVol = $('audio-vol'), audioVolVal = $('audio-vol-val');
+  const updAudioVol = () => {
+    audioVolVal.textContent = audioVol.value + '%';
+    audioEl.volume = +audioVol.value / 100;
+  };
+  audioVol.addEventListener('input', updAudioVol); updAudioVol();
+
+  $('timing-pick').addEventListener('click', () => $('timing-input').click());
+  $('timing-clear').addEventListener('click', () => {
+    timingData = null; $('timing-info').textContent = 'No timing file';
+  });
+  $('timing-input').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const content = await f.text();
+      timingData = parseTimingFile(content, f.name);
+      $('timing-info').textContent = timingData
+        ? `Loaded · ${timingData.length} items` : 'Failed to parse';
+    } catch (err) {
+      timingData = null;
+      $('timing-info').textContent = 'Read error: ' + err.message;
+    }
+    e.target.value = '';
+  });
+
+  function parseTimingFile(content, fname) {
+    const ext = fname.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'json') return parseWhisperJson(content);
+      if (ext === 'srt') return parseSrt(content);
+      if (ext === 'vtt') return parseVtt(content);
+    } catch (e) { console.error('Timing parse error', e); }
+    return null;
+  }
+  function parseWhisperJson(content) {
+    const data = JSON.parse(content);
+    const words = [];
+    if (Array.isArray(data.segments)) {
+      for (const s of data.segments) {
+        if (Array.isArray(s.words) && s.words.length > 0) {
+          for (const w of s.words) words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+        } else if (typeof s.text === 'string') words.push({ text: s.text, start: +s.start, end: +s.end });
+      }
+    } else if (Array.isArray(data.words)) {
+      for (const w of data.words) words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+    }
+    return words.length > 0 ? words : null;
+  }
+  function parseSrt(content) {
+    const lines = content.replace(/\r/g, '').split('\n');
+    const items = []; let i = 0;
+    while (i < lines.length) {
+      while (i < lines.length && lines[i].trim() === '') i++;
+      if (i >= lines.length) break;
+      if (/^\d+$/.test(lines[i].trim())) i++;
+      if (i >= lines.length) break;
+      const m = lines[i].match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{3})/);
+      if (!m) { i++; continue; }
+      const start = parseTimestamp(m[1]); const end = parseTimestamp(m[2]); i++;
+      const tl = [];
+      while (i < lines.length && lines[i].trim() !== '') { tl.push(lines[i]); i++; }
+      items.push({ text: tl.join(' ').trim(), start, end });
+    }
+    return items.length > 0 ? items : null;
+  }
+  function parseVtt(content) {
+    return parseSrt(content.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, ''));
+  }
+  function parseTimestamp(ts) {
+    const m = ts.match(/(\d+):(\d{2}):(\d{2})[,.](\d{3})/);
+    if (!m) return 0;
+    return +m[1]*3600 + +m[2]*60 + +m[3] + +m[4]/1000;
+  }
+
+  // ---------- Script parsing ----------
+  // Returns { hook, handle, caption, notes: [...] }
+  function parseScript(input) {
+    // Pull out top-level hook + handle directives (anywhere)
+    let hook = null, handle = null, caption = null;
+    input = input.replace(/\[\[hook:([^\]]*)\]\]/g, (_, v) => { hook = v; return ''; });
+    input = input.replace(/\[\[handle:([^\]|]*)(?:\|([^\]]*))?\]\]/g, (_, h, c) => { handle = h; caption = c || ''; return ''; });
+
+    const paragraphs = input.split(/\n[ \t]*\n+/).map(p => p.trim()).filter(Boolean);
+    const notes = paragraphs.map(parseNote);
+    return { hook, handle, caption, notes };
+  }
+
+  function parseNote(para) {
+    const meta = {};
+    let body = para;
+    const directiveRe = /^\[\[(\w+)(?::([^\]]*))?\]\]\s*/;
+    let m;
+    while ((m = body.match(directiveRe))) {
+      const key = m[1].toLowerCase();
+      const val = m[2] ?? '';
+      if (['image','img','video','vid','place','tags','trigger','muted','loop','fit','z','behind','exit','sync','ttstext','narrate','ttsvoice','ttsrate','ttspitch','ttsvolume','ttsfx','ttsssml','ttspreset','ttspredelay','ttspostdelay','ttsboost','duck'].includes(key)) {
+        const k = key === 'img' ? 'image' : key === 'vid' ? 'video' : key;
+        if (key === 'behind') meta.behind = true;
+        else meta[k] = val;
+      } else break;
+      body = body.slice(m[0].length);
+    }
+    body = body.trimStart();
+    return { meta, body: parseInline(body) };
+  }
+
+  function parseInline(input) {
+    const tokens = []; let i = 0;
+    while (i < input.length) {
+      if (input[i] === '\\' && input.startsWith('[[', i+1)) {
+        tokens.push({ type: 'text', char: '[' });
+        tokens.push({ type: 'text', char: '[' });
+        i += 3; continue;
+      }
+      if (input.startsWith('[[', i)) {
+        const end = input.indexOf(']]', i+2);
+        if (end !== -1) {
+          const inner = input.slice(i+2, end);
+          if (inner.startsWith('pause:') || inner.startsWith('wait:')) {
+            const ms = parseInt(inner.split(':')[1], 10);
+            if (!isNaN(ms)) tokens.push({ type: 'pause', ms });
+          } else if (inner.includes('|')) {
+            const idx = inner.indexOf('|');
+            tokens.push({ type: 'typo', wrong: inner.slice(0, idx), right: inner.slice(idx+1) });
+          } else {
+            for (const c of '[[' + inner + ']]') tokens.push({ type: 'text', char: c });
+          }
+          i = end + 2; continue;
+        }
+      }
+      tokens.push({ type: 'text', char: input[i] }); i++;
+    }
+    return tokens;
+  }
+
+  function stripMarkup(text) {
+    return text
+      .replace(/\\?\[\[(?:pause|wait):\d+\]\]/g, '')
+      .replace(/\\?\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+      .replace(/\\\[\[/g, '[[');
+  }
+
+  /* ============ BGM / TTS ============ */
+  const audioState = {
+    bgm: null,
+    bgmUrl: null,
+    bgmName: '',
+    markers: [],
+    playStartWall: 0,
+    fadeTimer: null,
+  };
+
+  function setBgmFile(file) {
+    clearBgm();
+    audioState.bgmUrl = URL.createObjectURL(file);
+    audioState.bgmName = file.name;
+    audioState.bgm = new Audio(audioState.bgmUrl);
+    audioState.bgm.preload = 'auto';
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.volume = parseFloat($('bgm-volume').value) || 0;
+    $('bgm-name').textContent = file.name;
+  }
+
+  function clearBgm() {
+    if (audioState.bgm) {
+      audioState.bgm.pause();
+      audioState.bgm.src = '';
+    }
+    if (audioState.bgmUrl) URL.revokeObjectURL(audioState.bgmUrl);
+    audioState.bgm = null;
+    audioState.bgmUrl = null;
+    audioState.bgmName = '';
+    $('bgm-name').textContent = 'none';
+  }
+
+  function startBgm(opts) {
+    if (!audioState.bgm) return;
+    if (!$('bgm-auto').checked && !opts?.force) return;
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.currentTime = parseFloat($('bgm-start').value) || 0;
+    const targetVol = parseFloat($('bgm-volume').value) || 0;
+    const fadeIn = parseFloat($('bgm-fadein').value) || 0;
+    if (fadeIn > 0) {
+      audioState.bgm.volume = 0;
+      audioState.bgm.play().catch(() => {});
+      const steps = 20;
+      const stepMs = fadeIn / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.min(targetVol, (i / steps) * targetVol);
+        if (i >= steps) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+      }, stepMs);
+    } else {
+      audioState.bgm.volume = targetVol;
+      audioState.bgm.play().catch(() => {});
+    }
+  }
+
+  function stopBgm() {
+    if (!audioState.bgm) return;
+    if (audioState.fadeTimer) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+    const fadeOut = parseFloat($('bgm-fadeout').value) || 0;
+    if (fadeOut > 0) {
+      const startVol = audioState.bgm.volume;
+      const steps = 20;
+      const stepMs = fadeOut / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.max(0, startVol * (1 - i / steps));
+        if (i >= steps) {
+          clearInterval(audioState.fadeTimer); audioState.fadeTimer = null;
+          audioState.bgm.pause();
+        }
+      }, stepMs);
+    } else {
+      audioState.bgm.pause();
+    }
+  }
+
+  $('bgm-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) setBgmFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('bgm-clear')?.addEventListener('click', clearBgm);
+  $('bgm-volume')?.addEventListener('input', e => {
+    if (audioState.bgm) audioState.bgm.volume = parseFloat(e.target.value);
+  });
+  $('bgm-loop')?.addEventListener('change', e => {
+    if (audioState.bgm) audioState.bgm.loop = e.target.checked;
+  });
+  $('bgm-test')?.addEventListener('click', () => {
+    if (!audioState.bgm) return;
+    startBgm({ force: true });
+    setTimeout(() => stopBgm(), 4000);
+  });
+  $('bgm-stop-test')?.addEventListener('click', () => stopBgm());
+
+
+  // ---------- Skin/page alpha sliders ----------
+  function bindAlphaSlider(sliderId, cssVar, valId) {
+    const s = document.getElementById(sliderId), v = document.getElementById(valId);
+    if (!s) return;
+    const apply = () => {
+      const pct = +s.value;
+      document.documentElement.style.setProperty(cssVar, (pct / 100).toFixed(3));
+      if (v) v.textContent = pct + '%';
+    };
+    s.addEventListener('input', apply); apply();
+  }
+  bindAlphaSlider('page-bg-alpha', '--page-bg-alpha', 'page-bg-alpha-val');
+  bindAlphaSlider('skin-alpha', '--skin-alpha', 'skin-alpha-val');
+
+  // ---------- SrtScript: load .srt/.vtt/.json/.txt timed cues ----------
+  const SrtScript = {
+    cues: null, fileName: '',
+    parseTimestamp(s) {
+      const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+      if (m) return (+m[1])*3600 + (+m[2])*60 + (+m[3]) + (+m[4])/1000;
+      const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+      if (m2) return (+m2[1])*60 + (+m2[2]) + (+m2[3])/1000;
+      return parseFloat(s) || 0;
+    },
+    parseAny(text, name) {
+      const lower = (name || '').toLowerCase();
+      try {
+        if (lower.endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+          const j = JSON.parse(text);
+          if (Array.isArray(j)) return j.map(x => ({ start: +x.start, end: +x.end, text: x.text || x.word || '' }));
+          if (Array.isArray(j.cues)) return j.cues.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+          if (Array.isArray(j.segments)) return j.segments.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+        }
+      } catch {}
+      const cleaned = text.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+      const out = [];
+      const blocks = cleaned.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const lines = block.trim().split(/\r?\n/);
+        if (!lines.length) continue;
+        const ti = lines.findIndex(l => l.includes('-->'));
+        if (ti < 0) continue;
+        const [sStr, eStr] = lines[ti].split('-->').map(x => x.trim());
+        const start = this.parseTimestamp(sStr);
+        const end   = this.parseTimestamp(eStr);
+        const txt   = lines.slice(ti + 1).join('\n').trim();
+        if (txt) out.push({ start, end, text: txt });
+      }
+      return out;
+    },
+    load(file) {
+      const r = new FileReader();
+      r.onload = e => {
+        try { this.cues = this.parseAny(e.target.result, file.name); } catch { this.cues = null; }
+        this.fileName = file.name;
+        const info = document.getElementById('srt-script-info');
+        if (info) info.textContent = (this.cues && this.cues.length) ? `${this.cues.length} cues · ${file.name}` : 'parse failed';
+      };
+      r.readAsText(file);
+    },
+    clear() {
+      this.cues = null; this.fileName = '';
+      const info = document.getElementById('srt-script-info'); if (info) info.textContent = 'no file';
+    },
+    enabled() { return !!document.getElementById('srt-script-on')?.checked && this.cues && this.cues.length > 0; }
+  };
+  document.getElementById('srt-script-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) SrtScript.load(e.target.files[0]);
+    e.target.value = '';
+  });
+  document.getElementById('srt-script-clear')?.addEventListener('click', () => SrtScript.clear());
+  document.getElementById('srt-script-fill')?.addEventListener('input', e => {
+    const v = document.getElementById('srt-script-fill-val'); if (v) v.textContent = e.target.value + '%';
+  });
+  window.SrtScript = SrtScript;
+
+  // ---------- playSrtScript: wall-clock driven typing of timed cues ----------
+  // When 'speak each cue' is on and Edge TTS is connected, each cue's audio is pre-synthesized
+  // and its playbackRate is set so it lasts exactly cue.end-cue.start. Typing fills the same window.
+  async function playSrtScript() {
+    if (!SrtScript.cues || !SrtScript.cues.length) return;
+    const fill = (+(document.getElementById('srt-script-fill')?.value) || 92) / 100;
+    const between = document.getElementById('srt-script-between')?.value || 'keep';
+    const speakEach = !!document.getElementById('srt-script-tts')?.checked;
+    const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+
+    // Pre-synth audio for every cue in parallel, rate-fitted to its window.
+    const audioHandles = new Array(SrtScript.cues.length).fill(null);
+    if (speakEach && useEdge) {
+      await Promise.all(SrtScript.cues.map(async (cue, i) => {
+        if (!cue.text || !cue.text.trim()) return;
+        try {
+          const h = await edgeTtsSynth(cue.text);
+          if (h && isFinite(h.audio.duration) && h.audio.duration > 0) {
+            const cueDurMs = Math.max(120, (cue.end - cue.start) * 1000);
+            fitAudioToWindow(h.audio, cueDurMs);
+            audioHandles[i] = h;
+          }
+        } catch {}
+      }));
+    }
+
+    const t0 = performance.now();
+    const stackEl = document.getElementById('stack');
+    const hookEl2 = document.getElementById('hook');
+    function clearStage() { if (stackEl) stackEl.textContent = ''; if (hookEl2) hookEl2.textContent = ''; }
+    clearStage();
+    for (let i = 0; i < SrtScript.cues.length; i++) {
+      if (typeof abortFlag !== 'undefined' && abortFlag) break;
+      const cue = SrtScript.cues[i];
+      const cueStartMs = cue.start * 1000;
+      const cueEndMs   = cue.end   * 1000;
+      const waitMs     = cueStartMs - (window.__srtElapsed ? window.__srtElapsed(t0) : (performance.now() - t0));
+      if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+      if (typeof abortFlag !== 'undefined' && abortFlag) break;
+      if (between === 'clear') clearStage();
+      if (i > 0 && between === 'newline' && stackEl) stackEl.appendChild(document.createElement('br'));
+
+      if (audioHandles[i]) {
+        stopEdgeTts();
+        edgeTtsAudio = audioHandles[i].audio; edgeTtsAudioUrl = audioHandles[i].url;
+        audioHandles[i].play();   // fire-and-forget; rate already set to fit cue window
+      } else if (speakEach && typeof speak === 'function') {
+        try { speak(cue.text); } catch {}
+      }
+
+      const target = document.createElement('span');
+      if (stackEl) stackEl.appendChild(target); else if (hookEl2) hookEl2.appendChild(target);
+      const winMs = Math.max(80, (cueEndMs - cueStartMs) * fill);
+      const text = cue.text;
+      const perChar = text.length ? winMs / text.length : 0;
+      const cueStartAt = performance.now();
+      for (let k = 0; k < text.length; k++) {
+        if (typeof abortFlag !== 'undefined' && abortFlag) break;
+        const elapsed = performance.now() - cueStartAt;
+        const drift = ((k + 1) * perChar) - elapsed;
+        if (drift > 0) await new Promise(r => setTimeout(r, drift));
+        target.textContent += text[k];
+      }
+    }
+  }
+
+  // Synthesize Edge TTS without auto-playing. Returns { audio, donePromise, url, fx } or null.
+  // Pass `sceneOverride` (object) to apply per-scene FX overrides on top of UI values.
+  // The returned object has helpers: play(), startPlayback(preDelayMs?), which apply pre/post-delay + fade.
+  // ---------- Typing engine ----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let abortFlag = false;
+  let playing = false;
+
+  function settings() {
+    return {
+      base: +$('base-ms').value,
+      variance: +$('variance-ms').value,
+      thinkChance: (+$('think-chance').value) / 100,
+      thinkMax: +$('think-max').value,
+      sentence: +$('punct-sentence').value,
+      sentenceJ: +$('punct-sentence-j').value,
+      comma: +$('punct-comma').value,
+      commaJ: +$('punct-comma-j').value,
+    };
+  }
+  function jitter() { return (Math.random()+Math.random()+Math.random())/3 - 0.5; }
+  function charDelay(ch, prevCh, s) {
+    let d = s.base + jitter() * 2 * s.variance;
+    if (/[.!?]/.test(ch)) d += s.sentence + Math.random() * s.sentenceJ;
+    else if (/[,;:]/.test(ch)) d += s.comma + Math.random() * s.commaJ;
+    if (ch === '\n') d += 150 + Math.random() * 250;
+    if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) {
+      if (Math.random() < s.thinkChance) d += 400 + Math.random() * Math.max(0, s.thinkMax - 400);
+    }
+    return Math.max(5, d);
+  }
+
+  // ---------- Manual trigger wait ----------
+  let manualResolver = null;
+  function waitForManual() {
+    manualCue.classList.add('show');
+    return new Promise(r => { manualResolver = r; });
+  }
+  function fireManual() {
+    if (manualResolver) {
+      manualCue.classList.remove('show');
+      manualResolver();
+      manualResolver = null;
+    }
+  }
+
+  // ---------- Render a note ----------
+  let zCounter = 100;
+
+  function buildNote(scene, sceneIdx) {
+    const note = document.createElement('div');
+    note.className = 'tt-note';
+    const place = scene.meta.place || 'full';
+    if (place.startsWith('x=')) {
+      // custom: x=10,y=20,w=80,h=40 (percent of phone)
+      const parts = Object.fromEntries(place.split(',').map(p => p.split('=').map(s => s.trim())));
+      note.style.left   = (+parts.x || 0) + '%';
+      note.style.top    = (+parts.y || 0) + '%';
+      note.style.width  = (+parts.w || 100) + '%';
+      note.style.height = (+parts.h || 100) + '%';
+    } else {
+      note.dataset.place = place;
+    }
+    if (scene.meta.z) note.style.zIndex = scene.meta.z;
+    else if (scene.meta.behind) note.style.zIndex = 1;
+    else note.style.zIndex = ++zCounter;
+
+    // Media
+    const mediaWrap = document.createElement('div');
+    mediaWrap.className = 'tt-media';
+    let mediaEl = null;
+    if (scene.meta.video) {
+      const idx = parseInt(scene.meta.video, 10) - 1;
+      const v = videos[idx];
+      if (v) {
+        const video = document.createElement('video');
+        video.src = v.url;
+        video.muted = (scene.meta.muted ?? ($('vid-muted-default').checked ? 'true' : 'false')) === 'true';
+        video.loop = (scene.meta.loop ?? ($('vid-loop-default').checked ? 'true' : 'false')) === 'true';
+        video.autoplay = $('vid-autoplay-default').checked;
+        video.playsInline = true;
+        if (scene.meta.fit) video.style.objectFit = scene.meta.fit;
+        if ($('vid-tap-unmute').checked) {
+          const mute = document.createElement('div');
+          mute.className = 'tt-mute';
+          mute.textContent = '🔇';
+          mediaWrap.appendChild(mute);
+          const unmute = (e) => {
+            e?.stopPropagation();
+            video.muted = false;
+            video.controls = true;
+            mediaWrap.classList.add('unmuted');
+          };
+          mute.addEventListener('click', unmute);
+          video.addEventListener('click', unmute);
+        }
+        mediaWrap.appendChild(video);
+        mediaEl = video;
+        video.play().catch(() => {});
+      }
+    } else if (scene.meta.image) {
+      const idx = parseInt(scene.meta.image, 10) - 1;
+      const im = images[idx];
+      if (im) {
+        const img = document.createElement('img');
+        img.src = im.dataUrl;
+        if (scene.meta.fit) img.style.objectFit = scene.meta.fit;
+        mediaWrap.appendChild(img);
+        mediaEl = img;
+      }
+    }
+    if (mediaEl) note.appendChild(mediaWrap);
+    else note.classList.add('no-media');
+
+    // Text area
+    const textWrap = document.createElement('div');
+    textWrap.className = 'tt-text';
+    const typed = document.createElement('span'); typed.className = 'tt-typed';
+    const cursor = document.createElement('span'); cursor.className = 'tt-cursor';
+    // Apply current cursor style class
+    const cs = $('cursor-style').value;
+    if (cs === 'block') cursor.classList.add('block');
+    else if (cs === 'underline') cursor.classList.add('underline');
+    else if (cs === 'none') cursor.style.display = 'none';
+    textWrap.append(typed, cursor);
+    note.appendChild(textWrap);
+
+    // Hashtags
+    if (scene.meta.tags) {
+      const tagWrap = document.createElement('div');
+      tagWrap.className = 'tt-tags';
+      const tags = scene.meta.tags.split(',').map(t => t.trim()).filter(Boolean);
+      for (const t of tags) {
+        const tag = document.createElement('span');
+        tag.className = 'tt-tag';
+        tag.textContent = t.startsWith('#') ? t : '#' + t;
+        tagWrap.appendChild(tag);
+      }
+      note.appendChild(tagWrap);
+    }
+
+    stack.appendChild(note);
+    requestAnimationFrame(() => note.classList.add('appear'));
+    Sound.chime();
+
+    return { el: note, typed, cursor, mediaEl, isVideo: !!scene.meta.video };
+  }
+
+  function applyExit(scene) {
+    if (scene.meta.exit === 'all') {
+      stack.querySelectorAll('.tt-note').forEach(n => removeNote(n));
+    } else if (scene.meta.exit === 'previous') {
+      const all = stack.querySelectorAll('.tt-note');
+      if (all.length > 0) removeNote(all[all.length - 1]);
+    }
+  }
+  function removeNote(el) {
+    el.classList.add('exit');
+    setTimeout(() => el.remove(), 340);
+  }
+
+  // ---------- Typing into a note ----------
+  let prevCh;
+  async function typeIntoNote(noteRefs, tokens, s) {
+    const typoPause = +$('typo-pause').value;
+    const bsMs = +$('bs-ms').value;
+    prevCh = undefined;
+    for (const tok of tokens) {
+      if (abortFlag) return;
+      if (tok.type === 'pause') { await sleep(tok.ms); continue; }
+      if (tok.type === 'typo') {
+        for (const c of tok.wrong) {
+          if (abortFlag) return;
+          await sleep(charDelay(c, prevCh, s));
+          noteRefs.typed.textContent += c;
+          Sound.key();
+          prevCh = c;
+        }
+        await sleep(typoPause + Math.random() * typoPause * 1.5);
+        for (let i = 0; i < tok.wrong.length; i++) {
+          if (abortFlag) return;
+          await sleep(bsMs + Math.random() * bsMs * 0.6);
+          noteRefs.typed.textContent = noteRefs.typed.textContent.slice(0, -1);
+          Sound.backspace();
+        }
+        prevCh = noteRefs.typed.textContent.slice(-1) || undefined;
+        await sleep(bsMs * 2);
+        for (const c of tok.right) {
+          if (abortFlag) return;
+          await sleep(charDelay(c, prevCh, s));
+          noteRefs.typed.textContent += c;
+          Sound.key();
+          prevCh = c;
+        }
+        continue;
+      }
+      await sleep(charDelay(tok.char, prevCh, s));
+      noteRefs.typed.textContent += tok.char;
+      Sound.key();
+      prevCh = tok.char;
+    }
+  }
+
+  // ---------- Wait for trigger ----------
+  async function waitForTrigger(scene, noteRefs) {
+    const trig = scene.meta.trigger || 'default';
+    const defaultDelay = +$('default-trigger').value;
+    const fallback = +$('video-fallback').value;
+
+    if (trig === 'manual') {
+      await waitForManual();
+      return;
+    }
+    if (trig === 'typed') return;
+    if (trig === 'end') {
+      if (noteRefs.isVideo && noteRefs.mediaEl) {
+        // wait for video to end, OR fallback
+        let endResolved = false;
+        await Promise.race([
+          new Promise(r => { noteRefs.mediaEl.addEventListener('ended', () => { endResolved = true; r(); }, { once: true }); }),
+          sleep(fallback),
+        ]);
+      } else {
+        await sleep(defaultDelay);
+      }
+      return;
+    }
+    // numeric
+    const n = parseInt(trig, 10);
+    if (!isNaN(n)) { await sleep(n); return; }
+    await sleep(defaultDelay);
+  }
+
+  // ---------- Rate-match ----------
+  function applyRateMatch() {
+    if (!audioEl.src || !audioEl.duration || isNaN(audioEl.duration)) return;
+    const { notes } = parseScript($('script').value);
+    let totalChars = 0;
+    let overheadMs = 0;
+    const defaultDelay = +$('default-trigger').value;
+    const fallback = +$('video-fallback').value;
+    for (const n of notes) {
+      for (const t of n.body) {
+        if (t.type === 'text') totalChars++;
+        else if (t.type === 'typo') totalChars += t.wrong.length + t.right.length;
+        else if (t.type === 'pause') overheadMs += t.ms;
+      }
+      const trig = n.meta.trigger;
+      if (trig === 'manual') {} // can't predict
+      else if (trig === 'typed') {}
+      else if (trig === 'end') overheadMs += n.meta.video ? fallback : defaultDelay;
+      else {
+        const num = parseInt(trig || defaultDelay, 10);
+        if (!isNaN(num)) overheadMs += num;
+      }
+    }
+    if (totalChars === 0) return;
+    const totalMs = audioEl.duration * 1000;
+    const typingMs = Math.max(1000, totalMs - overheadMs);
+    const msPerChar = typingMs / totalChars;
+    const baseSlider = $('base-ms');
+    baseSlider.value = Math.max(+baseSlider.min, Math.min(+baseSlider.max, Math.round(msPerChar)));
+    baseSlider.dispatchEvent(new Event('input'));
+    const varSlider = $('variance-ms');
+    varSlider.value = Math.max(0, Math.min(+varSlider.max, Math.round(msPerChar * 0.25)));
+    varSlider.dispatchEvent(new Event('input'));
+  }
+
+  // ---------- Word-timed playback ----------
+  async function playWordTimed(parsed) {
+    try { audioEl.currentTime = 0; await audioEl.play(); }
+    catch (e) { console.warn('audio play blocked:', e); }
+
+    const gap = (+$('paragraph-gap').value) / 1000;
+    const paras = [];
+    let cur = [];
+    for (let i = 0; i < timingData.length; i++) {
+      const w = timingData[i];
+      if (i > 0 && (w.start - timingData[i-1].end) > gap && cur.length > 0) {
+        paras.push(cur); cur = [];
+      }
+      cur.push(w);
+    }
+    if (cur.length > 0) paras.push(cur);
+
+    const useScriptMeta = parsed.notes.length === paras.length;
+
+    for (let pi = 0; pi < paras.length; pi++) {
+      if (abortFlag) break;
+      const para = paras[pi];
+      const meta = useScriptMeta ? parsed.notes[pi].meta : {};
+      const scene = { meta, body: [] };
+
+      // Apply exit before creating
+      applyExit(scene);
+
+      // wait for first word
+      while (audioEl.currentTime < para[0].start && !abortFlag && !audioEl.ended) await sleep(15);
+      if (abortFlag) break;
+
+      const refs = buildNote(scene, pi);
+
+      // type each word in time
+      for (const w of para) {
+        if (abortFlag) break;
+        while (audioEl.currentTime < w.start && !abortFlag && !audioEl.ended) await sleep(15);
+        if (abortFlag) break;
+        const text = w.text;
+        if (!text) continue;
+        const wordDur = Math.max(50, (w.end - w.start) * 1000);
+        const perChar = wordDur / text.length;
+        for (const c of text) {
+          if (abortFlag) break;
+          refs.typed.textContent += c;
+          Sound.key();
+          await sleep(perChar);
+        }
+      }
+      if (abortFlag) break;
+      await waitForTrigger(scene, refs);
+    }
+
+    if (!abortFlag) { while (!audioEl.ended && !abortFlag) await sleep(50); }
+    audioEl.pause();
+  }
+
+  // ---------- Normal playback ----------
+  // ---------- TTS ↔ typing sync helpers ----------
+  function tokensToPlainText(tokens) {
+    let s = '';
+    for (const t of tokens) {
+      if (t.type === 'text') s += t.char;
+      else if (t.type === 'typo') s += t.right;
+    }
+    return s;
+  }
+  function countTypedChars(tokens) {
+    let n = 0;
+    for (const t of tokens) {
+      if (t.type === 'text') n++;
+      else if (t.type === 'typo') n += t.wrong.length * 2 + t.right.length;
+    }
+    return n;
+  }
+  function estimatePauseMs(tokens) {
+    let ms = 0;
+    for (const t of tokens) if (t.type === 'pause') ms += t.ms;
+    return ms;
+  }
+  // Estimate total natural typing time for a token list (mean — variance/jitter zero out).
+  function estimateTypingMs(tokens, s) {
+    const typoPause = +($('typo-pause')?.value) || 0;
+    const bsMs = +($('bs-ms')?.value) || 50;
+    const sentenceMean = (s.sentence || 0) + (s.sentenceJ || 0) / 2;
+    const commaMean = (s.comma || 0) + (s.commaJ || 0) / 2;
+    const thinkMean = (s.thinkChance || 0) * (400 + Math.max(0, (s.thinkMax || 0) - 400) / 2);
+    const nlMean = 275;
+    let total = 0, prevCh;
+    const contrib = (ch) => {
+      let d = s.base;
+      if (/[.!?]/.test(ch)) d += sentenceMean;
+      else if (/[,;:]/.test(ch)) d += commaMean;
+      if (ch === '\n') d += nlMean;
+      if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) d += thinkMean;
+      return Math.max(5, d);
+    };
+    for (const tok of tokens) {
+      if (tok.type === 'pause') { total += tok.ms; continue; }
+      if (tok.type === 'typo') {
+        for (const c of tok.wrong) { total += contrib(c); prevCh = c; }
+        total += typoPause * 1.75;
+        total += tok.wrong.length * bsMs * 1.3;
+        total += bsMs * 2;
+        for (const c of tok.right) { total += contrib(c); prevCh = c; }
+        continue;
+      }
+      total += contrib(tok.char);
+      prevCh = tok.char;
+    }
+    return total;
+  }
+  // Set audio.playbackRate so audio finishes in targetMs. Preserves pitch. Clamped 0.5–2.0.
+  function fitAudioToWindow(audio, targetMs, opts) {
+    opts = opts || {};
+    const minR = opts.minRate || 0.5;
+    const maxR = opts.maxRate || 2.0;
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0 || targetMs <= 0) return 1;
+    const desiredSec = targetMs / 1000;
+    let rate = audio.duration / desiredSec;
+    rate = Math.min(maxR, Math.max(minR, rate));
+    audio.playbackRate = rate;
+    try { audio.preservesPitch = true; } catch {}
+    try { audio.mozPreservesPitch = true; } catch {}
+    try { audio.webkitPreservesPitch = true; } catch {}
+    return rate;
+  }
+  function chunkTokensBySentence(tokens) {
+    const chunks = []; let cur = [];
+    const flush = () => { if (cur.length) { chunks.push(cur); cur = []; } };
+    for (const t of tokens) {
+      cur.push(t);
+      if (t.type === 'text' && /[.!?]/.test(t.char)) flush();
+      else if (t.type === 'typo' && /[.!?]/.test(t.right.slice(-1))) flush();
+    }
+    flush();
+    return chunks;
+  }
+  function getSyncMode(scene) {
+    const o = (scene?.meta?.sync || '').toLowerCase();
+    if (o === 'off' || o === 'stretch' || o === 'sentence') return o;
+    return $('tts-sync-mode')?.value || 'off';
+  }
+  function getNarrationText(scene, allItems) {
+    const ov = scene?.meta?.ttstext || scene?.meta?.narrate;
+    if (ov && ov.trim()) return ov;
+    if ($('tts-narr-on')?.checked) {
+      const t = ($('tts-narr-text')?.value || '').trim();
+      if (t) return t;
+    }
+    return buildSpeechText(scene, allItems);
+  }
+  function webSpeechUtter(text) {
+    if (!text || !text.trim() || !window.speechSynthesis) return null;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = parseFloat($('tts-rate').value) || 1;
+    u.pitch = parseFloat($('tts-pitch').value) || 1;
+    u.volume = parseFloat($('tts-volume').value) || 1;
+    const voiceName = $('tts-voice').value;
+    if (voiceName) {
+      const v = speechSynthesis.getVoices().find(x => x.name === voiceName);
+      if (v) u.voice = v;
+    }
+    return u;
+  }
+  function speakAndAwait(text, sceneOverride) {
+    // Returns a Promise that resolves when speaking finishes. Uses Edge TTS if on, else Web Speech.
+    return new Promise(async (resolve) => {
+      if (!text || !text.trim()) return resolve();
+      const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+      if (useEdge) {
+        stopEdgeTts();
+        const handle = await edgeTtsSynth(text, sceneOverride);
+        if (!handle) return resolve();
+        edgeTtsAudio = handle.audio; edgeTtsAudioUrl = handle.url;
+        await handle.play();
+        await handle.donePromise;
+        await handle.postDelayWait();
+        resolve();
+      } else {
+        const u = webSpeechUtter(text);
+        if (!u) return resolve();
+        u.onend = () => resolve();
+        u.onerror = () => resolve();
+        try { speechSynthesis.speak(u); } catch { resolve(); }
+      }
+    });
+  }
+
+  async function playNormal(parsed) {
+    const baseSettings = settings();
+    const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+    const padMs = +($('tts-sync-pad')?.value) || 0;
+    for (let i = 0; i < parsed.notes.length; i++) {
+      if (abortFlag) break;
+      const scene = parsed.notes[i];
+      applyExit(scene);
+      const refs = buildNote(scene, i);
+      await sleep(180);
+      await typeIntoNote(refs, scene.body, baseSettings);
+
+      if (abortFlag) break;
+      await waitForTrigger(scene, refs);
+    }
+  }
+
+  // ---------- Progress tracking ----------
+  let progressTimer = null;
+  function startProgressForAudio() {
+    if (!audioEl.src) return;
+    cancelAnimationFrame(progressTimer);
+    const tick = () => {
+      if (!audioEl.duration || isNaN(audioEl.duration)) {
+        progressTimer = requestAnimationFrame(tick); return;
+      }
+      const pct = Math.min(100, (audioEl.currentTime / audioEl.duration) * 100);
+      progressFill.style.width = pct + '%';
+      if (!audioEl.ended && !audioEl.paused) progressTimer = requestAnimationFrame(tick);
+    };
+    progressTimer = requestAnimationFrame(tick);
+  }
+  function startProgressForDuration(totalMs) {
+    cancelAnimationFrame(progressTimer);
+    const start = performance.now();
+    const tick = () => {
+      const elapsed = performance.now() - start;
+      const pct = Math.min(100, (elapsed / totalMs) * 100);
+      progressFill.style.width = pct + '%';
+      if (pct < 100 && !abortFlag) progressTimer = requestAnimationFrame(tick);
+    };
+    progressTimer = requestAnimationFrame(tick);
+  }
+  function resetProgress() {
+    cancelAnimationFrame(progressTimer);
+    progressFill.style.width = '0%';
+  }
+
+  // ---------- Play / Stop / Reset ----------
+  async function play() {
+    if (playing) return;
+    playing = true;
+    abortFlag = false;
+    Sound.resume();
+
+    audioState.playStartWall = performance.now();
+    resetTtsFirstNoteFlag();
+    startBgm();
+
+    stack.innerHTML = '';
+    zCounter = 100;
+    resetProgress();
+
+    // SRT-driven timed script overrides natural pacing
+    if (typeof SrtScript !== 'undefined' && SrtScript.enabled && SrtScript.enabled()) {
+      try { await playSrtScript(); } finally { playing = false; }
+      return;
+    }
+
+    const startDelay = (+$('start-delay').value) * 1000;
+    if (startDelay > 0) await sleep(startDelay);   // silent pre-roll (no countdown overlay)
+
+    const parsed = parseScript($('script').value);
+    if (parsed.hook !== null) hookEl.textContent = parsed.hook;
+    if (parsed.handle !== null) chHandleName.textContent = parsed.handle;
+    if (parsed.caption !== null) chHandleCaption.textContent = parsed.caption;
+
+    const syncMode = $('sync-mode').value;
+    const audioReady = !!audioEl.src && audioEl.duration && !isNaN(audioEl.duration);
+
+    if (syncMode === 'words' && timingData && audioReady) {
+      startProgressForAudio();
+      await playWordTimed(parsed);
+    } else {
+      if (syncMode === 'rate' && audioReady) applyRateMatch();
+      if ((syncMode === 'rate' || syncMode === 'words') && audioReady) {
+        try { audioEl.currentTime = 0; await audioEl.play(); }
+        catch (e) { console.warn('audio play blocked:', e); }
+        startProgressForAudio();
+      } else {
+        // Estimate total ms for progress
+        const s = settings();
+        let estMs = 0;
+        for (const n of parsed.notes) {
+          for (const t of n.body) {
+            if (t.type === 'text') estMs += s.base;
+            else if (t.type === 'typo') estMs += (t.wrong.length + t.right.length) * s.base + 500;
+            else if (t.type === 'pause') estMs += t.ms;
+          }
+          const trig = n.meta.trigger;
+          if (trig === 'end' && n.meta.video) estMs += +$('video-fallback').value;
+          else if (trig === 'manual') estMs += 3000;
+          else if (trig === 'typed') estMs += 100;
+          else estMs += parseInt(trig || $('default-trigger').value, 10);
+        }
+        startProgressForDuration(Math.max(1000, estMs));
+      }
+      await playNormal(parsed);
+      if (audioReady) audioEl.pause();
+    }
+    const naturalEnd = !abortFlag;
+    playing = false;
+    // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+    // (present/render/audiocap) does one take — refresh the source for a fresh take.
+    if (naturalEnd && !(window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash))) setTimeout(() => { if (!abortFlag) play(); }, 800);
+  }
+
+  function stop() {
+    abortFlag = true;
+    if (audioEl.src) audioEl.pause();
+    stopBgm();
+    cancelAnimationFrame(progressTimer);
+    if (manualResolver) { manualResolver(); manualResolver = null; manualCue.classList.remove('show'); }
+  }
+  function reset() {
+    stop();
+    stack.innerHTML = '';
+    zCounter = 100;
+    resetProgress();
+    if (audioEl.src) audioEl.currentTime = 0;
+  }
+
+  $('start').addEventListener('click', play);
+  $('stop').addEventListener('click', stop);
+  $('reset').addEventListener('click', reset);
+  $('hide').addEventListener('click', () => body.classList.toggle('hide-controls'));
+
+  // ---------- Keyboard ----------
+  document.addEventListener('keydown', e => {
+    const t = e.target;
+    const inField = t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT' || t.tagName === 'SELECT');
+    if (inField) return;
+    if (e.key === 'h' || e.key === 'H') {
+      body.classList.toggle('hide-controls');
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      if (manualResolver) {
+        fireManual();
+        e.preventDefault();
+      } else if (!playing) {
+        play();
+        e.preventDefault();
+      } else {
+        stop();
+        e.preventDefault();
+      }
+    } else if (e.key === 'Escape') {
+      stop();
+    }
+  });
+})();
+</script>
+<!-- ===== Universal OBS present mode (#present) — shared across sims ===== -->
+<style>
+  body.present { background: #000 !important; overflow: hidden !important; }
+  body.present, body.present * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  body.present *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  body.present #controls { display: none !important; }
+  body.present #stage { padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+  body.present .present-frame {
+    position: fixed !important; inset: 0 !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; min-height: 0 !important;
+    max-width: none !important; max-height: none !important;
+    margin: 0 !important; border: none !important; border-radius: 0 !important;
+    transform: none !important; box-shadow: none !important;
+    overflow: hidden !important;
+  }
+  body.present .present-frame .phone-screen {
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; margin: 0 !important; border: none !important;
+  }
+  body.present .frame-handle,
+  body.present .frame-size-readout,
+  body.present #hint, body.present #focus-banner,
+  body.present #resize-handle, body.present #controls-toggle,
+  body.present #drop-hint, body.present #rec-indicator,
+  body.present #stage-meta, body.present #stage-scale-info,
+  body.present #tt-drag-bar, body.present #tt-resize-grip, body.present #tt-size-pill,
+  body.present .tt-grip, body.present #controls-toggle { display: none !important; }
+  #obs-link-btn {
+    position: fixed; left: 12px; bottom: 12px; z-index: 99999;
+    background: #c2410c; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 12px; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.92;
+  }
+  #obs-link-btn:hover { opacity: 1; }
+  body.present #obs-link-btn { display: none !important; }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'sim:script:' + (location.pathname.split('/').pop() || 'sim');
+  var scriptEl = $('script');
+  function buildLink() {
+    var base = location.href.replace(/[#?].*$/, '');
+    var s = scriptEl ? scriptEl.value : '';
+    return base + '#present' + (s && s.trim() ? '&s=' + encodeURIComponent(s) : '');
+  }
+  function copyText(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); } catch (e) {} }
+  }
+  if (scriptEl) {
+    scriptEl.addEventListener('input', function () { try { localStorage.setItem(KEY, scriptEl.value); } catch (e) {} });
+  }
+  var params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (params.has('present')) {
+    var s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem(KEY); } catch (e) {} }
+    if (s && scriptEl) scriptEl.value = s;
+    var stage = $('stage');
+    var frame = (stage && stage.querySelector('#gmail-frame, #tt-frame, #frame, .phone-wrap')) || stage;
+    if (frame) frame.classList.add('present-frame');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('present', 'hide-controls');
+    setTimeout(function () {
+      var b = $('start') || $('btn-play');
+      if (b) b.click();
+    }, 1200);
+  } else {
+    var btn = document.createElement('button');
+    btn.id = 'obs-link-btn'; btn.type = 'button'; btn.textContent = '📋 OBS link';
+    btn.title = 'Copy a present-mode link (with your current script) to paste into an OBS Browser Source';
+    btn.addEventListener('click', function () {
+      copyText(buildLink());
+      var t = btn.textContent; btn.textContent = '✓ Copied!';
+      setTimeout(function () { btn.textContent = t; }, 1600);
+    });
+    document.body.appendChild(btn);
+  }
+})();
+</script>
+</body>
+</html>

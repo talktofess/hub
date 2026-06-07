@@ -1,0 +1,3998 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prompt Typer</title>
+<style>
+  :root {
+    /* ---------- Stage / page ---------- */
+    --bg-page:           #0e0f12;
+    --stage-padding:     40px;
+    --stage-align:       center;
+    --stage-justify:     center;
+
+    /* ---------- Prompt box ---------- */
+    --bg-box:            #1a1b1f;
+    --box-radius:        18px;
+    --box-padding-y:     28px;
+    --box-padding-x:     32px;
+    --box-max-width:     820px;
+    --box-min-height:    4em;
+    --box-shadow-x:      0px;
+    --box-shadow-y:      10px;
+    --box-shadow-blur:   40px;
+    --box-shadow-color:  rgba(0,0,0,0.35);
+    --box-border-width:  0px;
+    --box-border-color:  #2a2c33;
+
+    /* ---------- Typography ---------- */
+    --color-text:        #ececf1;
+    --color-placeholder: #6b6f78;
+    --font-family:       "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-size:         22px;
+    --font-weight:       400;
+    --line-height:       1.55;
+    --letter-spacing:    0em;
+
+    /* ---------- Lens / zoom (magnify text + vignette + centered give-way) ---------- */
+    --lens-mag:          1.5;
+    --lens-vignette:     0.5;
+
+    /* ---------- Cursor ---------- */
+    --color-cursor:      #ececf1;
+    --cursor-width:      2px;
+    --cursor-height:     1.1em;
+    --cursor-offset-y:   2px;
+    --cursor-margin-l:   1px;
+    --cursor-block-w:    0.55em;
+    --cursor-underline-h: 2px;
+    --cursor-blink-on:   0; /* 1 enables blink */
+
+    --countdown-weight:  300;
+    --countdown-bg:      rgba(0,0,0,0.0);
+
+    /* ---------- Skin transparency (lets bg-video peep through page chrome) ---------- */
+    --page-bg-alpha:     1;     /* 0..1, alpha of body background  */
+    --box-bg-alpha:      1;     /* 0..1, alpha of prompt-box bg    */
+
+    /* ---------- TikTok portrait stage ---------- */
+    --tt-stage-w:        1080px;
+    --tt-stage-h:        1920px;
+    --tt-stage-scale:    1;     /* set by JS to fit viewport       */
+    --tt-stage-bg:       #000;
+
+    /* ---------- Ghost words backdrop ---------- */
+    --ghost-min:         18px;
+    --ghost-max:         140px;
+    --ghost-opacity-lo:  0.08;
+    --ghost-opacity-hi:  0.35;
+    --ghost-rotate-max:  18;    /* degrees */
+    --ghost-color:       #ececf1;
+    --ghost-lifetime-ms: 4200;
+    --ghost-fade-ms:     600;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    /* page background is rendered as a separately-controllable tint over the bg media */
+    background: transparent;
+    color: #d6d7df;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    display: flex;
+  }
+  /* Page-bg tint sits between bg-media-layer and the stage so video can peep through */
+  #page-bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--bg-page);
+    opacity: var(--page-bg-alpha);
+    pointer-events: none;
+  }
+
+  /* ---------- Controls panel ---------- */
+  #controls {
+    width: 380px;
+    flex: 0 0 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #15161a;
+    border-right: 1px solid #2a2c33;
+    padding: 18px 18px 28px;
+    font-size: 13px;
+    transition: margin-left 200ms ease;
+    color: #c4c6cd;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+
+  #controls h1 {
+    font-size: 14px;
+    margin: 0 0 14px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #controls h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8a8d96;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #2a2c33;
+    padding-bottom: 4px;
+  }
+
+  /* ---------- Tabs ---------- */
+  #tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a2c33;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #8a8d96;
+    padding: 7px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab-btn:hover { color: #c4c6cd; background: transparent; }
+  .tab-btn.active {
+    color: #fff;
+    border-bottom-color: #4a6cf7;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tab-fade 160ms ease; }
+  @keyframes tab-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { flex: 1; color: #c4c6cd; }
+  .row input[type="number"], .row select, .row input[type="text"] {
+    width: 130px; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 6px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px;
+  }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="color"] {
+    width: 40px; height: 28px; padding: 0;
+    border: 1px solid #2a2c33; border-radius: 6px; background: #0e0f12;
+  }
+  .row .val { width: 56px; text-align: right; color: #8a8d96; font-variant-numeric: tabular-nums; }
+  .row input[type="checkbox"] { accent-color: #6b8fff; }
+
+  textarea#script {
+    width: 100%;
+    height: 220px;
+    background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px; font-family: var(--font-family); font-size: 13px;
+    resize: vertical;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    background: #2b2f3a; color: #ececf1;
+    border: 1px solid #3a3f4c; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #353a47; }
+  button.primary { background: #4a6cf7; border-color: #4a6cf7; }
+  button.primary:hover { background: #5b7afa; }
+  button.danger { background: #5a2a2a; border-color: #6a3535; }
+
+  .help {
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+    color: #a8abb3; font-size: 12px; line-height: 1.55;
+  }
+  .help code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: var(--font-family); font-size: 11.5px;
+  }
+
+  /* ---------- Stage ---------- */
+  #stage {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    align-items: var(--stage-align);
+    justify-content: var(--stage-justify);
+    padding: var(--stage-padding);
+    background: transparent;
+    overflow: auto;
+    position: relative;
+  }
+
+  /* Ghost-word backdrop layer (typed words floating in random fonts/sizes/positions) */
+  #ghost-layer {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  #ghost-layer .ghost {
+    position: absolute;
+    color: var(--ghost-color);
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.92);
+    transition: opacity var(--ghost-fade-ms) ease,
+                transform var(--ghost-lifetime-ms) cubic-bezier(.2,.6,.3,1);
+    will-change: opacity, transform;
+    text-shadow: 0 2px 18px rgba(0,0,0,0.45);
+    user-select: none;
+    -webkit-text-stroke: 0.5px rgba(255,255,255,0.05);
+  }
+
+  #prompt-box {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: var(--box-max-width);
+    background: transparent;
+    border-radius: var(--box-radius);
+    padding: var(--box-padding-y) var(--box-padding-x);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    font-weight: var(--font-weight);
+    line-height: var(--line-height);
+    letter-spacing: var(--letter-spacing);
+    min-height: var(--box-min-height);
+    border: var(--box-border-width) solid var(--box-border-color);
+    word-wrap: break-word;
+    transition: border-radius 150ms ease, border-color 150ms ease;
+  }
+  /* Box background as a separate layer so we can fade it independently of text. */
+  #prompt-box::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--bg-box);
+    border-radius: inherit;
+    opacity: var(--box-bg-alpha);
+    box-shadow: var(--box-shadow-x) var(--box-shadow-y) var(--box-shadow-blur) var(--box-shadow-color);
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  #prompt-box > * { position: relative; z-index: 1; }
+  body.no-frame #prompt-box::before {
+    opacity: 0;
+    box-shadow: none;
+  }
+  body.no-frame #prompt-box {
+    padding: 0;
+    border-width: 0;
+  }
+
+  /* ---------- #tt-frame: a real centering container in BOTH modes ---------- */
+  #tt-frame {
+    position: relative;
+    flex: 1 1 auto;             /* fill #stage by default */
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 0;
+  }
+  #tt-frame #ghost-layer { position: absolute; inset: 0; }
+
+  /* ---------- Lens / zoom: magnify the typed text, frame it with a vignette,
+     and run a "teleprompter" — typing starts vertically centered, then the
+     words scroll up (older lines rise + fade) so the caret stays centered.
+     Uses native scroll (scrollTop), so font magnification reflows cleanly.
+     Works in BOTH typer modes: prompt-box (plain) and note cards (notes-mode). ---------- */
+  #prompt-box, .prompt-note .note-body { transition: font-size 600ms cubic-bezier(.22,1,.36,1); }
+  /* magnify the body text in whichever mode is active. In note mode the typed text
+     flows into .note-body, whose size is set by responsive .note-shape rules — so
+     override it directly with !important. */
+  body.lens-on:not(.notes-mode) #prompt-box {
+    font-size: calc(var(--font-size) * var(--lens-mag, 1.5));
+  }
+  body.lens-on.notes-mode .prompt-note .note-body {
+    font-size: calc(var(--font-size) * var(--lens-mag, 1.5)) !important;
+  }
+  /* --- plain prompt mode: #tt-frame is the teleprompter viewport, #prompt-box the track --- */
+  body.lens-on:not(.notes-mode) #tt-frame {
+    justify-content: flex-start;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 22%, #000 80%, transparent 100%);
+  }
+  body.lens-on:not(.notes-mode) #tt-frame::-webkit-scrollbar { width: 0; height: 0; display: none; }
+  body.lens-on:not(.notes-mode) #prompt-box { margin-top: var(--cf-pad, 50vh); margin-bottom: var(--cf-pad, 50vh); }
+  /* --- note mode: #notes-host is the scroller; centre the first card + give-way fade --- */
+  body.lens-on.notes-mode #notes-host {
+    padding-top: 50vh; padding-bottom: 50vh;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 80%, transparent 100%);
+  }
+  body.lens-on.notes-mode #notes-host::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  #lens-vignette-fx {
+    position: absolute; inset: 0; pointer-events: none; z-index: 8;
+    opacity: 0; transition: opacity 600ms ease;
+    background: radial-gradient(ellipse 82% 74% at 50% 48%,
+      rgba(0,0,0,0) 38%,
+      rgba(0,0,0,calc(var(--lens-vignette, 0.5) * 0.5)) 72%,
+      rgba(0,0,0,var(--lens-vignette, 0.5)) 100%);
+  }
+  body.lens-on #lens-vignette-fx { opacity: 1; }
+
+  /* TikTok portrait mode locks the frame to a fixed 9:16 box */
+  body.tiktok-mode #stage {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: #1a1a1a;
+  }
+  body.tiktok-mode #tt-frame {
+    width: var(--tt-stage-w);
+    height: var(--tt-stage-h);
+    flex: 0 0 auto;
+    transform: scale(var(--tt-stage-scale));
+    transform-origin: center center;
+    background: var(--tt-stage-bg);
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.5);
+    padding: var(--stage-padding);
+  }
+  body.tiktok-mode #tt-frame #prompt-box,
+  body.tiktok-mode #tt-frame .prompt-note {
+    max-width: calc(var(--tt-stage-w) - 28px);
+  }
+
+  /* Responsive typography: scale notes down when the screen frame is narrow.
+     Uses container queries on #tt-frame, fallback to default size if unsupported. */
+  #tt-frame { container-type: inline-size; }
+  @container (max-width: 480px) {
+    .prompt-note .note-shape { padding: 14px 16px; font-size: 14px; }
+    .prompt-note .note-shape .note-meta { font-size: 10px; margin-bottom: 5px; padding-bottom: 4px; }
+    .prompt-note .note-shape .note-subject { font-size: 11.5px; }
+    .prompt-note .note-shape .note-body { line-height: 1.4; }
+    .prompt-note .note-shape.shape-sticky,
+    .prompt-note .note-shape.shape-polaroid,
+    .prompt-note .note-shape.shape-notebook { font-size: 14px; }
+    #notes-host { gap: 10px; padding: 8px 8px 18px; }
+  }
+  @container (max-width: 320px) {
+    .prompt-note .note-shape { padding: 10px 12px; font-size: 12px; }
+    .prompt-note .note-shape .note-meta { font-size: 9px; margin-bottom: 4px; }
+    .prompt-note .note-shape .note-subject { font-size: 10px; }
+    #notes-host { gap: 8px; padding: 6px 6px 14px; }
+  }
+
+  /* ---------- Resize grip on #tt-frame (single, middle-right, 2-axis) ---------- */
+  .tt-grip {
+    position: absolute;
+    background: linear-gradient(180deg, rgba(74,108,247,0.95), rgba(74,108,247,0.85));
+    border: 1px solid #ffffff;
+    box-shadow:
+      0 2px 10px rgba(0,0,0,0.55),
+      inset 0 0 0 2px rgba(255,255,255,0.18);
+    z-index: 26;
+    opacity: 0.95;
+    transition: opacity 120ms ease, transform 120ms ease, background 120ms ease;
+    display: none;
+    touch-action: none;
+  }
+  .tt-grip::before {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  .tt-grip:hover { opacity: 1; background: linear-gradient(180deg,#5b7afa,#4a6cf7); }
+
+  /* Single 2-axis grip on middle-right edge: drag horizontally → width, drag vertically → height */
+  #tt-resize-grip {
+    right: 6px; top: 50%;
+    width: 22px; height: 86px;
+    transform: translateY(-50%);
+    border-radius: 11px;
+    cursor: move;
+  }
+  #tt-resize-grip:hover { transform: translateY(-50%) scale(1.08); }
+  #tt-resize-grip::before {
+    inset: 12px 5px;
+    background:
+      /* horizontal lines (vertical-drag hint) */
+      repeating-linear-gradient(to bottom,
+        rgba(255,255,255,0.65) 0 2px, transparent 2px 6px),
+      /* corner crosshair tips top + bottom */
+      linear-gradient(to bottom,
+        rgba(255,255,255,0.6) 0 1px, transparent 1px 100%);
+  }
+  #tt-resize-grip::after {
+    content: '';
+    position: absolute;
+    top: 4px; bottom: 4px; left: 50%; width: 1px;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.55);
+    pointer-events: none;
+  }
+
+  #tt-drag-bar {
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    width: 56px; height: 6px;
+    background: rgba(255,255,255,0.28);
+    border-radius: 4px;
+    cursor: grab;
+    z-index: 26;
+    display: none;
+  }
+  #tt-drag-bar:hover { background: rgba(255,255,255,0.45); }
+  #tt-drag-bar:active { cursor: grabbing; }
+
+  /* Show grips whenever screen-mode is on AND grips-toggle is on */
+  body.tiktok-mode.show-grips .tt-grip,
+  body.tiktok-mode.show-grips #tt-drag-bar { display: block; }
+
+  /* size-info pill that fades in while dragging */
+  #tt-size-pill {
+    position: absolute;
+    right: 32px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #fff;
+    font: 11px ui-monospace, monospace;
+    padding: 3px 7px; border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 120ms ease;
+    z-index: 26;
+    white-space: nowrap;
+  }
+  body.tt-dragging #tt-size-pill { opacity: 1; }
+
+  /* ---------- Multi-note Note model ---------- */
+  #notes-host {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    z-index: 2;
+    display: flex; flex-direction: column;
+    gap: 16px;
+    align-items: center;              /* horizontal center  */
+    justify-content: flex-start;      /* anchor to top      */
+    pointer-events: auto;
+    box-sizing: border-box;
+    overflow-y: auto;                 /* scroll if cards overflow the frame */
+    overflow-x: hidden;
+    padding: 14px 14px 30px;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+  }
+  #notes-host::-webkit-scrollbar { width: 6px; }
+  #notes-host::-webkit-scrollbar-track { background: transparent; }
+  #notes-host::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+  body.notes-mode #prompt-box { display: none; }
+  body:not(.notes-mode) #notes-host { display: none; }
+
+  .prompt-note {
+    position: relative;
+    width: min(100%, var(--box-max-width));
+    max-width: 100%;
+    align-self: center;
+    margin: 0 auto;
+    border-radius: var(--box-radius);
+    overflow: visible;              /* let shape shadows/flap show without clipping */
+    transition: opacity 300ms ease, transform 300ms ease;
+    opacity: 0;
+    transform: translateY(8px);
+    box-sizing: border-box;
+  }
+  .prompt-note.visible { opacity: 1; transform: none; }
+  .prompt-note.done   { /* keep visible after typing finishes */ }
+  .prompt-note.fading { opacity: 0; transform: translateY(-8px); }
+
+  .prompt-note .note-bg-layer {
+    position: absolute; inset: 0; z-index: 0; overflow: hidden;
+    border-radius: inherit;
+  }
+  .prompt-note .note-bg-layer img,
+  .prompt-note .note-bg-layer video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .prompt-note .note-bg-tint {
+    position: absolute; inset: 0; z-index: 1; border-radius: inherit;
+    background: var(--bg-box);
+    pointer-events: none;
+  }
+
+  .prompt-note .note-content {
+    position: relative; z-index: 2;
+    padding: var(--box-padding-y) var(--box-padding-x);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    font-weight: var(--font-weight);
+    line-height: var(--line-height);
+    letter-spacing: var(--letter-spacing);
+    word-wrap: break-word;
+  }
+  .prompt-note .note-title {
+    display: block;
+    font-size: 1.35em;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin: 0 0 12px;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 380ms ease, transform 380ms ease;
+  }
+  .prompt-note .note-title.visible { opacity: 1; transform: none; }
+  .prompt-note .note-title.mid-body { margin: 14px 0; }
+  .prompt-note .note-lyrics {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .prompt-note .note-footnote {
+    display: block;
+    margin-top: 18px;
+    font-size: 0.82em;
+    color: var(--color-placeholder);
+    font-style: italic;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 420ms ease, transform 420ms ease;
+  }
+  .prompt-note .note-footnote.visible { opacity: 1; transform: none; }
+  .prompt-note .note-cursor {
+    display: inline-block;
+    width: var(--cursor-width);
+    height: var(--cursor-height);
+    background: var(--color-cursor);
+    vertical-align: text-bottom;
+    margin-left: var(--cursor-margin-l);
+    transform: translateY(var(--cursor-offset-y));
+  }
+
+  /* Sequential layout: notes stack vertically and only one is "active" typing. */
+  #notes-host.layout-stack .prompt-note { width: 100%; }
+  /* Parallel layout: notes side-by-side (wraps) */
+  #notes-host.layout-parallel {
+    flex-direction: row; flex-wrap: wrap;
+    justify-content: center; gap: 16px;
+  }
+  #notes-host.layout-parallel .prompt-note {
+    flex: 1 1 calc(50% - 16px);
+    max-width: 100%;
+    min-width: 260px;
+  }
+  /* Absolute layout: each note uses its own x/y */
+  #notes-host.layout-absolute {
+    position: relative; height: 100%;
+  }
+  #notes-host.layout-absolute .prompt-note {
+    position: absolute;
+  }
+
+  /* Per-note style overrides hooked via inline CSS variables */
+  .prompt-note[data-bg-alpha] .note-bg-tint { opacity: var(--note-bg-alpha, 1); }
+  .prompt-note.frameless .note-bg-tint { display: none; }
+
+  /* ===== Note shapes (envelope / sticky / polaroid / notebook / postcard / plain) =====
+     A shape note replaces the plain box look. The content area is a grid with named slots.
+     The .note-body span is where typing flows. */
+  .prompt-note.shaped {
+    background: transparent;
+  }
+  .prompt-note.shaped .note-bg-tint { display: none; }
+  .prompt-note.shaped .note-content { padding: 0; font-size: 17px; color: #2b2625; }
+  .prompt-note.shaped .note-content > * { all: revert; }
+  .prompt-note .note-shape {
+    position: relative;
+    padding: 22px 24px;
+    color: #2b2625;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    border-radius: 6px;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .prompt-note .note-shape .note-meta {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 2px 10px;
+    align-items: baseline;
+    font-size: 11.5px;
+    letter-spacing: 0.02em;
+    color: #6b6045;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed currentColor;
+    font-family: ui-monospace, "JetBrains Mono", "Menlo", monospace;
+  }
+  .prompt-note .note-shape .note-from { font-weight: 700; color: #2b2625; }
+  .prompt-note .note-shape .note-subject { grid-column: 1 / -1; font-size: 13px; color: #2b2625; font-weight: 600; font-family: inherit; letter-spacing: 0; }
+  .prompt-note .note-shape .note-time { text-align: right; opacity: 0.7; }
+  .prompt-note .note-shape .note-header { grid-column: 1 / -1; opacity: 0.75; font-style: italic; }
+  .prompt-note .note-shape .note-lock {
+    position: absolute; top: 12px; right: 14px;
+    font-size: 14px; opacity: 0.6;
+  }
+  .prompt-note .note-shape .note-body {
+    display: block;
+    white-space: pre-wrap;
+    line-height: 1.55;
+    min-height: 1.2em;
+  }
+  .prompt-note .note-shape .note-footer {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(0,0,0,0.18);
+    font-size: 13px;
+    font-style: italic;
+    opacity: 0.78;
+  }
+  .prompt-note .note-shape .note-cursor {
+    display: inline-block;
+    width: var(--cursor-width, 2px);
+    height: 1.05em;
+    background: currentColor;
+    margin-left: 2px;
+    transform: translateY(2px);
+    opacity: 0.85;
+  }
+
+  /* --- envelope --- */
+  .prompt-note .note-shape.shape-envelope {
+    background: #fdf6e3;
+    border: 1px solid #d3c8a8;
+    padding-top: 56px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .prompt-note .note-shape.shape-envelope::before {
+    content: '';
+    position: absolute; top: 0; left: -2px; right: -2px; height: 50px;
+    background:
+      linear-gradient(135deg, transparent 49.5%, #d3c8a8 50%, transparent 50.5%) no-repeat 50% 0 / 100% 100%,
+      #fbf0c2;
+    clip-path: polygon(0 0, 100% 0, 100% 60%, 50% 100%, 0 60%);
+  }
+  .prompt-note .note-shape.shape-envelope::after {
+    content: '★';
+    position: absolute; top: 8px; right: 14px;
+    color: #c44; font-size: 18px; transform: rotate(-12deg);
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.05);
+  }
+  .prompt-note .note-shape.shape-envelope .note-meta {
+    color: #6b6045;
+    border-color: #c5b88a;
+  }
+
+  /* --- sticky --- */
+  .prompt-note .note-shape.shape-sticky {
+    background: linear-gradient(135deg, #fff7a1 0%, #ffe366 100%);
+    color: #2b2625;
+    box-shadow: 4px 6px 14px rgba(0,0,0,0.25), inset 0 0 30px rgba(255,210,90,0.4);
+    transform: rotate(-2deg);
+    font-family: "Patrick Hand", "Caveat", cursive;
+    font-size: 1.18em;
+  }
+  .prompt-note .note-shape.shape-sticky .note-meta {
+    color: #6b5c1d; border-color: #c8b73a; font-family: ui-monospace, monospace;
+  }
+  .prompt-note .note-shape.shape-sticky .note-body { line-height: 1.45; }
+  .prompt-note .note-shape.shape-sticky .note-cursor { background: #2b2625; }
+
+  /* --- polaroid --- */
+  .prompt-note .note-shape.shape-polaroid {
+    background: #ffffff;
+    color: #1a1817;
+    padding: 22px 22px 72px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    border-radius: 3px;
+    font-family: "Caveat", "Patrick Hand", cursive;
+    font-size: 1.25em;
+    text-align: center;
+  }
+  .prompt-note .note-shape.shape-polaroid .note-meta {
+    font-family: ui-monospace, monospace; font-size: 10.5px;
+    border-color: rgba(0,0,0,0.18); color: #555;
+    text-align: left;
+  }
+  .prompt-note .note-shape.shape-polaroid .note-body { line-height: 1.4; }
+  .prompt-note .note-shape.shape-polaroid .note-footer {
+    position: absolute; left: 0; right: 0; bottom: 18px;
+    border-top: none; padding-top: 0;
+    text-align: center; font-style: normal;
+    font-family: "Caveat", "Patrick Hand", cursive; font-size: 1em;
+    opacity: 0.85;
+  }
+
+  /* --- notebook --- */
+  .prompt-note .note-shape.shape-notebook {
+    background-color: #fcfaf2;
+    background-image:
+      linear-gradient(to right, transparent 50px, #f0b4b4 50px, #f0b4b4 51px, transparent 51px),
+      repeating-linear-gradient(to bottom, transparent 0, transparent 27px, #d8e4ee 27px, #d8e4ee 28px);
+    color: #1a1817;
+    padding: 16px 22px 18px 62px;
+    border: 1px solid #e0d6b8;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.18);
+    font-family: "Patrick Hand", "Caveat", "Comic Sans MS", cursive;
+    font-size: 1.18em;
+    line-height: 28px;
+  }
+  .prompt-note .note-shape.shape-notebook .note-meta {
+    color: #6a5a40; border-color: #d8c89a;
+    font-family: ui-monospace, monospace; font-size: 11px;
+    margin-bottom: 14px;
+  }
+  .prompt-note .note-shape.shape-notebook .note-body { line-height: 28px; }
+  .prompt-note .note-shape.shape-notebook .note-body::before { content: ''; }
+
+  /* --- postcard --- */
+  .prompt-note .note-shape.shape-postcard {
+    background: #f2e8d0;
+    color: #1a1817;
+    padding: 18px 22px;
+    border: 1px solid #c5b88a;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.04em;
+    position: relative;
+  }
+  .prompt-note .note-shape.shape-postcard::after {
+    /* stamp */
+    content: 'POST';
+    position: absolute; top: 14px; right: 14px;
+    width: 46px; height: 56px;
+    background: #fff;
+    border: 1.5px dashed #b09a64;
+    display: flex; align-items: center; justify-content: center;
+    font-family: ui-monospace, monospace; font-size: 10px;
+    color: #b09a64; letter-spacing: 0.1em;
+    transform: rotate(4deg);
+  }
+  .prompt-note .note-shape.shape-postcard .note-meta {
+    color: #6b5b3a; border-color: #c5b88a;
+    grid-template-columns: auto 1fr;
+    padding-right: 70px; /* leave room for stamp */
+  }
+  .prompt-note .note-shape.shape-postcard .note-body {
+    column-count: 1;
+    line-height: 1.5;
+  }
+  .prompt-note .note-shape.shape-postcard .note-footer {
+    text-align: right; font-family: "Caveat", "Patrick Hand", cursive; font-size: 1.4em;
+    border-top: none; opacity: 1;
+  }
+
+  /* --- plain (default if no shape) --- */
+  .prompt-note .note-shape.shape-plain {
+    background: #1a1b1f;
+    color: #ececf1;
+    border: 1px solid #2a2c33;
+    font-family: var(--font-family);
+  }
+  .prompt-note .note-shape.shape-plain .note-meta { color: #8a8d96; border-color: #2a2c33; }
+  .prompt-note .note-shape.shape-plain .note-from { color: #ececf1; }
+  .prompt-note .note-shape.shape-plain .note-subject { color: #ececf1; }
+  .prompt-note .note-shape.shape-plain .note-cursor { background: #ececf1; }
+
+  /* When a shape is rendered, the surrounding .prompt-note bg layers stand down */
+  .prompt-note.shaped { background: transparent !important; border: 0; box-shadow: none; }
+  .prompt-note.shaped > .note-bg-layer { display: none; }
+  .prompt-note.shaped > .note-content { padding: 0; }
+
+  /* slightly randomized rotation per shape index can be set inline */
+  .prompt-note.shaped[data-rot] .note-shape { transform: rotate(var(--rot, 0deg)); }
+
+  /* ===== Per-note background media (video / image / audio + visualizer) ===== */
+  .note-shape .note-shape-media {
+    position: absolute; inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .note-shape .note-shape-media video,
+  .note-shape .note-shape-media img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .note-shape .note-shape-media canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    mix-blend-mode: screen;
+  }
+  .note-shape .note-shape-media audio { display: none; }
+
+  /* Dark legibility tint over media so text stays readable */
+  .note-shape .note-shape-media::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.55) 100%);
+    pointer-events: none;
+  }
+
+  /* When a note has media, the shape becomes "media mode": darker tint replaces
+     the paper look so the video shows through. The shape outline stays. */
+  .note-shape.has-media {
+    background: rgba(0,0,0,0.35) !important;
+    color: #ffffff !important;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .note-shape.has-media::before,
+  .note-shape.has-media::after { display: none; }  /* hide envelope flap / postcard stamp on media notes */
+  .note-shape.has-media .note-meta {
+    color: rgba(255,255,255,0.85) !important;
+    border-color: rgba(255,255,255,0.3) !important;
+  }
+  .note-shape.has-media .note-from,
+  .note-shape.has-media .note-subject { color: #ffffff !important; }
+  .note-shape.has-media .note-cursor { background: #ffffff !important; }
+  .note-shape.has-media .note-meta,
+  .note-shape.has-media .note-body,
+  .note-shape.has-media .note-footer,
+  .note-shape.has-media .note-lock {
+    position: relative; z-index: 2;
+  }
+
+  body.no-note-media .note-shape-media { display: none !important; }
+  body.no-note-media .note-shape.has-media {
+    background: revert !important; color: revert !important; text-shadow: none !important;
+  }
+
+  /* ===== Spawned media-only cards ([image N] / [video N] inline tokens) ===== */
+  .prompt-note.media-only {
+    background: transparent !important;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+  .prompt-note.media-only > .media-only-frame {
+    background: #fefefe;
+    padding: 10px 10px 14px;
+    border-radius: 4px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+    max-width: 86%;
+    display: inline-block;
+  }
+  .prompt-note.media-only img,
+  .prompt-note.media-only video {
+    display: block;
+    width: 100%;
+    max-width: 520px;
+    max-height: 60vh;
+    border-radius: 2px;
+    background: #111;
+  }
+  .prompt-note.media-only .media-only-caption {
+    font-family: var(--font-family);
+    font-size: 11px;
+    color: #2b2625;
+    margin-top: 6px;
+    text-align: center;
+    opacity: 0.65;
+  }
+  body.tiktok-mode #tt-frame .prompt-note.media-only > .media-only-frame {
+    padding: 6px 6px 10px;
+    max-width: 92%;
+  }
+  body.tiktok-mode #tt-frame .prompt-note.media-only img,
+  body.tiktok-mode #tt-frame .prompt-note.media-only video {
+    max-height: 38vh;
+  }
+
+  /* Notes editor card (in the controls sidebar) */
+  .note-edit-card {
+    background: #1a1b1f;
+    border: 1px solid #2a2c33;
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+  }
+  .note-edit-card.selected { border-color: #4a6cf7; }
+  .note-edit-card h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #8a8d96; margin: 0 0 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .note-edit-card h3 .nid { color: #4a6cf7; font-weight: 700; }
+  .note-edit-card h3 .gap { flex: 1; }
+  .note-edit-card h3 button {
+    padding: 2px 6px; font-size: 10px;
+    background: #2b2f3a; color: #c4c6cd;
+    border: 1px solid #3a3f4c; border-radius: 4px; cursor: pointer;
+  }
+  .note-edit-card h3 button.del { background: #5a2a2a; border-color: #6a3535; }
+  .note-edit-card textarea,
+  .note-edit-card input[type="text"] {
+    width: 100%; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 4px;
+    padding: 5px 7px; font: 12px var(--font-family);
+    resize: vertical;
+  }
+  .note-edit-card .field { margin-bottom: 5px; }
+  .note-edit-card .field label {
+    font-size: 10.5px; color: #8a8d96;
+    display: block; margin-bottom: 2px;
+  }
+  .note-edit-card .mini-row { display: flex; gap: 6px; align-items: center; }
+  .note-edit-card .mini-row > * { flex: 1; }
+  .note-edit-card .file-btn {
+    background: #2b2f3a; border: 1px solid #3a3f4c; border-radius: 4px;
+    padding: 4px 6px; font-size: 11px; color: #c4c6cd; cursor: pointer; text-align: center;
+  }
+  .note-edit-card .bg-info { font-size: 10px; color: #888; margin-top: 2px; }
+
+  #text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #placeholder {
+    color: var(--color-placeholder);
+    white-space: pre-wrap;
+  }
+
+  #cursor {
+    display: inline-block;
+    width: var(--cursor-width);
+    height: var(--cursor-height);
+    background: var(--color-cursor);
+    vertical-align: text-bottom;
+    margin-left: var(--cursor-margin-l);
+    transform: translateY(var(--cursor-offset-y));
+  }
+  #cursor.block {
+    width: var(--cursor-block-w);
+    background: var(--color-cursor);
+    opacity: 0.85;
+  }
+  #cursor.underline {
+    width: var(--cursor-block-w);
+    height: var(--cursor-underline-h);
+    background: var(--color-cursor);
+    transform: translateY(0);
+  }
+  body.cursor-blink #cursor { animation: blink 1s steps(2,start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
+
+  /* hint shown when controls are hidden */
+  #hint {
+    position: fixed; bottom: 12px; right: 16px;
+    color: #4a4d55; font-size: 11px;
+    font-family: var(--font-family);
+    opacity: 0; transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  body.hide-controls #hint { opacity: 1; }
+
+  /* countdown overlay */
+
+  /* ---------- Subtitle (used by Edge TTS section) ---------- */
+  .subtitle {
+    margin: 12px 0 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ff2c55;
+  }
+
+  /* ============ MOBILE LAYOUT ============ */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: visible; }
+    body {
+      flex-direction: column !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 0;
+      gap: 0;
+    }
+    /* Stage area on top */
+    #stage, #stage-wrap, .stage, .stage-wrap, main, #main {
+      width: 100% !important;
+      height: 60vh !important;
+      min-height: 320px;
+      flex: 0 0 auto !important;
+      position: relative !important;
+      top: auto !important;
+      order: 0;
+    }
+    /* Controls below */
+    #controls, .controls, aside, #sidebar {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: 1px solid #25252a !important;
+      margin: 0 !important;
+      position: relative !important;
+      order: 1;
+    }
+    body.hide-controls #controls { margin-left: 0 !important; margin-top: -100vh !important; }
+    /* Tabs scrollable horizontally */
+    #tabs, .tabs {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap !important;
+      scroll-snap-type: x proximity;
+    }
+    .tab-btn, .tab {
+      flex: 0 0 auto !important;
+      min-height: 36px;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+      scroll-snap-align: start;
+    }
+    /* Touch-friendly inputs */
+    button, .btn {
+      min-height: 38px;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+    }
+    .row { gap: 12px; margin: 4px 0; }
+    .row label { flex: 0 0 110px; font-size: 12px; }
+    .row input[type="text"], .row input[type="number"], .row input[type="url"], .row select, .row textarea {
+      min-height: 38px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+    .row input[type="range"] { min-height: 36px; }
+    .row input[type="color"] { width: 44px; height: 36px; }
+    .row input[type="checkbox"] { width: 22px; height: 22px; }
+    /* Stage padding shrink */
+    #stage { padding: 16px !important; }
+  }
+  @media (max-width: 600px) {
+    #stage, #stage-wrap, .stage, .stage-wrap { height: 55vh !important; }
+    .row label { flex: 0 0 95px; font-size: 11px; }
+    #controls { padding: 12px 12px 24px; }
+  }
+</style>
+</head>
+<body>
+<div id="bg-media-layer" style="position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;">
+  <video id="bg-video" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:1;" playsinline preload="auto"></video>
+  <video id="bg-video-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" playsinline preload="auto"></video>
+  <img id="bg-image" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;" alt="">
+  <img id="bg-image-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" alt="">
+  <audio id="bg-audio-only" style="display:none;"></audio>
+</div>
+<div id="page-bg-tint"></div>
+
+<aside id="controls">
+  <h1>Prompt Typer</h1>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="tab-notes">Notes</button>
+    <button class="tab-btn" data-tab="tab-script">Script</button>
+    <button class="tab-btn" data-tab="tab-tiktok">TikTok</button>
+    <button class="tab-btn" data-tab="tab-ghosts">Ghosts</button>
+    <button class="tab-btn" data-tab="tab-layout">Layout</button>
+    <button class="tab-btn" data-tab="tab-colors">Colors</button>
+    <button class="tab-btn" data-tab="tab-type">Type</button>
+    <button class="tab-btn" data-tab="tab-cursor">Cursor</button>
+    <button class="tab-btn" data-tab="tab-timing">Timing</button>
+    <button class="tab-btn" data-tab="tab-sound">Sound</button>
+    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+    <button class="tab-btn" data-tab="tab-sync">Sync</button>
+    <button class="tab-btn" data-tab="tab-srt-script">Script SRT</button>
+  </div>
+
+  <!-- ============ NOTES TAB ============ -->
+  <div class="tab-content active" id="tab-notes">
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:8px;">
+      Notes are <b>parsed directly from the Script tab</b>. Each <code>[[shape:X]]</code> starts a new note that types itself directly into that shape — no prompt, no send button.
+    </div>
+    <!-- Notes mode is always on. Toggle kept hidden + checked for legacy JS references. -->
+    <input type="checkbox" id="notes-mode-on" checked style="display:none;">
+    <div class="row">
+      <label>Playback</label>
+      <select id="notes-playback">
+        <option value="sequential" selected>Sequential (one after another)</option>
+        <option value="parallel">Parallel (all at once)</option>
+        <option value="staggered">Staggered (parallel + per-note delay)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Layout</label>
+      <select id="notes-layout">
+        <option value="stack" selected>Stacked (vertical)</option>
+        <option value="parallel">Side-by-side</option>
+        <option value="absolute">Absolute (per-note x/y)</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Between notes (s)</label>
+      <input type="number" id="notes-gap" value="0.6" min="0" max="20" step="0.1">
+    </div>
+    <div class="row">
+      <label>Clear screen between</label>
+      <input type="checkbox" id="notes-clear">
+    </div>
+    <div class="row">
+      <label>Random tilt (°)</label>
+      <input type="number" id="notes-tilt" value="3" min="0" max="20" step="1">
+    </div>
+
+    <h2 style="margin-top:14px;">Per-note media</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Upload videos / images / audio here. Reference by filename for full-card backgrounds: <code>[[bg-video:NAME]]</code>, <code>[[bg-image:NAME]]</code>, <code>[[bg-audio:NAME]]</code>. Reference by 1-based upload index <em>inline</em> in a note's body with <code>[image 1]</code> or <code>[video 1]</code> to spawn a sibling note (typing continues on the original).
+    </div>
+    <div class="row"><label>Media on notes</label><input type="checkbox" id="notes-media-on" checked></div>
+    <div class="row">
+      <label>Upload assets</label>
+      <input type="file" id="notes-assets-file" multiple accept="video/*,image/*,audio/*">
+    </div>
+    <div id="notes-assets-list" style="font-size:11px;color:#aaa;border:1px solid #2a2c33;border-radius:6px;padding:6px;background:#0e0f12;max-height:140px;overflow-y:auto;">
+      <div style="color:#666;text-align:center;padding:6px;">No assets — upload files above</div>
+    </div>
+    <div class="row" style="margin-top:6px;"><label>Cross-note continuity</label><input type="checkbox" id="notes-media-continue" checked title="if next note references the same filename, keep playback going"></div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="notes-media-mute"></div>
+    <div class="row"><label>Volume</label><input type="range" id="notes-media-volume" min="0" max="1" step="0.05" value="0.8"></div>
+
+    <h2 style="margin-top:14px;">Markup cheatsheet</h2>
+    <details class="help" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Tags reference</summary>
+      <div style="margin-top:8px;font-size:12px;line-height:1.65;">
+        <code>[[shape:envelope]]</code> · envelope · sticky · polaroid · notebook · postcard · plain<br>
+        <code>[[from:name]]</code> · who the note is from<br>
+        <code>[[time:6:48 AM]]</code> · timestamp<br>
+        <code>[[subject:…]]</code> · subject line<br>
+        <code>[[header:…]]</code> · top header (italic)<br>
+        <code>[[footer:…]]</code> · footer / signature<br>
+        <code>[[lock]]</code> · shows a 🔒 in the corner<br>
+        <code>[[bg-video:file.mp4]]</code> · vertical video bg behind this note<br>
+        <code>[[bg-image:pic.jpg]]</code> · still image bg<br>
+        <code>[[bg-audio:song.mp3]]</code> · audio plays during this note<br>
+        <code>[[bg-cover:cover.jpg]]</code> · cover art (great with bg-audio)<br>
+        <code>[[bg-visual:bars]]</code> · audio visualizer: <i>bars</i> / <i>wave</i> / <i>off</i><br>
+        <code>[[wrong|right]]</code> · types <i>wrong</i>, backspaces, types <i>right</i><br>
+        <code>[[pause:1500]]</code> · pauses 1500ms mid-typing<br>
+        <code>[image 1]</code> / <code>[[image:1]]</code> · drops image #1 as a sibling note, typing continues<br>
+        <code>[video 1]</code> / <code>[[video:1]]</code> · drops video #1 as a sibling note (1-based, in upload order)<br>
+        Blank line OR a new <code>[[shape:…]]</code> starts the next note.
+      </div>
+    </details>
+
+    <h2>Parsed notes</h2>
+    <div id="notes-list" style="display:flex;flex-direction:column;gap:0;font-size:11px;">
+      <div id="notes-empty" style="color:#666;padding:14px;text-align:center;">script empty — type some markup in the <b>Script</b> tab.</div>
+    </div>
+  </div>
+
+  <!-- ============ SCRIPT TAB ============ -->
+  <div class="tab-content" id="tab-script">
+    <textarea id="script" spellcheck="false">[[shape:envelope]][[header:From: m@home.net]][[from:mom]][[time:6:48 AM]][[subject:the back window]]
+hey kid. coffee's on. don't forget the back window today.
+
+[[shape:sticky]][[from:Anna]][[time:7:02 AM]][[subject:photo · the bridge]]
+sending the bridge photo
+the [[fag|fog]] lifted just in time
+
+[[shape:polaroid]][[footer:morning, east window]][[from:j]][[time:7:14 AM]][[subject:re: the apartment]]
+caught it just as the light came in
+felt like i was the only one who saw
+
+[[shape:notebook]][[header:errands]][[from:to-self]][[time:7:30 AM]][[subject:lists]][[lock]]
+buy bread
+fix the back window
+[[wirte|write]] back to mom
+
+[[shape:postcard]][[header:dear j]][[footer:— m]][[from:me]][[time:7:48 AM]][[subject:Drafts · for j]]
+the [[apartmnet|apartment]] is small. the window faces east. i wake up before the alarm now. tell me how you are in notes.</textarea>
+
+    <div class="btn-row">
+      <button id="start" class="primary">Start ▶</button>
+      <button id="stop" class="danger">Stop</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="hide">Hide panel (H)</button>
+    </div>
+
+    <h2>Presets</h2>
+    <div class="btn-row">
+      <button data-preset="fast">Fast</button>
+      <button data-preset="natural">Natural</button>
+      <button data-preset="slow">Slow</button>
+    </div>
+
+    <details class="help" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Markup cheatsheet</summary>
+      <div style="margin-top:8px">
+        <code>[[wrong|right]]</code> — types <i>wrong</i>, pauses, backspaces, types <i>right</i><br>
+        <code>[[pause:1500]]</code> — pauses for 1500 ms<br>
+        Plain text types with natural human variance.<br>
+        Newlines in the script are typed as line breaks.<br>
+        Use <code>\[[</code> to type a literal <code>[[</code>.
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ TIKTOK / SCREEN TAB ============ -->
+  <div class="tab-content" id="tab-tiktok">
+    <h2>Screen frame</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Lock the stage to a fixed-aspect "screen" — a phone, TikTok 9:16, square, custom. <b>Drag the bottom-right corner</b> of the on-screen frame to resize it live.
+    </div>
+    <div class="row"><label>Screen mode on</label><input type="checkbox" id="tt-on" checked></div>
+    <div class="row">
+      <label>Preset</label>
+      <select id="tt-preset">
+        <option value="390x844" selected>iPhone 14 — 390 × 844</option>
+        <option value="430x932">iPhone 14 Pro Max — 430 × 932</option>
+        <option value="360x800">Android — 360 × 800</option>
+        <option value="540x960">540 × 960 (9:16 small)</option>
+        <option value="720x1280">720 × 1280 (9:16 mid)</option>
+        <option value="1080x1920">1080 × 1920 (TikTok 9:16)</option>
+        <option value="1080x1350">1080 × 1350 (IG portrait 4:5)</option>
+        <option value="1080x1080">1080 × 1080 (square 1:1)</option>
+        <option value="custom">Custom W × H</option>
+      </select>
+    </div>
+    <div class="row"><label>Width (px)</label><input type="number" id="tt-w" value="390" min="200" max="4000"></div>
+    <div class="row"><label>Height (px)</label><input type="number" id="tt-h" value="844" min="200" max="4000"></div>
+    <div class="row"><label>Fit to viewport</label><input type="checkbox" id="tt-fit" checked></div>
+    <div class="row"><label>Show drag grips</label><input type="checkbox" id="tt-grips" checked></div>
+    <div class="row"><label>Frame bg color</label><input type="color" data-css="--tt-stage-bg" value="#000000"></div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;">
+      When the grip is on, the bottom-right corner of the frame is a live drag handle. Recorder area-preset can be set to <b>Match #stage element</b> to align capture to the frame.
+    </div>
+  </div>
+
+  <!-- ============ GHOSTS TAB ============ -->
+  <div class="tab-content" id="tab-ghosts">
+    <h2>Ghost words backdrop</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      As each word is typed, ghost copies float in behind the prompt in random fonts, sizes, rotations. Replaces the "notes" feel.
+    </div>
+    <div class="row"><label>Enable ghosts</label><input type="checkbox" id="ghost-on"></div>
+    <div class="row">
+      <label>Spawn density</label>
+      <input type="range" id="ghost-density" min="0" max="8" step="1" value="2">
+      <span class="val" id="ghost-density-val">2× per word</span>
+    </div>
+    <div class="row">
+      <label>Trigger on</label>
+      <select id="ghost-trigger">
+        <option value="word" selected>each completed word</option>
+        <option value="sentence">each sentence</option>
+        <option value="char">each character</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Font set</label>
+      <select id="ghost-fontset" multiple size="6" style="width:130px;height:120px;font-family:inherit;font-size:11px;">
+        <option value='"Patrick Hand", cursive' selected>Patrick Hand (handwritten)</option>
+        <option value='"Caveat", cursive' selected>Caveat (handwritten)</option>
+        <option value='Georgia, serif' selected>Georgia (serif)</option>
+        <option value='"Times New Roman", serif' selected>Times New Roman</option>
+        <option value='Impact, sans-serif' selected>Impact (heavy)</option>
+        <option value='"Comic Sans MS", cursive'>Comic Sans</option>
+        <option value='"Courier New", monospace' selected>Courier New (mono)</option>
+        <option value='"Brush Script MT", cursive'>Brush Script</option>
+        <option value='Verdana, sans-serif'>Verdana</option>
+        <option value='"Helvetica Neue", Helvetica, sans-serif' selected>Helvetica</option>
+      </select>
+    </div>
+    <div class="row"><label>Size min (px)</label><input type="number" data-css="--ghost-min" data-unit="px" value="18" min="6" max="400"></div>
+    <div class="row"><label>Size max (px)</label><input type="number" data-css="--ghost-max" data-unit="px" value="140" min="8" max="600"></div>
+    <div class="row">
+      <label>Opacity min</label>
+      <input type="range" id="ghost-op-lo" min="0" max="100" value="8">
+      <span class="val" id="ghost-op-lo-val">8%</span>
+    </div>
+    <div class="row">
+      <label>Opacity max</label>
+      <input type="range" id="ghost-op-hi" min="0" max="100" value="35">
+      <span class="val" id="ghost-op-hi-val">35%</span>
+    </div>
+    <div class="row"><label>Rotate max (°)</label><input type="number" data-css="--ghost-rotate-max" value="18" min="0" max="180"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--ghost-color" value="#ececf1"></div>
+    <div class="row"><label>Uppercase</label><input type="checkbox" id="ghost-upper"></div>
+    <div class="row"><label>Lifetime (ms)</label><input type="number" data-css="--ghost-lifetime-ms" value="4200" min="200" max="20000" step="100"></div>
+    <div class="row"><label>Fade (ms)</label><input type="number" data-css="--ghost-fade-ms" value="600" min="50" max="5000" step="50"></div>
+    <div class="row">
+      <label>Spawn area</label>
+      <select id="ghost-area">
+        <option value="stage" selected>Stage area</option>
+        <option value="full">Full viewport</option>
+        <option value="ring">Ring around prompt box</option>
+      </select>
+    </div>
+    <div class="row"><label>Float drift</label><input type="checkbox" id="ghost-drift" checked></div>
+    <div class="row">
+      <button id="ghost-clear" style="padding:5px 12px;font-size:11px;">clear ghosts</button>
+      <button id="ghost-test" style="padding:5px 12px;font-size:11px;margin-left:6px;">spawn test</button>
+    </div>
+  </div>
+
+  <!-- ============ LAYOUT TAB ============ -->
+  <div class="tab-content" id="tab-layout">
+    <h2>Lens / zoom</h2>
+    <div class="row"><label>Magnify &amp; center text</label><input type="checkbox" id="lens-on" checked></div>
+    <div class="row">
+      <label>Magnification (×)</label>
+      <input type="range" id="lens-mag" min="100" max="320" value="150">
+      <span class="val" id="lens-mag-val">1.5×</span>
+    </div>
+    <div class="row">
+      <label>Vignette strength</label>
+      <input type="range" id="lens-vignette" min="0" max="100" value="50">
+      <span class="val" id="lens-vignette-val">50%</span>
+    </div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin:-2px 0 8px;">
+      Magnifies the text (so you can author at a normal font size) and frames it like a lens. Typing starts centered; as it grows, older lines scroll up and fade — the words give way for new text.
+    </div>
+
+    <h2>Stage</h2>
+    <div class="row"><label>Padding (px)</label><input type="number" data-css="--stage-padding" data-unit="px" value="40" min="0" max="400"></div>
+    <div class="row">
+      <label>Vertical align</label>
+      <select data-css="--stage-align">
+        <option value="center" selected>Center</option>
+        <option value="flex-start">Top</option>
+        <option value="flex-end">Bottom</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Horizontal align</label>
+      <select data-css="--stage-justify">
+        <option value="center" selected>Center</option>
+        <option value="flex-start">Left</option>
+        <option value="flex-end">Right</option>
+      </select>
+    </div>
+
+    <h2>Prompt box</h2>
+    <div class="row"><label>Show prompt frame</label><input type="checkbox" id="show-frame" checked></div>
+    <div class="row">
+      <label>Box bg opacity</label>
+      <input type="range" id="box-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="box-bg-alpha-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Page bg opacity</label>
+      <input type="range" id="page-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="page-bg-alpha-val">100%</span>
+    </div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin:-2px 0 8px;">
+      Drop <b>Page bg</b> & <b>Box bg</b> to 0% with a bg video loaded → words appear from thin air over the video. Bubble text stays opaque.
+    </div>
+    <div class="row"><label>Max width (px)</label><input type="number" data-css="--box-max-width" data-unit="px" value="820" min="200" max="3000"></div>
+    <div class="row"><label>Min height (em)</label><input type="number" data-css="--box-min-height" data-unit="em" value="4" min="0" max="40" step="0.5"></div>
+    <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--box-padding-y" data-unit="px" value="28" min="0" max="200"></div>
+    <div class="row"><label>Padding X (px)</label><input type="number" data-css="--box-padding-x" data-unit="px" value="32" min="0" max="200"></div>
+    <div class="row"><label>Border radius (px)</label><input type="number" data-css="--box-radius" data-unit="px" value="18" min="0" max="200"></div>
+    <div class="row"><label>Border width (px)</label><input type="number" data-css="--box-border-width" data-unit="px" value="0" min="0" max="20"></div>
+    <div class="row"><label>Border color</label><input type="color" data-css="--box-border-color" value="#2a2c33"></div>
+
+    <h2>Shadow</h2>
+    <div class="row"><label>Offset X (px)</label><input type="number" data-css="--box-shadow-x" data-unit="px" value="0" min="-100" max="100"></div>
+    <div class="row"><label>Offset Y (px)</label><input type="number" data-css="--box-shadow-y" data-unit="px" value="10" min="-100" max="100"></div>
+    <div class="row"><label>Blur (px)</label><input type="number" data-css="--box-shadow-blur" data-unit="px" value="40" min="0" max="300"></div>
+    <div class="row">
+      <label>Opacity</label>
+      <input type="range" id="shadow-alpha" min="0" max="100" value="35">
+      <span class="val" id="shadow-alpha-val">35%</span>
+    </div>
+  </div>
+
+  <!-- ============ COLORS TAB ============ -->
+  <div class="tab-content" id="tab-colors">
+    <h2>Surface</h2>
+    <div class="row"><label>Page background</label><input type="color" data-css="--bg-page" value="#0e0f12"></div>
+    <div class="row"><label>Prompt background</label><input type="color" data-css="--bg-box" value="#1a1b1f"></div>
+
+    <h2>Text</h2>
+    <div class="row"><label>Text color</label><input type="color" data-css="--color-text" value="#ececf1"></div>
+    <div class="row"><label>Placeholder color</label><input type="color" data-css="--color-placeholder" value="#6b6f78"></div>
+
+    <h2>Cursor</h2>
+    <div class="row"><label>Cursor color</label><input type="color" data-css="--color-cursor" value="#ececf1"></div>
+  </div>
+
+  <!-- ============ TYPOGRAPHY TAB ============ -->
+  <div class="tab-content" id="tab-type">
+    <h2>Font</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--font-family">
+        <option value='"JetBrains Mono", ui-monospace, monospace' selected>JetBrains Mono / mono</option>
+        <option value='"Fira Code", ui-monospace, monospace'>Fira Code / mono</option>
+        <option value='Consolas, ui-monospace, monospace'>Consolas</option>
+        <option value='Menlo, ui-monospace, monospace'>Menlo</option>
+        <option value='"SF Mono", ui-monospace, monospace'>SF Mono</option>
+        <option value='ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'>System sans-serif</option>
+        <option value='Inter, ui-sans-serif, sans-serif'>Inter</option>
+        <option value='"Helvetica Neue", Helvetica, Arial, sans-serif'>Helvetica</option>
+        <option value='Georgia, "Times New Roman", serif'>Georgia / serif</option>
+        <option value='"Times New Roman", Times, serif'>Times New Roman</option>
+        <option value='"Courier New", Courier, monospace'>Courier New</option>
+        <option value='"Patrick Hand", "Caveat", cursive'>Handwritten</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="font-family-custom" placeholder='e.g. "Inter", sans-serif'></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--font-size" data-unit="px" value="22" min="6" max="240"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--font-weight">
+        <option value="100">100 Thin</option>
+        <option value="200">200 ExtraLight</option>
+        <option value="300">300 Light</option>
+        <option value="400" selected>400 Regular</option>
+        <option value="500">500 Medium</option>
+        <option value="600">600 SemiBold</option>
+        <option value="700">700 Bold</option>
+        <option value="800">800 ExtraBold</option>
+        <option value="900">900 Black</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--line-height" value="1.55" min="0.8" max="4" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--letter-spacing" data-unit="em" value="0" min="-0.1" max="0.5" step="0.01"></div>
+  </div>
+
+  <!-- ============ CURSOR TAB ============ -->
+  <div class="tab-content" id="tab-cursor">
+    <h2>Shape</h2>
+    <div class="row">
+      <label>Style</label>
+      <select id="cursor-style">
+        <option value="bar">Bar (│)</option>
+        <option value="block">Block (█)</option>
+        <option value="underline">Underline (_)</option>
+      </select>
+    </div>
+    <div class="row"><label>Bar width (px)</label><input type="number" data-css="--cursor-width" data-unit="px" value="2" min="1" max="40"></div>
+    <div class="row"><label>Height (em)</label><input type="number" data-css="--cursor-height" data-unit="em" value="1.1" min="0.2" max="3" step="0.05"></div>
+    <div class="row"><label>Block/underline width (em)</label><input type="number" data-css="--cursor-block-w" data-unit="em" value="0.55" min="0.1" max="3" step="0.05"></div>
+    <div class="row"><label>Underline thickness (px)</label><input type="number" data-css="--cursor-underline-h" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Vertical offset (px)</label><input type="number" data-css="--cursor-offset-y" data-unit="px" value="2" min="-30" max="30"></div>
+    <div class="row"><label>Left margin (px)</label><input type="number" data-css="--cursor-margin-l" data-unit="px" value="1" min="0" max="30"></div>
+    <div class="row"><label>Blink (when idle)</label><input type="checkbox" id="cursor-blink"></div>
+  </div>
+
+  <!-- ============ TIMING TAB ============ -->
+  <div class="tab-content" id="tab-timing">
+    <h2>Typing feel</h2>
+    <div class="row">
+      <label>Avg ms / char</label>
+      <input type="range" id="base-ms" min="5" max="500" value="80">
+      <span class="val" id="base-ms-val">80</span>
+    </div>
+    <div class="row">
+      <label>Variance ±</label>
+      <input type="range" id="variance-ms" min="0" max="400" value="50">
+      <span class="val" id="variance-ms-val">50</span>
+    </div>
+    <div class="row">
+      <label>Think pause chance</label>
+      <input type="range" id="think-chance" min="0" max="100" value="12">
+      <span class="val" id="think-chance-val">12%</span>
+    </div>
+    <div class="row">
+      <label>Max think (ms)</label>
+      <input type="number" id="think-max" value="2800" min="0" max="20000">
+    </div>
+    <div class="row">
+      <label>Sentence pause base (ms)</label>
+      <input type="number" id="punct-sentence" value="250" min="0" max="5000">
+    </div>
+    <div class="row">
+      <label>Sentence pause jitter (ms)</label>
+      <input type="number" id="punct-sentence-j" value="450" min="0" max="5000">
+    </div>
+    <div class="row">
+      <label>Comma pause base (ms)</label>
+      <input type="number" id="punct-comma" value="80" min="0" max="2000">
+    </div>
+    <div class="row">
+      <label>Comma pause jitter (ms)</label>
+      <input type="number" id="punct-comma-j" value="180" min="0" max="2000">
+    </div>
+    <div class="row">
+      <label>Backspace ms / char</label>
+      <input type="number" id="bs-ms" value="45" min="5" max="500">
+    </div>
+    <div class="row">
+      <label>Typo pause before bs (ms)</label>
+      <input type="number" id="typo-pause" value="400" min="0" max="3000">
+    </div>
+    <div class="row">
+      <label>Start delay (s)</label>
+      <input type="number" id="start-delay" value="0" min="0" max="60" step="0.5">
+    </div>
+
+  </div>
+
+  <!-- ============ SOUND TAB ============ -->
+  <div class="tab-content" id="tab-sound">
+    <h2>Typing sound</h2>
+    <div class="row"><label>Enable sound</label><input type="checkbox" id="sound-on" checked></div>
+    <div class="row">
+      <label>Style</label>
+      <select id="sound-style">
+        <option value="soft">Soft tock</option>
+        <option value="mechanical">Mechanical click</option>
+        <option value="typewriter">Typewriter</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Volume</label>
+      <input type="range" id="sound-vol" min="0" max="100" value="40">
+      <span class="val" id="sound-vol-val">40%</span>
+    </div>
+    <div class="row">
+      <label>Pitch base (Hz)</label>
+      <input type="number" id="sound-pitch" value="1500" min="100" max="6000" step="50">
+    </div>
+    <div class="row">
+      <label>Pitch jitter (Hz)</label>
+      <input type="number" id="sound-pitch-j" value="500" min="0" max="3000" step="50">
+    </div>
+    <div class="row">
+      <label>Decay (ms)</label>
+      <input type="number" id="sound-decay" value="60" min="5" max="500">
+    </div>
+  </div>
+
+  <!-- ============ AUDIO TAB (BGM + TTS + Sync markers) ============ -->
+  <div class="tab-content" id="tab-audio">
+    <h2>Background music (BGM)</h2>
+    <div class="row">
+      <label>Upload audio</label>
+      <input type="file" id="bgm-file" accept="audio/*">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>File</label>
+      <span id="bgm-name" style="color:#888;flex:1;">none</span>
+      <button id="bgm-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Auto-play with show</label><input type="checkbox" id="bgm-auto" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bgm-loop"></div>
+    <div class="row"><label>Volume</label><input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6"></div>
+    <div class="row"><label>Start offset (s)</label><input type="number" id="bgm-start" value="0" step="0.1" min="0"></div>
+    <div class="row"><label>Fade in (ms)</label><input type="number" id="bgm-fadein" value="0" min="0" step="50"></div>
+    <div class="row"><label>Fade out (ms)</label><input type="number" id="bgm-fadeout" value="0" min="0" step="50"></div>
+    <div class="row">
+      <label>Test</label>
+      <button id="bgm-test" style="padding:5px 12px;font-size:11px;flex:0 0 auto;">▶ Preview 4s</button>
+      <button id="bgm-stop-test" style="padding:5px 12px;font-size:11px;flex:0 0 auto;">⏹ Stop</button>
+    </div>
+
+    <h2>Background media (image / video / audio)</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Full-screen background layer. Image OR video (with or without sound), plus optional separate audio-only track. Ducks during TTS.
+    </div>
+    <div class="row"><label>Background video</label><input type="file" id="bg-video-file" accept="video/*"></div>
+    <div class="row"><label>Background image</label><input type="file" id="bg-image-file" accept="image/*"></div>
+    <div class="row"><label>Audio-only file</label><input type="file" id="bg-audio-file" accept="audio/*"></div>
+    <div class="row"><label>Video playlist (multiple)</label><input type="file" id="bg-playlist-files" accept="video/*" multiple></div>
+    <div class="row" style="align-items:flex-start;"><label>Queue</label>
+      <ol id="bg-playlist-list" style="flex:1;font-size:11px;color:#aaa;padding-left:20px;margin:0;list-style:decimal;max-height:120px;overflow-y:auto;"></ol>
+    </div>
+    <div class="row"><label>Playlist mode</label><input type="checkbox" id="bg-playlist-on" checked></div>
+    <div class="row"><label>Loop playlist</label><input type="checkbox" id="bg-playlist-loop" checked></div>
+    <div class="row"><label>Crossfade (ms)</label><input type="number" id="bg-crossfade-ms" value="250" min="0" max="3000" step="50"></div>
+    <div class="row">
+      <button id="bg-playlist-next" style="padding:4px 10px;font-size:11px;">⏭ next</button>
+      <button id="bg-playlist-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear queue</button>
+    </div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="bg-mute" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bg-loop" checked></div>
+    <div class="row"><label>Volume</label><input type="range" id="bg-volume" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="row"><label>Fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="fill">stretch (fill)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+    <div class="row"><label>Auto-start with show</label><input type="checkbox" id="bg-auto" checked></div>
+    <div class="row"><label>Duck during TTS</label><input type="checkbox" id="bg-duck-on" checked></div>
+    <div class="row"><label>Duck to (factor)</label><input type="range" id="bg-duck-to" min="0" max="1" step="0.05" value="0.3"></div>
+    <div class="row">
+      <button id="bg-play" style="padding:4px 10px;font-size:11px;">▶ play bg</button>
+      <button id="bg-stop" style="padding:4px 10px;font-size:11px;margin-left:4px;">⏹ stop</button>
+      <button id="bg-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear</button>
+    </div>
+
+    <h2>Audio-driven timing (sync markers)</h2>
+    <div class="row">
+      <label>Sync file</label>
+      <input type="file" id="sync-file" accept=".srt,.vtt,.json,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="sync-marker-count" style="color:#888;flex:1;">no markers</span>
+      <button id="sync-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use sync triggers</label><input type="checkbox" id="sync-enabled"></div>
+    <div class="row">
+      <label>Sync to</label>
+      <select id="sync-source">
+        <option value="bgm" selected>BGM playhead</option>
+        <option value="clock">Wall clock from play()</option>
+      </select>
+    </div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.6;margin-top:4px;">
+      Accepts <b>.srt</b>, <b>.vtt</b>, or <b>.json</b>. The Prompt Typer types one continuous script, so loaded sync markers do <i>not</i> drive timing here — use the <b>Sync</b> tab's word-timed mode for whisper-style word sync. These markers are only loaded/parsed for completeness.
+    </div>
+  </div>
+
+  <!-- ============ TTS TAB ============ -->
+  <div class="tab-content" id="tab-sync">
+    <h2>Audio</h2>
+    <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+    <div class="btn-row">
+      <button id="audio-pick">Load audio</button>
+      <button id="audio-clear">Clear</button>
+    </div>
+    <div id="audio-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No audio loaded</div>
+
+    <div class="row" style="margin-top:10px;">
+      <label>Sync mode</label>
+      <select id="sync-mode">
+        <option value="off">Off</option>
+        <option value="rate">Rate-match</option>
+        <option value="words">Word-timed</option>
+      </select>
+    </div>
+
+    <h2>Whisper timing</h2>
+    <input type="file" id="timing-input" accept=".srt,.vtt,.json" style="display:none;">
+    <div class="btn-row">
+      <button id="timing-pick">Load timing (.srt/.vtt/.json)</button>
+      <button id="timing-clear">Clear</button>
+    </div>
+    <div id="timing-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No timing file</div>
+
+    <div class="help" style="margin-top:8px">
+      <b>Rate-match</b> — typing speed adjusts so it ends with the audio.<br>
+      <b>Word-timed</b> — each word types at its Whisper timestamp. <i>Script textarea is ignored.</i><br>
+      Generate: <code>whisper audio.mp3 --word_timestamps True --output_format json</code>
+    </div>
+  </div>
+
+  <!-- ============ SCRIPT-SRT TAB ============ -->
+  <div class="tab-content" id="tab-srt-script">
+    <h2>Script from SRT / timestamped file</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Load an <b>.srt / .vtt / .json / .txt</b> with cue timestamps. Each cue's text is typed out so it lands during its [start..end] window. Wall-clock from <i>Play</i>. Overrides natural pacing.
+    </div>
+    <div class="row">
+      <label>Timed script file</label>
+      <input type="file" id="srt-script-file" accept=".srt,.vtt,.json,.txt,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="srt-script-info" style="color:#888;flex:1;">no file</span>
+      <button id="srt-script-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use timed script</label><input type="checkbox" id="srt-script-on"></div>
+    <div class="row">
+      <label>Between cues</label>
+      <select id="srt-script-between">
+        <option value="keep" selected>Keep previous text on screen</option>
+        <option value="clear">Clear screen between cues</option>
+        <option value="newline">Append newline between cues</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Cue typing fill</label>
+      <input type="range" id="srt-script-fill" min="20" max="100" value="92">
+      <span class="val" id="srt-script-fill-val">92%</span>
+    </div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-top:4px;">
+      <b>Fill</b> controls how much of each cue's [start..end] window the typing fills. Lower = leaves silence at the end of each cue.<br>
+      Plain <b>.txt</b> lines accepted as <code>HH:MM:SS,mmm --&gt; HH:MM:SS,mmm</code> followed by text.<br>
+      To <b>author</b> an SRT, open <code>srt-editor.html</code>, edit + export, then load here.
+    </div>
+  </div>
+</aside>
+
+<main id="stage">
+  <div id="tt-frame">
+    <div id="ghost-layer" aria-hidden="true"></div>
+    <div id="notes-host" class="layout-stack"></div>
+    <div id="prompt-box">
+      <span id="text"></span><span id="placeholder">Type a message…</span><span id="cursor"></span>
+    </div>
+    <div id="tt-drag-bar" title="drag to move (visual only)"></div>
+    <div id="tt-resize-grip" class="tt-grip" title="drag to resize — horizontal = width, vertical = height"></div>
+    <div id="tt-size-pill"></div>
+  </div>
+  <div id="lens-vignette-fx" aria-hidden="true"></div>
+</main>
+
+<div id="hint">press H to show controls · Space to play · Esc to stop</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const root = document.documentElement;
+  const body = document.body;
+  const textEl = $('text');
+  const placeholderEl = $('placeholder');
+  const cursorEl = $('cursor');
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ---------- Generic CSS-var binding (data-css="--var" data-unit="px") ----------
+  document.querySelectorAll('[data-css]').forEach(el => {
+    const prop = el.dataset.css;
+    const unit = el.dataset.unit || '';
+    const apply = () => {
+      let v = el.value;
+      if (unit && v !== '' && !String(v).endsWith(unit)) v = v + unit;
+      root.style.setProperty(prop, v);
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+    apply();
+  });
+
+  // ---------- Lens / zoom: magnify + vignette + teleprompter centering ----------
+  // The viewport (#tt-frame) scrolls; #prompt-box gets half-viewport margins so the
+  // caret can sit dead-centre. lensFollow() keeps it there as text is typed.
+  const ttFrame = $('tt-frame');
+  function lensOn() { return body.classList.contains('lens-on'); }
+  function lensMeasure() {
+    // half the visible height → top/bottom breathing room so line 1 starts centered
+    if (ttFrame) ttFrame.style.setProperty('--cf-pad', Math.round(ttFrame.clientHeight / 2) + 'px');
+  }
+  function lensFollow() {
+    if (!lensOn() || !ttFrame) return;
+    // caret offsetTop relative to the scrolling frame
+    let top = 0, el = cursorEl;
+    while (el && el !== ttFrame) { top += el.offsetTop; el = el.offsetParent; }
+    ttFrame.scrollTop = top - ttFrame.clientHeight / 2;
+  }
+  function applyLens(on) {
+    body.classList.toggle('lens-on', !!on);
+    if (on) { lensMeasure(); requestAnimationFrame(lensFollow); }
+    else if (ttFrame) ttFrame.scrollTop = 0;
+  }
+  if ($('lens-on')) {
+    $('lens-on').addEventListener('change', e => applyLens(e.target.checked));
+    applyLens($('lens-on').checked);
+  }
+  (() => {
+    const sl = $('lens-mag'), out = $('lens-mag-val');
+    if (!sl) return;
+    const apply = () => { const m = +sl.value / 100; out.textContent = m.toFixed(2).replace(/0$/, '') + '×'; root.style.setProperty('--lens-mag', m.toFixed(3)); requestAnimationFrame(lensFollow); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  (() => {
+    const sl = $('lens-vignette'), out = $('lens-vignette-val');
+    if (!sl) return;
+    const apply = () => { out.textContent = sl.value + '%'; root.style.setProperty('--lens-vignette', (+sl.value / 100).toFixed(2)); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  window.addEventListener('resize', () => { if (lensOn()) { lensMeasure(); lensFollow(); } });
+
+  // ---------- Sound module ----------
+  const Sound = (() => {
+    let ctx;
+    const ensureCtx = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    let enabled = true, volume = 0.4, style = 'soft';
+    let pitchBase = 1500, pitchJitter = 500, decayMs = 60;
+    let duckFactor = 1, duckAnim = null;
+
+    function setDuckFactor(target, durMs) {
+      if (duckAnim) cancelAnimationFrame(duckAnim);
+      duckAnim = null;
+      target = Math.max(0, Math.min(1, target));
+      if (!durMs || durMs <= 0) { duckFactor = target; return; }
+      const start = duckFactor;
+      const t0 = performance.now();
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) { duckFactor = target; duckAnim = null; return; }
+        duckFactor = start + (target - start) * t;
+        duckAnim = requestAnimationFrame(step);
+      };
+      duckAnim = requestAnimationFrame(step);
+    }
+    function duck(amountPct, fadeMs) { setDuckFactor(Math.max(0, 1 - (amountPct || 0) / 100), fadeMs); }
+    function unduck(fadeMs) { setDuckFactor(1, fadeMs); }
+
+    function noiseBurst(c, durationS, decayPow = 4) {
+      const n = Math.floor(c.sampleRate * durationS);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decayPow);
+      }
+      return buf;
+    }
+
+    function key() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      const decayS = decayMs / 1000;
+      const freq = pitchBase + Math.random() * pitchJitter;
+      if (style === 'typewriter') {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, decayS, 5);
+        const bf = c.createBiquadFilter();
+        bf.type = 'bandpass'; bf.frequency.value = freq + 700; bf.Q.value = 1.2;
+        const bg = c.createGain();
+        bg.gain.setValueAtTime(volume * duckFactor * 0.5, now);
+        bg.gain.exponentialRampToValueAtTime(0.001, now + decayS + 0.02);
+        burst.connect(bf).connect(bg).connect(c.destination);
+        burst.start(now);
+        const ping = c.createOscillator();
+        ping.type = 'triangle';
+        ping.frequency.value = freq + 100;
+        const pg = c.createGain();
+        pg.gain.setValueAtTime(volume * duckFactor * 0.15, now + 0.005);
+        pg.gain.exponentialRampToValueAtTime(0.001, now + decayS * 0.7);
+        ping.connect(pg).connect(c.destination);
+        ping.start(now + 0.005); ping.stop(now + decayS);
+      } else if (style === 'mechanical') {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, decayS * 0.85, 6);
+        const f = c.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = 3;
+        const g = c.createGain();
+        g.gain.setValueAtTime(volume * duckFactor * 0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + decayS);
+        burst.connect(f).connect(g).connect(c.destination);
+        burst.start(now);
+      } else {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, decayS * 0.7, 4);
+        const f = c.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = Math.max(300, freq * 0.6); f.Q.value = 1;
+        const g = c.createGain();
+        g.gain.setValueAtTime(volume * duckFactor * 0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + decayS * 0.8);
+        burst.connect(f).connect(g).connect(c.destination);
+        burst.start(now);
+      }
+    }
+
+    function backspace() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      const burst = c.createBufferSource();
+      burst.buffer = noiseBurst(c, 0.03, 5);
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = pitchBase * 0.6 + Math.random() * 200;
+      f.Q.value = 1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume * duckFactor * 0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      burst.connect(f).connect(g).connect(c.destination);
+      burst.start(now);
+    }
+
+    return {
+      key, backspace,
+      setEnabled: v => enabled = v,
+      setVolume: v => volume = v,
+      setStyle: v => style = v,
+      setPitch: v => pitchBase = v,
+      setPitchJitter: v => pitchJitter = v,
+      setDecay: v => decayMs = v,
+      duck, unduck,
+      get duckFactor() { return duckFactor; },
+      resume: ensureCtx,
+    };
+  })();
+
+  // ---------- Settings binding ----------
+  $('show-frame').addEventListener('change', e => body.classList.toggle('no-frame', !e.target.checked));
+  $('cursor-style').addEventListener('change', e => {
+    cursorEl.classList.remove('block', 'underline');
+    if (e.target.value === 'block') cursorEl.classList.add('block');
+    if (e.target.value === 'underline') cursorEl.classList.add('underline');
+  });
+  $('cursor-blink').addEventListener('change', e => body.classList.toggle('cursor-blink', e.target.checked));
+
+  // Custom font family
+  $('font-family-custom').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v) root.style.setProperty('--font-family', v);
+  });
+
+  // Shadow alpha → recompose box-shadow-color rgba
+  const shadowAlpha = $('shadow-alpha'), shadowAlphaVal = $('shadow-alpha-val');
+  shadowAlpha.addEventListener('input', () => {
+    const a = (+shadowAlpha.value / 100).toFixed(2);
+    shadowAlphaVal.textContent = shadowAlpha.value + '%';
+    root.style.setProperty('--box-shadow-color', `rgba(0,0,0,${a})`);
+  });
+
+  // Countdown backdrop alpha
+  const cdBg = $('countdown-bg'), cdBgVal = $('countdown-bg-val');
+  cdBg.addEventListener('input', () => {
+    const a = (+cdBg.value / 100).toFixed(2);
+    cdBgVal.textContent = cdBg.value + '%';
+    root.style.setProperty('--countdown-bg', `rgba(0,0,0,${a})`);
+  });
+
+  const bindRange = (id, suffix = '') => {
+    const el = $(id), out = $(id + '-val');
+    if (!el || !out) return;
+    const update = () => out.textContent = el.value + suffix;
+    el.addEventListener('input', update); update();
+  };
+  bindRange('base-ms');
+  bindRange('variance-ms');
+  bindRange('think-chance', '%');
+
+  // Sound bindings
+  $('sound-on').addEventListener('change', e => Sound.setEnabled(e.target.checked));
+  $('sound-style').addEventListener('change', e => Sound.setStyle(e.target.value));
+  const soundVol = $('sound-vol'), soundVolVal = $('sound-vol-val');
+  const updateVol = () => {
+    soundVolVal.textContent = soundVol.value + '%';
+    Sound.setVolume(+soundVol.value / 100);
+  };
+  soundVol.addEventListener('input', updateVol);
+  updateVol();
+  $('sound-pitch').addEventListener('input', e => Sound.setPitch(+e.target.value));
+  $('sound-pitch-j').addEventListener('input', e => Sound.setPitchJitter(+e.target.value));
+  $('sound-decay').addEventListener('input', e => Sound.setDecay(+e.target.value));
+
+  // ---------- Presets ----------
+  const presets = {
+    fast:    { base: 35,  variance: 20, think: 4,  thinkMax: 800 },
+    natural: { base: 80,  variance: 50, think: 12, thinkMax: 2800 },
+    slow:    { base: 140, variance: 70, think: 25, thinkMax: 4500 },
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      $('base-ms').value = p.base; $('base-ms').dispatchEvent(new Event('input'));
+      $('variance-ms').value = p.variance; $('variance-ms').dispatchEvent(new Event('input'));
+      $('think-chance').value = p.think; $('think-chance').dispatchEvent(new Event('input'));
+      $('think-max').value = p.thinkMax;
+    });
+  });
+
+  // ---------- Audio sync ----------
+  const audioEl = new Audio();
+  audioEl.preload = 'auto';
+  let audioUrl = null;
+  let timingData = null;
+
+  function setAudioInfo() {
+    const info = $('audio-info');
+    if (audioUrl && audioEl.duration && !isNaN(audioEl.duration)) {
+      info.textContent = `Loaded · ${audioEl.duration.toFixed(1)}s`;
+    } else if (audioUrl) {
+      info.textContent = 'Loaded · reading metadata…';
+    } else {
+      info.textContent = 'No audio loaded';
+    }
+  }
+
+  $('audio-pick').addEventListener('click', () => $('audio-input').click());
+  $('audio-clear').addEventListener('click', () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = null;
+    audioEl.src = '';
+    setAudioInfo();
+  });
+  $('audio-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(file);
+    audioEl.src = audioUrl;
+    audioEl.addEventListener('loadedmetadata', setAudioInfo, { once: true });
+    setAudioInfo();
+    e.target.value = '';
+  });
+
+  $('timing-pick').addEventListener('click', () => $('timing-input').click());
+  $('timing-clear').addEventListener('click', () => {
+    timingData = null;
+    $('timing-info').textContent = 'No timing file';
+  });
+  $('timing-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      timingData = parseTimingFile(content, file.name);
+      $('timing-info').textContent = timingData
+        ? `Loaded · ${timingData.length} ${timingData.length === 1 ? 'item' : 'items'}`
+        : 'Failed to parse — check file format';
+    } catch (err) {
+      timingData = null;
+      $('timing-info').textContent = 'Read error: ' + err.message;
+    }
+    e.target.value = '';
+  });
+
+  function parseTimingFile(content, filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'json') return parseWhisperJson(content);
+      if (ext === 'srt')  return parseSrt(content);
+      if (ext === 'vtt')  return parseVtt(content);
+    } catch (e) {
+      console.error('Timing parse error', e);
+    }
+    return null;
+  }
+
+  function parseWhisperJson(content) {
+    const data = JSON.parse(content);
+    const words = [];
+    if (Array.isArray(data.segments)) {
+      for (const seg of data.segments) {
+        if (Array.isArray(seg.words) && seg.words.length > 0) {
+          for (const w of seg.words) {
+            words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+          }
+        } else if (typeof seg.text === 'string') {
+          words.push({ text: seg.text, start: +seg.start, end: +seg.end });
+        }
+      }
+    } else if (Array.isArray(data.words)) {
+      for (const w of data.words) {
+        words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+      }
+    }
+    return words.length > 0 ? words : null;
+  }
+
+  function parseSrt(content) {
+    const lines = content.replace(/\r/g, '').split('\n');
+    const items = [];
+    let i = 0;
+    while (i < lines.length) {
+      while (i < lines.length && lines[i].trim() === '') i++;
+      if (i >= lines.length) break;
+      if (/^\d+$/.test(lines[i].trim())) i++;
+      if (i >= lines.length) break;
+      const m = lines[i].match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{3})/);
+      if (!m) { i++; continue; }
+      const start = parseTimestamp(m[1]);
+      const end = parseTimestamp(m[2]);
+      i++;
+      const textLines = [];
+      while (i < lines.length && lines[i].trim() !== '') {
+        textLines.push(lines[i]);
+        i++;
+      }
+      items.push({ text: textLines.join(' ').trim(), start, end });
+    }
+    return items.length > 0 ? items : null;
+  }
+
+  function parseVtt(content) {
+    const noHeader = content.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+    return parseSrt(noHeader);
+  }
+
+  function parseTimestamp(ts) {
+    const m = ts.match(/(\d+):(\d{2}):(\d{2})[,.](\d{3})/);
+    if (!m) return 0;
+    return +m[1] * 3600 + +m[2] * 60 + +m[3] + +m[4] / 1000;
+  }
+
+  function stripMarkup(text) {
+    return text
+      .replace(/\\?\[\[(?:pause|wait):\d+\]\]/g, '')
+      .replace(/\\?\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+      .replace(/\\\[\[/g, '[[');
+  }
+
+  function applyRateMatch() {
+    if (!audioEl.src || !audioEl.duration || isNaN(audioEl.duration)) return;
+    const text = stripMarkup($('script').value);
+    const charCount = text.length;
+    if (charCount === 0) return;
+    const totalMs = audioEl.duration * 1000;
+    const msPerChar = totalMs / charCount;
+    const baseSlider = $('base-ms');
+    baseSlider.value = Math.max(+baseSlider.min, Math.min(+baseSlider.max, Math.round(msPerChar)));
+    baseSlider.dispatchEvent(new Event('input'));
+    const varSlider = $('variance-ms');
+    varSlider.value = Math.max(0, Math.min(+varSlider.max, Math.round(msPerChar * 0.25)));
+    varSlider.dispatchEvent(new Event('input'));
+  }
+
+  // ---------- Script parsing ----------
+  // Recognizes:
+  //   [[pause:N]]        → { type: 'pause', ms }
+  //   [[wrong|right]]    → { type: 'typo', wrong, right }
+  //   [[image:N]]        → { type: 'media', kind: 'image', idx }
+  //   [[video:N]]        → { type: 'media', kind: 'video', idx }
+  //   [image N]          → { type: 'media', kind: 'image', idx }   (single-bracket variant)
+  //   [video N]          → { type: 'media', kind: 'video', idx }
+  //   \[[                → literal "[["
+  function parseScript(input) {
+    const tokens = [];
+    let i = 0;
+    const singleMediaRe = /^\[(image|video)\s+(\d+)\]/;
+    while (i < input.length) {
+      if (input[i] === '\\' && input.startsWith('[[', i + 1)) {
+        tokens.push({ type: 'text', char: '[' });
+        tokens.push({ type: 'text', char: '[' });
+        i += 3; continue;
+      }
+      if (input.startsWith('[[', i)) {
+        const end = input.indexOf(']]', i + 2);
+        if (end !== -1) {
+          const inner = input.slice(i + 2, end);
+          if (inner.startsWith('pause:')) {
+            const ms = parseInt(inner.slice(6), 10);
+            if (!isNaN(ms)) tokens.push({ type: 'pause', ms });
+          } else if (/^image:\d+$/.test(inner)) {
+            tokens.push({ type: 'media', kind: 'image', idx: +inner.slice(6) });
+          } else if (/^video:\d+$/.test(inner)) {
+            tokens.push({ type: 'media', kind: 'video', idx: +inner.slice(6) });
+          } else if (inner.includes('|')) {
+            const idx = inner.indexOf('|');
+            const wrong = inner.slice(0, idx);
+            const right = inner.slice(idx + 1);
+            tokens.push({ type: 'typo', wrong, right });
+          } else {
+            for (const c of '[[' + inner + ']]') tokens.push({ type: 'text', char: c });
+          }
+          i = end + 2;
+          continue;
+        }
+      }
+      // single-bracket [image N] / [video N]
+      if (input[i] === '[') {
+        const sb = input.slice(i).match(singleMediaRe);
+        if (sb) {
+          tokens.push({ type: 'media', kind: sb[1], idx: +sb[2] });
+          i += sb[0].length;
+          continue;
+        }
+      }
+      tokens.push({ type: 'text', char: input[i] });
+      i++;
+    }
+    return tokens;
+  }
+
+  // ---------- Timing ----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function settings() {
+    return {
+      base: +$('base-ms').value,
+      variance: +$('variance-ms').value,
+      thinkChance: (+$('think-chance').value) / 100,
+      thinkMax: +$('think-max').value,
+      sentencePause: +$('punct-sentence').value,
+      sentenceJ: +$('punct-sentence-j').value,
+      commaPause: +$('punct-comma').value,
+      commaJ: +$('punct-comma-j').value,
+    };
+  }
+
+  function jitter() {
+    return (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
+  }
+
+  function charDelay(ch, prevCh, s) {
+    let d = s.base + jitter() * 2 * s.variance;
+    if (/[.!?]/.test(ch)) d += s.sentencePause + Math.random() * s.sentenceJ;
+    else if (/[,;:]/.test(ch)) d += s.commaPause + Math.random() * s.commaJ;
+    if (ch === '\n') d += 150 + Math.random() * 250;
+    if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) {
+      if (Math.random() < s.thinkChance) {
+        d += 400 + Math.random() * Math.max(0, s.thinkMax - 400);
+      }
+    }
+    return Math.max(5, d);
+  }
+
+  /* ============ BGM / TTS / SYNC ============ */
+  const audioState = {
+    bgm: null,
+    bgmUrl: null,
+    bgmName: '',
+    markers: [],
+    playStartWall: 0,
+    fadeTimer: null,
+  };
+
+  function setBgmFile(file) {
+    clearBgm();
+    audioState.bgmUrl = URL.createObjectURL(file);
+    audioState.bgmName = file.name;
+    audioState.bgm = new Audio(audioState.bgmUrl);
+    audioState.bgm.preload = 'auto';
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.volume = parseFloat($('bgm-volume').value) || 0;
+    $('bgm-name').textContent = file.name;
+  }
+
+  function clearBgm() {
+    if (audioState.bgm) {
+      audioState.bgm.pause();
+      audioState.bgm.src = '';
+    }
+    if (audioState.bgmUrl) URL.revokeObjectURL(audioState.bgmUrl);
+    audioState.bgm = null;
+    audioState.bgmUrl = null;
+    audioState.bgmName = '';
+    $('bgm-name').textContent = 'none';
+  }
+
+  function startBgm(opts) {
+    if (!audioState.bgm) return;
+    if (!$('bgm-auto').checked && !opts?.force) return;
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.currentTime = parseFloat($('bgm-start').value) || 0;
+    const targetVol = parseFloat($('bgm-volume').value) || 0;
+    const fadeIn = parseFloat($('bgm-fadein').value) || 0;
+    if (fadeIn > 0) {
+      audioState.bgm.volume = 0;
+      audioState.bgm.play().catch(() => {});
+      const steps = 20;
+      const stepMs = fadeIn / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.min(targetVol, (i / steps) * targetVol);
+        if (i >= steps) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+      }, stepMs);
+    } else {
+      audioState.bgm.volume = targetVol;
+      audioState.bgm.play().catch(() => {});
+    }
+  }
+
+  function stopBgm() {
+    if (!audioState.bgm) return;
+    if (audioState.fadeTimer) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+    const fadeOut = parseFloat($('bgm-fadeout').value) || 0;
+    if (fadeOut > 0) {
+      const startVol = audioState.bgm.volume;
+      const steps = 20;
+      const stepMs = fadeOut / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.max(0, startVol * (1 - i / steps));
+        if (i >= steps) {
+          clearInterval(audioState.fadeTimer); audioState.fadeTimer = null;
+          audioState.bgm.pause();
+        }
+      }, stepMs);
+    } else {
+      audioState.bgm.pause();
+    }
+  }
+
+  $('bgm-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) setBgmFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('bgm-clear')?.addEventListener('click', clearBgm);
+  $('bgm-volume')?.addEventListener('input', e => {
+    if (audioState.bgm) audioState.bgm.volume = parseFloat(e.target.value);
+  });
+  $('bgm-loop')?.addEventListener('change', e => {
+    if (audioState.bgm) audioState.bgm.loop = e.target.checked;
+  });
+  $('bgm-test')?.addEventListener('click', () => {
+    if (!audioState.bgm) return;
+    startBgm({ force: true });
+    setTimeout(() => stopBgm(), 4000);
+  });
+  $('bgm-stop-test')?.addEventListener('click', () => stopBgm());
+
+  /* ===== SYNC FILE (markers only — typer is continuous, so these don't drive timing) ===== */
+  function audioParseTimestamp(s) {
+    const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+    if (m) return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
+    const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+    if (m2) return (+m2[1]) * 60000 + (+m2[2]) * 1000 + (+m2[3]);
+    return parseFloat(s) || 0;
+  }
+
+  function audioParseSrt(text) {
+    const out = [];
+    text = text.replace(/^WEBVTT.*?\n\n/s, '');
+    const blocks = text.split(/\n\s*\n/);
+    for (const block of blocks) {
+      const lines = block.trim().split(/\r?\n/);
+      if (!lines.length) continue;
+      const tIdx = lines.findIndex(l => l.includes('-->'));
+      if (tIdx < 0) continue;
+      const [s, e] = lines[tIdx].split('-->').map(x => audioParseTimestamp(x.trim()));
+      const txt = lines.slice(tIdx + 1).join(' ').trim();
+      out.push({ start: s, end: e, text: txt });
+    }
+    return out;
+  }
+
+  function loadSyncFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      let markers = [];
+      try {
+        if (/\.json$/i.test(file.name) || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+          const parsed = JSON.parse(text);
+          markers = Array.isArray(parsed) ? parsed : parsed.markers || [];
+        } else {
+          markers = audioParseSrt(text);
+        }
+      } catch (err) {
+        markers = audioParseSrt(text);
+      }
+      audioState.markers = markers;
+      $('sync-marker-count').textContent = `${markers.length} markers loaded from ${file.name}`;
+    };
+    reader.readAsText(file);
+  }
+
+  $('sync-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) loadSyncFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('sync-clear')?.addEventListener('click', () => {
+    audioState.markers = [];
+    $('sync-marker-count').textContent = 'no markers';
+  });
+
+  function getPlayElapsed() {
+    if ($('sync-source')?.value === 'bgm' && audioState.bgm && !audioState.bgm.paused) {
+      return audioState.bgm.currentTime * 1000;
+    }
+    return performance.now() - audioState.playStartWall;
+  }
+
+  // ---------- Playback ----------
+  let abortFlag = false;
+  let playing = false;
+  let prevCh;
+
+  function clearScreen() {
+    textEl.textContent = '';
+    prevCh = undefined;
+    placeholderEl.style.display = '';
+    Ghost.resetWordBuf();
+    if (ttFrame) ttFrame.scrollTop = 0;
+  }
+
+  function appendChar(c) {
+    if (placeholderEl.style.display !== 'none') placeholderEl.style.display = 'none';
+    textEl.textContent += c;
+    prevCh = c;
+    Sound.key();
+    Ghost.feedChar(c);
+    lensFollow();
+  }
+
+  function backspaceChar() {
+    textEl.textContent = textEl.textContent.slice(0, -1);
+    prevCh = textEl.textContent.slice(-1) || undefined;
+    Sound.backspace();
+    Ghost.feedBackspace();
+    lensFollow();
+  }
+
+  // ---------- TTS ↔ typing sync helpers ----------
+  function tokensToPlainText(tokens) {
+    let s = '';
+    for (const t of tokens) {
+      if (t.type === 'text') s += t.char;
+      else if (t.type === 'typo') s += t.right;
+    }
+    return s;
+  }
+  function countTypedChars(tokens) {
+    let n = 0;
+    for (const t of tokens) {
+      if (t.type === 'text') n++;
+      else if (t.type === 'typo') n += t.wrong.length * 2 + t.right.length;
+    }
+    return n;
+  }
+  function estimatePauseMs(tokens) {
+    let ms = 0;
+    for (const t of tokens) if (t.type === 'pause') ms += t.ms;
+    return ms;
+  }
+  // Estimate total natural typing time for a token list (mean — variance/jitter zero out).
+  function estimateTypingMs(tokens, s) {
+    const typoPause = +($('typo-pause')?.value) || 0;
+    const bsMs = +($('bs-ms')?.value) || 50;
+    const sentenceMean = (s.sentence || 0) + (s.sentenceJ || 0) / 2;
+    const commaMean = (s.comma || 0) + (s.commaJ || 0) / 2;
+    const thinkMean = (s.thinkChance || 0) * (400 + Math.max(0, (s.thinkMax || 0) - 400) / 2);
+    const nlMean = 275;
+    let total = 0, prevCh;
+    const contrib = (ch) => {
+      let d = s.base;
+      if (/[.!?]/.test(ch)) d += sentenceMean;
+      else if (/[,;:]/.test(ch)) d += commaMean;
+      if (ch === '\n') d += nlMean;
+      if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) d += thinkMean;
+      return Math.max(5, d);
+    };
+    for (const tok of tokens) {
+      if (tok.type === 'pause') { total += tok.ms; continue; }
+      if (tok.type === 'typo') {
+        for (const c of tok.wrong) { total += contrib(c); prevCh = c; }
+        total += typoPause * 1.75;
+        total += tok.wrong.length * bsMs * 1.3;
+        total += bsMs * 2;
+        for (const c of tok.right) { total += contrib(c); prevCh = c; }
+        continue;
+      }
+      total += contrib(tok.char);
+      prevCh = tok.char;
+    }
+    return total;
+  }
+  // Set audio.playbackRate so audio finishes in targetMs. Preserves pitch. Clamped 0.5–2.0.
+  function fitAudioToWindow(audio, targetMs, opts) {
+    opts = opts || {};
+    const minR = opts.minRate || 0.5;
+    const maxR = opts.maxRate || 2.0;
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0 || targetMs <= 0) return 1;
+    const desiredSec = targetMs / 1000;
+    let rate = audio.duration / desiredSec;
+    rate = Math.min(maxR, Math.max(minR, rate));
+    audio.playbackRate = rate;
+    try { audio.preservesPitch = true; } catch {}
+    try { audio.mozPreservesPitch = true; } catch {}
+    try { audio.webkitPreservesPitch = true; } catch {}
+    return rate;
+  }
+  function chunkTokensBySentence(tokens) {
+    const chunks = []; let cur = [];
+    const flush = () => { if (cur.length) { chunks.push(cur); cur = []; } };
+    for (const t of tokens) {
+      cur.push(t);
+      if (t.type === 'text' && /[.!?]/.test(t.char)) flush();
+      else if (t.type === 'typo' && /[.!?]/.test(t.right.slice(-1))) flush();
+    }
+    flush();
+    return chunks;
+  }
+  function getNarrationTextTyper() {
+    if ($('tts-narr-on')?.checked) {
+      const t = ($('tts-narr-text')?.value || '').trim();
+      if (t) return t;
+    }
+    return audioStripMarkup($('script')?.value || '');
+  }
+  function webSpeechUtter(text) {
+    if (!text || !text.trim() || !window.speechSynthesis) return null;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = parseFloat($('tts-rate').value) || 1;
+    u.pitch = parseFloat($('tts-pitch').value) || 1;
+    u.volume = parseFloat($('tts-volume').value) || 1;
+    const voiceName = $('tts-voice').value;
+    if (voiceName) {
+      const v = speechSynthesis.getVoices().find(x => x.name === voiceName);
+      if (v) u.voice = v;
+    }
+    return u;
+  }
+  function speakAndAwait(text) {
+    return new Promise(async (resolve) => {
+      if (!text || !text.trim()) return resolve();
+      const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+      if (useEdge) {
+        stopEdgeTts();
+        const handle = await edgeTtsSynth(text);
+        if (!handle) return resolve();
+        edgeTtsAudio = handle.audio; edgeTtsAudioUrl = handle.url;
+        await handle.play();
+        await handle.donePromise;
+        await handle.postDelayWait();
+        resolve();
+      } else {
+        const u = webSpeechUtter(text);
+        if (!u) return resolve();
+        u.onend = () => resolve(); u.onerror = () => resolve();
+        try { speechSynthesis.speak(u); } catch { resolve(); }
+      }
+    });
+  }
+
+  async function play() {
+    if (playing) return;
+    playing = true;
+    abortFlag = false;
+    Sound.resume();
+    if (lensOn()) lensMeasure();   // recompute centering for the current viewport
+
+    audioState.playStartWall = performance.now();
+    startBgm();
+
+    const startDelay = (+$('start-delay').value) * 1000;
+    if (startDelay > 0) await sleep(startDelay);   // silent pre-roll (no countdown overlay)
+
+    const syncMode = $('sync-mode').value;
+    const audioReady = !!audioEl.src && audioEl.duration && !isNaN(audioEl.duration);
+    const ttsOn = $('tts-on') && $('tts-on').checked;
+    const ttsSyncMode = ttsOn ? ($('tts-sync-mode')?.value || 'off') : 'off';
+    const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+
+    if (syncMode === 'words' && timingData && audioReady) {
+      if (ttsOn) { stopTts(); speak(getNarrationTextTyper()); }
+      await playWordTimed();
+    } else if (ttsSyncMode === 'sentence' && ttsOn) {
+      await playSentenceSyncTyper();
+    } else if (ttsSyncMode === 'stretch' && ttsOn && useEdge) {
+      await playStretchTyper();
+    } else {
+      if (ttsOn) { stopTts(); speak(getNarrationTextTyper()); }
+      if (syncMode === 'rate' && audioReady) applyRateMatch();
+      if ((syncMode === 'rate' || syncMode === 'words') && audioReady) {
+        try { audioEl.currentTime = 0; await audioEl.play(); }
+        catch (e) { console.warn('audio play blocked:', e); }
+      }
+      await playNormal();
+      if (audioReady) audioEl.pause();
+    }
+
+    const naturalEnd = !abortFlag;
+    playing = false;
+    // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+    // (present/render/audiocap) does one take — refresh the source for a fresh take.
+    if (naturalEnd && !(window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash))) setTimeout(() => { if (!abortFlag) play(); }, 800);
+  }
+
+  async function playStretchTyper() {
+    clearScreen();
+    const tokens = parseScript($('script').value);
+    const narration = getNarrationTextTyper();
+    stopEdgeTts();
+    const handle = await edgeTtsSynth(narration);
+    const naturalSettings = settings();
+    if (handle && isFinite(handle.audio.duration) && handle.audio.duration > 0) {
+      const padMs = +($('tts-sync-pad')?.value) || 0;
+      const typingMs = estimateTypingMs(tokens, naturalSettings);
+      const targetMs = Math.max(500, typingMs - padMs);
+      fitAudioToWindow(handle.audio, targetMs);
+      edgeTtsAudio = handle.audio; edgeTtsAudioUrl = handle.url;
+      await handle.play();
+      await playTokensWithSettings(tokens, naturalSettings);
+      if (!abortFlag) await Promise.race([handle.donePromise, sleep(typingMs + 1500)]);
+      await handle.postDelayWait();
+    } else {
+      await playNormal();
+    }
+  }
+
+  async function playSentenceSyncTyper() {
+    clearScreen();
+    const tokens = parseScript($('script').value);
+    const chunks = chunkTokensBySentence(tokens);
+    const s = settings();
+    for (const chunk of chunks) {
+      if (abortFlag) break;
+      await playTokensWithSettings(chunk, s);
+      if (abortFlag) break;
+      const speech = tokensToPlainText(chunk).trim();
+      if (speech) await speakAndAwait(speech);
+    }
+  }
+
+  async function playTokensWithSettings(tokens, s) {
+    const bsMs = +$('bs-ms').value;
+    const typoPause = +$('typo-pause').value;
+    for (const t of tokens) {
+      if (abortFlag) break;
+      if (t.type === 'text') {
+        const delay = charDelay(t.char, prevCh, s);
+        await sleep(delay);
+        if (abortFlag) break;
+        appendChar(t.char);
+      } else if (t.type === 'pause') {
+        await sleep(t.ms);
+      } else if (t.type === 'typo') {
+        for (const c of t.wrong) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+        }
+        await sleep(typoPause + Math.random() * typoPause);
+        for (let k = 0; k < t.wrong.length; k++) {
+          if (abortFlag) break;
+          await sleep(bsMs + Math.random() * bsMs * 0.6);
+          backspaceChar();
+        }
+        await sleep(bsMs * 3 + Math.random() * bsMs * 4);
+        for (const c of t.right) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+        }
+      }
+    }
+  }
+
+  async function playNormal() {
+    clearScreen();
+    const tokens = parseScript($('script').value);
+    const s = settings();
+    const bsMs = +$('bs-ms').value;
+    const typoPause = +$('typo-pause').value;
+
+    for (const t of tokens) {
+      if (abortFlag) break;
+
+      if (t.type === 'text') {
+        const delay = charDelay(t.char, prevCh, s);
+        await sleep(delay);
+        if (abortFlag) break;
+        appendChar(t.char);
+      }
+      else if (t.type === 'pause') {
+        await sleep(t.ms);
+      }
+      else if (t.type === 'typo') {
+        for (const c of t.wrong) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+        }
+        await sleep(typoPause + Math.random() * typoPause);
+        for (let k = 0; k < t.wrong.length; k++) {
+          if (abortFlag) break;
+          await sleep(bsMs + Math.random() * bsMs * 0.6);
+          backspaceChar();
+        }
+        await sleep(bsMs * 3 + Math.random() * bsMs * 4);
+        for (const c of t.right) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+        }
+      }
+    }
+  }
+
+  async function playWordTimed() {
+    clearScreen();
+    try {
+      audioEl.currentTime = 0;
+      await audioEl.play();
+    } catch (e) { console.warn('audio play blocked:', e); }
+
+    for (const t of timingData) {
+      if (abortFlag) break;
+      while (audioEl.currentTime < t.start && !abortFlag && !audioEl.ended) {
+        await sleep(15);
+      }
+      if (abortFlag) break;
+      const word = t.text;
+      if (!word) continue;
+      const wordDuration = Math.max(50, (t.end - t.start) * 1000);
+      const perChar = wordDuration / word.length;
+      for (const c of word) {
+        if (abortFlag) break;
+        appendChar(c);
+        await sleep(perChar);
+      }
+    }
+
+    if (!abortFlag) {
+      while (!audioEl.ended && !abortFlag) await sleep(50);
+    }
+    audioEl.pause();
+  }
+
+  function stop() {
+    abortFlag = true;
+    // Clear playing immediately so Start re-enables even if a long pause
+    // (e.g. [[pause:5000]]) is still pending inside the async play loop —
+    // that lingering loop will exit on its next abortFlag check anyway.
+    playing = false;
+    if (audioEl.src) audioEl.pause();
+    // ----- audio module hooks: stop BGM + cancel TTS -----
+    stopBgm();
+    try { Notes._stopAllMedia(); } catch {}
+  }
+  function reset() {
+    stop();
+    clearScreen();
+    if (audioEl.src) audioEl.currentTime = 0;
+  }
+
+  /* ============ SKIN OPACITY (page + box) ============ */
+  function bindAlphaSlider(sliderId, cssVar, valId) {
+    const s = $(sliderId), v = $(valId);
+    if (!s) return;
+    const apply = () => {
+      const pct = +s.value;
+      const a = (pct / 100).toFixed(3);
+      root.style.setProperty(cssVar, a);
+      if (v) v.textContent = pct + '%';
+    };
+    s.addEventListener('input', apply); apply();
+  }
+  bindAlphaSlider('page-bg-alpha', '--page-bg-alpha', 'page-bg-alpha-val');
+  bindAlphaSlider('box-bg-alpha', '--box-bg-alpha', 'box-bg-alpha-val');
+  // 'show-frame' is now a quick toggle that maps to box opacity 100 / 0
+  $('show-frame')?.addEventListener('change', e => {
+    body.classList.toggle('no-frame', !e.target.checked);
+    const sl = $('box-bg-alpha');
+    if (sl) { sl.value = e.target.checked ? 100 : 0; sl.dispatchEvent(new Event('input')); }
+  });
+
+  /* ============ TIKTOK / SCREEN MODE ============ */
+  const TikTokMode = {
+    on: false,
+    apply() {
+      const w = +($('tt-w')?.value) || 390;
+      const h = +($('tt-h')?.value) || 844;
+      root.style.setProperty('--tt-stage-w', w + 'px');
+      root.style.setProperty('--tt-stage-h', h + 'px');
+      const fit = !!$('tt-fit')?.checked;
+      const ttOn = !!$('tt-on')?.checked;
+      this.on = ttOn;
+      body.classList.toggle('tiktok-mode', ttOn);
+      body.classList.toggle('show-grips', ttOn && !!$('tt-grips')?.checked);
+      if (ttOn && fit) {
+        const stage = document.getElementById('stage');
+        const r = stage.getBoundingClientRect();
+        const scale = Math.min(r.width / w, r.height / h, 1);
+        this._scale = scale;
+        root.style.setProperty('--tt-stage-scale', String(scale.toFixed(4)));
+      } else {
+        this._scale = 1;
+        root.style.setProperty('--tt-stage-scale', '1');
+      }
+      this._updatePill();
+    },
+    _updatePill() {
+      const pill = $('tt-size-pill');
+      if (!pill) return;
+      pill.textContent = `${$('tt-w')?.value || 0} × ${$('tt-h')?.value || 0}`;
+    },
+    _bindGrip() {
+      // Per-grip axis: 'x' (width), 'y' (height), 'xy' (both)
+      const wire = (id, axes) => {
+        const grip = $(id); if (!grip) return;
+        let startX, startY, startW, startH, sc;
+        const onMove = (ev) => {
+          const scale = sc || 1;
+          const dx = (ev.clientX - startX) / scale;
+          const dy = (ev.clientY - startY) / scale;
+          if (axes.indexOf('x') >= 0) {
+            const w = Math.max(120, Math.round(startW + dx));
+            $('tt-w').value = w;
+          }
+          if (axes.indexOf('y') >= 0) {
+            const h = Math.max(160, Math.round(startH + dy));
+            $('tt-h').value = h;
+          }
+          $('tt-preset').value = 'custom';
+          this.apply();
+        };
+        const onUp = (ev) => {
+          try { grip.releasePointerCapture(ev.pointerId); } catch {}
+          grip.removeEventListener('pointermove', onMove);
+          grip.removeEventListener('pointerup', onUp);
+          grip.removeEventListener('pointercancel', onUp);
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          body.classList.remove('tt-dragging');
+        };
+        grip.addEventListener('pointerdown', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          try { grip.setPointerCapture(ev.pointerId); } catch {}
+          startX = ev.clientX; startY = ev.clientY;
+          startW = +$('tt-w').value || 390;
+          startH = +$('tt-h').value || 844;
+          sc = this._scale || 1;
+          body.classList.add('tt-dragging');
+          // Listen on BOTH the grip (captured pointer) and document (fallback)
+          grip.addEventListener('pointermove', onMove);
+          grip.addEventListener('pointerup', onUp);
+          grip.addEventListener('pointercancel', onUp);
+          document.addEventListener('pointermove', onMove);
+          document.addEventListener('pointerup', onUp);
+        });
+      };
+      wire('tt-resize-grip', 'xy');
+    },
+    _bindDragBar() {
+      // Drag bar is visual-only for now (the frame is always centered in #stage).
+      // Future: untether centering and allow drag-to-position.
+    },
+    bind() {
+      const onChange = () => this.apply();
+      ['tt-on','tt-w','tt-h','tt-fit','tt-grips'].forEach(id => {
+        $(id)?.addEventListener('change', onChange);
+        $(id)?.addEventListener('input', onChange);
+      });
+      $('tt-preset')?.addEventListener('change', e => {
+        const v = e.target.value;
+        if (v === 'custom') return;
+        const [w, h] = v.split('x').map(n => +n);
+        if (w && h) { $('tt-w').value = w; $('tt-h').value = h; }
+        this.apply();
+        if ($('tt-on')?.checked) {
+          const recSel = $('rec-area-preset');
+          if (recSel && (w === 1080 && h === 1920)) { recSel.value = 'tiktok'; recSel.dispatchEvent(new Event('change')); }
+        }
+      });
+      window.addEventListener('resize', () => this.apply());
+      this._bindGrip();
+      this._bindDragBar();
+      this.apply();
+    }
+  };
+  TikTokMode.bind();
+  window.TikTokMode = TikTokMode;
+
+  /* ============ NOTE MARKUP PARSER ============
+     Splits a script into Note objects keyed by [[shape:X]] boundaries.
+     Recognized metadata tags: shape, from, time, subject, header, footer, lock,
+     bg-video, bg-image, bg-audio, bg-cover, bg-visual.
+     Body retains [[wrong|right]] and [[pause:N]] markup, parsed at typing time. */
+  const NoteMarkup = {
+    META_TAGS: ['shape','from','time','subject','header','footer','lock','bg-video','bg-image','bg-audio','bg-cover','bg-visual'],
+    parse(text) {
+      const notes = [];
+      if (!text) return notes;
+      const re = /\[\[(shape|from|time|subject|header|footer|lock|bg-video|bg-image|bg-audio|bg-cover|bg-visual)(?::([^\]]*))?\]\]/g;
+      // First pass: find all metadata tag positions
+      const tags = [];
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        tags.push({ name: m[1], value: m[2] ?? '', index: m.index, end: m.index + m[0].length });
+      }
+      // Walk the text in segments. A note begins on a [[shape:X]] or at file start if metadata appears before any body.
+      let i = 0;
+      let cur = null;
+      const flush = (bodyEnd) => {
+        if (cur === null) return;
+        // body is from cur.bodyStart to bodyEnd, then trimmed.
+        cur.body = text.slice(cur.bodyStart, bodyEnd).trim();
+        notes.push(cur);
+        cur = null;
+      };
+      // Pre-strip ALL metadata tags from text (we already collected them by index)
+      // We need to know which contiguous span at the head of a section is "metadata-only"
+      // so the rest is body. Algorithm: between two [[shape:X]] markers (or file start/end),
+      // consume metadata tags from the start and treat the remainder as the body.
+      // Find shape boundaries:
+      const shapeIdx = tags.filter(t => t.name === 'shape').map(t => t.index);
+      const boundaries = [0, ...shapeIdx, text.length];
+      // Dedup the 0 boundary if a shape tag is at index 0
+      const uniq = [];
+      for (const b of boundaries) if (uniq[uniq.length - 1] !== b) uniq.push(b);
+      for (let s = 0; s < uniq.length - 1; s++) {
+        const segStart = uniq[s];
+        const segEnd = uniq[s + 1];
+        const segment = text.slice(segStart, segEnd);
+        if (!segment.trim()) continue;
+        // Within segment, peel metadata tags from the head
+        let pos = 0;
+        const note = { shape: 'plain', meta: {}, body: '' };
+        // Whitespace then tag, repeated
+        const tagRe = /^[\s]*\[\[(shape|from|time|subject|header|footer|lock|bg-video|bg-image|bg-audio|bg-cover|bg-visual)(?::([^\]]*))?\]\]/;
+        while (true) {
+          const sub = segment.slice(pos);
+          const tm = sub.match(tagRe);
+          if (!tm) break;
+          const tagName = tm[1];
+          const tagVal = (tm[2] || '').trim();
+          if (tagName === 'shape') note.shape = (tagVal || 'plain');
+          else if (tagName === 'lock') note.meta.lock = true;
+          else if (tagName.startsWith('bg-')) {
+            // store hyphenated tag values under camelCase keys: bg-video → bgVideo
+            const key = tagName.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+            note.meta[key] = tagVal;
+          }
+          else note.meta[tagName] = tagVal;
+          pos += tm.index + tm[0].length;
+        }
+        // body is segment after metadata head, trimmed
+        note.body = segment.slice(pos).replace(/^[\s]+/, '').replace(/[\s]+$/, '');
+        // skip empty notes (no body, no metadata)
+        const hasMeta = note.meta.from || note.meta.time || note.meta.subject || note.meta.header || note.meta.footer || note.meta.lock || note.meta.bgVideo || note.meta.bgImage || note.meta.bgAudio || note.meta.bgCover || note.meta.bgVisual;
+        if (!note.body && !hasMeta && note.shape === 'plain') continue;
+        notes.push(note);
+      }
+      return notes;
+    },
+  };
+
+  /* ============ NOTES (script-driven, shape-aware) ============ */
+  const Notes = {
+    list: [],
+    nextId: 1,
+    host: null,
+    assets: {},          // filename -> { kind: 'video'|'image'|'audio', url, file }
+    _activeMedia: {},    // active video/audio elements keyed by note id (for cleanup)
+    _vizRaf: null,
+    init() {
+      this.host = document.getElementById('notes-host');
+      $('notes-mode-on')?.addEventListener('change', () => { this.updateMode(); this.rebuildFromScript(); });
+      $('notes-layout')?.addEventListener('change', () => { this.applyLayout(); this.renderStage(); });
+      $('notes-tilt')?.addEventListener('input', () => this.renderStage());
+      // Re-parse on every script change (debounced)
+      const scriptEl = $('script');
+      if (scriptEl) {
+        let t = null;
+        scriptEl.addEventListener('input', () => {
+          if (t) clearTimeout(t);
+          t = setTimeout(() => this.rebuildFromScript(), 200);
+        });
+      }
+      // Asset uploader
+      $('notes-assets-file')?.addEventListener('change', e => {
+        for (const f of e.target.files) this.addAsset(f);
+        e.target.value = '';
+      });
+      $('notes-media-on')?.addEventListener('change', e => {
+        document.body.classList.toggle('no-note-media', !e.target.checked);
+        this.renderStage();
+      });
+      this.updateMode();
+      this.applyLayout();
+      this.rebuildFromScript();
+    },
+    addAsset(file) {
+      const t = file.type || '';
+      let kind = 'image';
+      if (/^video\//.test(t)) kind = 'video';
+      else if (/^audio\//.test(t)) kind = 'audio';
+      else if (/^image\//.test(t)) kind = 'image';
+      else if (/\.(mp4|webm|mov|m4v)$/i.test(file.name)) kind = 'video';
+      else if (/\.(mp3|wav|ogg|m4a|flac)$/i.test(file.name)) kind = 'audio';
+      // revoke previous URL if filename collision
+      if (this.assets[file.name]) { try { URL.revokeObjectURL(this.assets[file.name].url); } catch {} }
+      this.assets[file.name] = { kind, url: URL.createObjectURL(file), file };
+      this.refreshAssetList();
+      this.renderStage();
+    },
+    refreshAssetList() {
+      const host = document.getElementById('notes-assets-list');
+      if (!host) return;
+      const names = Object.keys(this.assets);
+      if (!names.length) {
+        host.innerHTML = '<div style="color:#666;text-align:center;padding:6px;">No assets — upload files above</div>';
+        return;
+      }
+      // Per-kind 1-based index so users know what [image 1] / [video 1] points to.
+      const kindIdx = { image: 0, video: 0, audio: 0 };
+      host.innerHTML = '';
+      for (const name of names) {
+        const a = this.assets[name];
+        kindIdx[a.kind] = (kindIdx[a.kind] || 0) + 1;
+        const n = kindIdx[a.kind];
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 4px;border-bottom:1px solid #1a1b1f;';
+        const icon = a.kind === 'video' ? '🎬' : a.kind === 'audio' ? '🎵' : '🖼️';
+        const shortTag = (a.kind === 'image' || a.kind === 'video') ? `[${a.kind} ${n}]` : `[[bg-audio:${name}]]`;
+        row.innerHTML = `
+          <span style="flex:0 0 auto;">${icon}</span>
+          <span style="flex:0 0 auto;color:#7fc9ff;font-size:10px;font-family:var(--font-family);" title="upload-order index for [${a.kind} N]">${a.kind === 'audio' ? '' : '#' + n}</span>
+          <code style="flex:1;color:#ffe066;font-family:var(--font-family);font-size:11px;cursor:pointer;" title="click to copy ${shortTag} to clipboard">${name}</code>
+          <span style="color:#888;font-size:10px;">${a.kind}</span>
+          <button style="flex:0 0 auto;padding:2px 6px;font-size:10px;background:#5a2a2a;border:1px solid #6a3535;color:#f5cfcf;border-radius:3px;cursor:pointer;">×</button>
+        `;
+        const code = row.querySelector('code');
+        code.addEventListener('click', () => {
+          const tag = shortTag;
+          navigator.clipboard?.writeText(tag).then(() => {
+            const orig = code.textContent; code.textContent = 'copied: ' + tag;
+            setTimeout(() => code.textContent = orig, 1200);
+          });
+        });
+        row.querySelector('button').addEventListener('click', () => {
+          try { URL.revokeObjectURL(a.url); } catch {}
+          delete this.assets[name];
+          this.refreshAssetList();
+          this.renderStage();
+        });
+        host.appendChild(row);
+      }
+    },
+    rebuildFromScript() {
+      // Never tear down the stage mid-play — that strands the active card with
+      // a now-dead data-id, so subsequent appendCharTo calls silently fail and
+      // the user sees a "dead" typer they can't restart from. Defer instead.
+      if (playing) { this._pendingRebuild = true; return; }
+      try {
+        const text = $('script')?.value || '';
+        const parsed = NoteMarkup.parse(text);
+        this.list = parsed.map(p => ({ id: this.nextId++, shape: p.shape, meta: p.meta, body: p.body }));
+        this.renderControls();
+        this.renderStage();
+      } catch (e) {
+        console.error('Notes.rebuildFromScript failed:', e);
+      }
+    },
+    enabled() { return true; },                       // notes-mode is always on now
+    updateMode() {
+      document.body.classList.add('notes-mode');       // lock it on
+      const cb = document.getElementById('notes-mode-on'); if (cb) cb.checked = true;
+    },
+    applyLayout() {
+      if (!this.host) return;
+      const v = $('notes-layout')?.value || 'stack';
+      this.host.classList.remove('layout-stack', 'layout-parallel', 'layout-absolute');
+      this.host.classList.add('layout-' + v);
+    },
+    renderControls() {
+      const host = document.getElementById('notes-list');
+      const empty = document.getElementById('notes-empty');
+      if (!host) return;
+      while (host.firstChild) host.removeChild(host.firstChild);
+      if (this.list.length === 0) { host.appendChild(empty); empty.style.display = ''; return; }
+      empty.style.display = 'none';
+      this.list.forEach((n, idx) => host.appendChild(this._summaryRow(n, idx)));
+    },
+    _summaryRow(n, idx) {
+      const row = document.createElement('div');
+      row.className = 'note-edit-card';
+      row.style.padding = '6px 8px';
+      const fromS = n.meta.from ? `· ${n.meta.from}` : '';
+      const timeS = n.meta.time ? `· ${n.meta.time}` : '';
+      const lockS = n.meta.lock ? ' 🔒' : '';
+      const preview = (n.body || '').replace(/\[\[[^\]]+\]\]/g, '…').slice(0, 80);
+      row.innerHTML = `
+        <div style="display:flex;gap:6px;align-items:baseline;color:#c4c6cd;">
+          <span style="color:#4a6cf7;font-weight:700;">#${idx + 1}</span>
+          <span style="color:#ffe066;font-size:10.5px;text-transform:uppercase;letter-spacing:0.06em;">${n.shape}</span>
+          <span style="color:#8a8d96;font-size:10.5px;">${n.meta.subject || ''}${lockS}</span>
+          <span style="flex:1;"></span>
+          <span style="color:#666;font-size:10px;">${fromS} ${timeS}</span>
+        </div>
+        <div style="color:#888;font-size:11px;margin-top:2px;font-family:var(--font-family);">${preview}${preview.length === 80 ? '…' : ''}</div>
+      `;
+      return row;
+    },
+    _editCard_DEAD_KEPT_FOR_REFERENCE_NEVER_CALLED(n, idx) {
+      // (replaced by markup-driven authoring — kept only to avoid renumbering line refs)
+      return null;
+    },
+    _editCard_OLD_BODY_FOLLOWS(n, idx) {
+      const card = document.createElement('div');
+      card.className = 'note-edit-card';
+      const h = document.createElement('h3');
+      h.innerHTML = `<span class="nid">#${idx + 1}</span><span class="gap"></span>`;
+      const upBtn = document.createElement('button'); upBtn.textContent = '↑';
+      upBtn.addEventListener('click', () => this.moveUp(n.id));
+      h.appendChild(upBtn);
+      const dnBtn = document.createElement('button'); dnBtn.textContent = '↓';
+      dnBtn.addEventListener('click', () => this.moveDown(n.id));
+      h.appendChild(dnBtn);
+      const dupBtn = document.createElement('button'); dupBtn.textContent = '⎘';
+      dupBtn.addEventListener('click', () => { const c = Object.assign({}, n, { id: this.nextId++ }); this.list.splice(idx + 1, 0, c); this.renderControls(); this.renderStage(); });
+      h.appendChild(dupBtn);
+      const delBtn = document.createElement('button'); delBtn.className = 'del'; delBtn.textContent = '×';
+      delBtn.addEventListener('click', () => this.remove(n.id));
+      h.appendChild(delBtn);
+      card.appendChild(h);
+
+      const titleField = document.createElement('div'); titleField.className = 'field';
+      titleField.innerHTML = '<label>Title (mid-body)</label>';
+      const titleIn = document.createElement('input'); titleIn.type = 'text'; titleIn.value = n.title;
+      titleIn.placeholder = 'optional title that pops in';
+      titleIn.addEventListener('input', () => this.update(n.id, { title: titleIn.value }));
+      titleField.appendChild(titleIn);
+      const titleRow = document.createElement('div'); titleRow.className = 'mini-row'; titleRow.style.marginTop = '4px';
+      const tmSel = document.createElement('select');
+      [['start','at start'],['mid','mid-body'],['end','at end'],['char','at char'],['never','never']].forEach(([v,l])=>{ const o=document.createElement('option'); o.value=v;o.textContent=l; if(v===n.titleMode)o.selected=true; tmSel.appendChild(o);});
+      tmSel.style.flex = '0 0 90px';
+      tmSel.addEventListener('change', () => this.update(n.id, { titleMode: tmSel.value }));
+      titleRow.appendChild(tmSel);
+      const tcIn = document.createElement('input'); tcIn.type = 'number'; tcIn.value = n.titleAtChar; tcIn.placeholder='char #'; tcIn.style.flex='0 0 80px';
+      tcIn.addEventListener('input', () => this.update(n.id, { titleAtChar: +tcIn.value || 0 }));
+      titleRow.appendChild(tcIn);
+      titleField.appendChild(titleRow);
+      card.appendChild(titleField);
+
+      const lyricsField = document.createElement('div'); lyricsField.className = 'field';
+      lyricsField.innerHTML = '<label>Lyrics / body (typed)</label>';
+      const ta = document.createElement('textarea'); ta.rows = 4; ta.value = n.lyrics;
+      ta.placeholder = 'The text that gets typed out…';
+      ta.spellcheck = false;
+      ta.addEventListener('input', () => this.update(n.id, { lyrics: ta.value }));
+      lyricsField.appendChild(ta);
+      card.appendChild(lyricsField);
+
+      const footField = document.createElement('div'); footField.className = 'field';
+      footField.innerHTML = '<label>Footnote (after lyrics finish)</label>';
+      const fn = document.createElement('input'); fn.type = 'text'; fn.value = n.footnote;
+      fn.placeholder = 'optional small text under the lyrics';
+      fn.addEventListener('input', () => this.update(n.id, { footnote: fn.value }));
+      footField.appendChild(fn);
+      card.appendChild(footField);
+
+      const bgField = document.createElement('div'); bgField.className = 'field';
+      bgField.innerHTML = '<label>Per-note background</label>';
+      const bgRow = document.createElement('div'); bgRow.className = 'mini-row';
+      const bgSel = document.createElement('select');
+      [['none','none'],['inherit','inherit stage'],['image','image…'],['video','video…']].forEach(([v,l])=>{ const o=document.createElement('option'); o.value=v; o.textContent=l; if(v===n.bgKind)o.selected=true; bgSel.appendChild(o); });
+      bgSel.style.flex = '0 0 110px';
+      bgRow.appendChild(bgSel);
+      const bgFileLabel = document.createElement('label'); bgFileLabel.className = 'file-btn'; bgFileLabel.textContent = 'choose file';
+      const bgFile = document.createElement('input'); bgFile.type = 'file'; bgFile.style.display = 'none';
+      bgFileLabel.appendChild(bgFile);
+      bgRow.appendChild(bgFileLabel);
+      bgField.appendChild(bgRow);
+      const bgInfo = document.createElement('div'); bgInfo.className = 'bg-info'; bgInfo.textContent = n.bgName || '(no file)';
+      bgField.appendChild(bgInfo);
+      bgSel.addEventListener('change', () => {
+        const kind = bgSel.value;
+        if (kind === 'image') bgFile.accept = 'image/*';
+        else if (kind === 'video') bgFile.accept = 'video/*';
+        this.update(n.id, { bgKind: kind });
+      });
+      bgFile.addEventListener('change', e => {
+        const f = e.target.files[0]; if (!f) return;
+        if (n.bgUrl && n.bgUrl.startsWith('blob:')) { try { URL.revokeObjectURL(n.bgUrl); } catch {} }
+        const url = URL.createObjectURL(f);
+        const kind = /^video\//.test(f.type) ? 'video' : 'image';
+        this.update(n.id, { bgKind: kind, bgUrl: url, bgName: f.name });
+        bgInfo.textContent = f.name;
+        bgSel.value = kind;
+        e.target.value = '';
+      });
+      card.appendChild(bgField);
+
+      const styleRow = document.createElement('div'); styleRow.className = 'field';
+      styleRow.innerHTML = '<label>Frame / position / delay</label>';
+      const sr = document.createElement('div'); sr.className = 'mini-row';
+      const frameBox = document.createElement('label'); frameBox.style.flex='0 0 auto'; frameBox.style.fontSize='10px'; frameBox.innerHTML = '<input type="checkbox"> frame';
+      const fcb = frameBox.querySelector('input'); fcb.checked = !!n.frame;
+      fcb.addEventListener('change', () => this.update(n.id, { frame: fcb.checked }));
+      sr.appendChild(frameBox);
+      const dly = document.createElement('input'); dly.type='number'; dly.value = n.delay; dly.step='0.1'; dly.min='0'; dly.placeholder='delay s'; dly.title='Start delay in seconds (staggered/parallel modes)'; dly.style.flex='0 0 64px';
+      dly.addEventListener('input', () => this.update(n.id, { delay: +dly.value || 0 }));
+      sr.appendChild(dly);
+      const wIn = document.createElement('input'); wIn.type='number'; wIn.value = n.widthPct; wIn.min='10'; wIn.max='100'; wIn.title='Width % of stage'; wIn.style.flex='0 0 60px';
+      wIn.addEventListener('input', () => this.update(n.id, { widthPct: +wIn.value || 100 }));
+      sr.appendChild(wIn);
+      styleRow.appendChild(sr);
+      card.appendChild(styleRow);
+
+      return card;
+    },
+    renderStage() {
+      if (!this.host) return;
+      this.host.innerHTML = '';
+      const tiltMax = +($('notes-tilt')?.value) || 0;
+      this.list.forEach((n, i) => {
+        const card = this._stageNode(n);
+        if (tiltMax > 0) {
+          const rot = (Math.sin(i * 53.7) * tiltMax).toFixed(2);
+          card.dataset.rot = '1';
+          card.style.setProperty('--rot', rot + 'deg');
+        }
+        this.host.appendChild(card);
+      });
+    },
+    _stageNode(n) {
+      const card = document.createElement('div');
+      card.className = 'prompt-note shaped';
+      card.dataset.id = String(n.id);
+
+      // Outer .note-shape applies the per-shape styling.
+      const shape = document.createElement('div');
+      shape.className = 'note-shape shape-' + (n.shape || 'plain');
+
+      // Per-note media (video / image / audio + visualizer)
+      const mediaOn = !!$('notes-media-on')?.checked;
+      const hasAnyMedia = !!(n.meta.bgVideo || n.meta.bgImage || n.meta.bgAudio || n.meta.bgCover);
+      if (mediaOn && hasAnyMedia) {
+        shape.classList.add('has-media');
+        const mediaLayer = document.createElement('div'); mediaLayer.className = 'note-shape-media';
+        // priority: video > cover/image > visualizer canvas
+        const videoAsset = n.meta.bgVideo ? this.assets[n.meta.bgVideo.trim()] : null;
+        const imageAsset = n.meta.bgImage ? this.assets[n.meta.bgImage.trim()] : null;
+        const coverAsset = n.meta.bgCover ? this.assets[n.meta.bgCover.trim()] : null;
+        const audioAsset = n.meta.bgAudio ? this.assets[n.meta.bgAudio.trim()] : null;
+        if (videoAsset && videoAsset.kind === 'video') {
+          const vid = document.createElement('video');
+          vid.src = videoAsset.url;
+          vid.loop = true;
+          vid.muted = !!$('notes-media-mute')?.checked;
+          vid.playsInline = true;
+          vid.preload = 'auto';
+          vid.volume = parseFloat($('notes-media-volume')?.value) || 0.8;
+          vid.dataset.assetName = n.meta.bgVideo.trim();
+          mediaLayer.appendChild(vid);
+        } else if (coverAsset && coverAsset.kind === 'image') {
+          const img = document.createElement('img'); img.src = coverAsset.url; mediaLayer.appendChild(img);
+        } else if (imageAsset && imageAsset.kind === 'image') {
+          const img = document.createElement('img'); img.src = imageAsset.url; mediaLayer.appendChild(img);
+        }
+        if (audioAsset && audioAsset.kind === 'audio') {
+          const aud = document.createElement('audio');
+          aud.src = audioAsset.url;
+          aud.preload = 'auto';
+          aud.volume = parseFloat($('notes-media-volume')?.value) || 0.8;
+          aud.dataset.assetName = n.meta.bgAudio.trim();
+          mediaLayer.appendChild(aud);
+          // visualizer canvas (only meaningful with audio)
+          const viz = (n.meta.bgVisual || '').toLowerCase();
+          if (viz === 'bars' || viz === 'wave') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 800; canvas.height = 800;
+            canvas.dataset.viz = viz;
+            mediaLayer.appendChild(canvas);
+          }
+        }
+        shape.appendChild(mediaLayer);
+      }
+
+      // lock badge
+      if (n.meta.lock) {
+        const lk = document.createElement('span'); lk.className = 'note-lock'; lk.textContent = '🔒';
+        shape.appendChild(lk);
+      }
+      // header
+      if (n.meta.header) {
+        const hd = document.createElement('div'); hd.className = 'note-header';
+        // header sits inside note-meta so the meta grid lays it out at top
+      }
+      // meta grid: from · subject · time + header row
+      const meta = document.createElement('div'); meta.className = 'note-meta';
+      const haveAnyMeta = n.meta.from || n.meta.time || n.meta.subject || n.meta.header;
+      if (haveAnyMeta) {
+        if (n.meta.header) {
+          const headerEl = document.createElement('div'); headerEl.className = 'note-header'; headerEl.textContent = n.meta.header;
+          meta.appendChild(headerEl);
+        }
+        const fromEl = document.createElement('div'); fromEl.className = 'note-from';
+        fromEl.textContent = n.meta.from ? n.meta.from : '';
+        meta.appendChild(fromEl);
+        const sub = document.createElement('div'); sub.className = 'note-subject'; sub.textContent = n.meta.subject || '';
+        // place subject after from but on its own row; CSS makes it grid-column: 1/-1
+        // we'll append after time so DOM order is: header, from, time, subject
+        const time = document.createElement('div'); time.className = 'note-time'; time.textContent = n.meta.time || '';
+        meta.appendChild(time);
+        meta.appendChild(sub);
+        shape.appendChild(meta);
+      }
+      // body slot
+      const body = document.createElement('span'); body.className = 'note-body'; body.textContent = '';
+      shape.appendChild(body);
+      // cursor
+      const cursor = document.createElement('span'); cursor.className = 'note-cursor';
+      shape.appendChild(cursor);
+      // footer
+      if (n.meta.footer) {
+        const ft = document.createElement('div'); ft.className = 'note-footer'; ft.textContent = n.meta.footer;
+        ft.style.opacity = '0';
+        ft.style.transition = 'opacity 420ms ease';
+        shape.appendChild(ft);
+      }
+
+      card.appendChild(shape);
+      return card;
+    },
+    _findStage(id) { return this.host?.querySelector(`.prompt-note[data-id="${id}"]`); },
+    // Assets keyed by upload-order, filtered by kind. 1-based indexing matches [image 1] / [video 1].
+    _orderedAssets(kind) {
+      const out = [];
+      for (const name of Object.keys(this.assets)) {
+        const a = this.assets[name];
+        if (a && a.kind === kind) out.push({ name, asset: a });
+      }
+      return out;
+    },
+    spawnMediaNote(kind, idx, afterId) {
+      if (!this.host) return;
+      const list = this._orderedAssets(kind);
+      const entry = list[idx - 1];
+      if (!entry) return;
+      const card = document.createElement('div');
+      card.className = 'prompt-note media-only';
+      card.dataset.spawned = '1';
+      const frame = document.createElement('div');
+      frame.className = 'media-only-frame';
+      let mediaEl;
+      if (kind === 'image') {
+        mediaEl = document.createElement('img');
+        mediaEl.src = entry.asset.url;
+        mediaEl.alt = entry.name;
+      } else {
+        mediaEl = document.createElement('video');
+        mediaEl.src = entry.asset.url;
+        mediaEl.autoplay = true;
+        mediaEl.loop = true;
+        mediaEl.muted = !!$('notes-media-mute')?.checked;
+        mediaEl.playsInline = true;
+        try { mediaEl.volume = parseFloat($('notes-media-volume')?.value) || 0.8; } catch {}
+        mediaEl.play?.().catch(() => {});
+      }
+      frame.appendChild(mediaEl);
+      const cap = document.createElement('div');
+      cap.className = 'media-only-caption';
+      cap.textContent = entry.name;
+      frame.appendChild(cap);
+      card.appendChild(frame);
+      const after = this._findStage(afterId);
+      if (after && after.nextSibling) this.host.insertBefore(card, after.nextSibling);
+      else if (after) this.host.appendChild(card);
+      else this.host.appendChild(card);
+      requestAnimationFrame(() => {
+        card.classList.add('visible');
+        try { card.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); } catch {}
+      });
+    },
+    _bodyEl(id) { const el = this._findStage(id); return el ? el.querySelector('.note-body') : null; },
+    _cursorEl(id) { const el = this._findStage(id); return el ? el.querySelector('.note-cursor') : null; },
+    _footerEl(id) { const el = this._findStage(id); return el ? el.querySelector('.note-footer') : null; },
+    appendCharTo(id, c) {
+      const body = this._bodyEl(id); if (!body) return;
+      body.appendChild(document.createTextNode(c));
+      Sound.key();
+      Ghost.feedChar(c);
+    },
+    backspaceFrom(id) {
+      const body = this._bodyEl(id); if (!body) return;
+      const last = body.lastChild; if (last) body.removeChild(last);
+      Sound.backspace();
+      Ghost.feedBackspace();
+    },
+    revealFooter(id) {
+      const ft = this._footerEl(id); if (!ft) return;
+      requestAnimationFrame(() => { ft.style.opacity = '1'; });
+    },
+    showCard(id) {
+      const el = this._findStage(id); if (!el) return;
+      requestAnimationFrame(() => {
+        el.classList.add('visible');
+        // scroll within notes-host so the card is in view inside the screen frame
+        try { el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' }); } catch {}
+      });
+    },
+    hideCard(id) {
+      const el = this._findStage(id); if (!el) return;
+      el.classList.add('fading');
+      this._stopMedia(id);
+    },
+    _startMedia(id, n) {
+      const el = this._findStage(id); if (!el) return;
+      const continuity = !!$('notes-media-continue')?.checked;
+      // Find current active media name on previous notes; pause non-matching media.
+      const wantVideo = n.meta?.bgVideo?.trim();
+      const wantAudio = n.meta?.bgAudio?.trim();
+      for (const pid of Object.keys(this._activeMedia)) {
+        const prev = this._activeMedia[pid];
+        if (!prev) continue;
+        if (prev.video) {
+          if (!(continuity && wantVideo && prev.videoName === wantVideo)) {
+            try { prev.video.pause(); } catch {}
+          }
+        }
+        if (prev.audio) {
+          if (!(continuity && wantAudio && prev.audioName === wantAudio)) {
+            try { prev.audio.pause(); } catch {}
+          }
+        }
+        delete this._activeMedia[pid];
+      }
+      const entry = { video: null, audio: null, videoName: '', audioName: '', vizRaf: null };
+      const vid = el.querySelector('.note-shape-media video');
+      if (vid) {
+        vid.muted = !!$('notes-media-mute')?.checked;
+        vid.volume = parseFloat($('notes-media-volume')?.value) || 0.8;
+        try { vid.currentTime = 0; } catch {}
+        vid.play().catch(() => {});
+        entry.video = vid; entry.videoName = vid.dataset.assetName || '';
+      }
+      const aud = el.querySelector('.note-shape-media audio');
+      if (aud) {
+        aud.volume = parseFloat($('notes-media-volume')?.value) || 0.8;
+        try { aud.currentTime = 0; } catch {}
+        aud.play().catch(() => {});
+        entry.audio = aud; entry.audioName = aud.dataset.assetName || '';
+        const canvas = el.querySelector('.note-shape-media canvas');
+        if (canvas) entry.vizRaf = this._startVisualizer(aud, canvas, canvas.dataset.viz || 'bars');
+      }
+      this._activeMedia[id] = entry;
+    },
+    _stopMedia(id) {
+      const entry = this._activeMedia[id];
+      if (!entry) return;
+      try { entry.video?.pause(); } catch {}
+      try { entry.audio?.pause(); } catch {}
+      if (entry.vizRaf) cancelAnimationFrame(entry.vizRaf);
+      delete this._activeMedia[id];
+    },
+    _startVisualizer(audioEl, canvas, kind) {
+      // Lazy-create Web Audio context shared by all visualizers
+      if (!Notes._vizCtx) {
+        try { Notes._vizCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; }
+      }
+      const ctx = Notes._vizCtx;
+      let source = audioEl._vizSrc;
+      if (!source) {
+        try {
+          source = ctx.createMediaElementSource(audioEl);
+          audioEl._vizSrc = source;
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 256;
+          source.connect(analyser);
+          analyser.connect(ctx.destination);
+          audioEl._vizAnalyser = analyser;
+        } catch (e) { return null; }
+      }
+      const analyser = audioEl._vizAnalyser;
+      if (!analyser) return null;
+      const c = canvas.getContext('2d');
+      const buf = new Uint8Array(analyser.frequencyBinCount);
+      let rafId = null;
+      const draw = () => {
+        if (audioEl.paused) { rafId = requestAnimationFrame(draw); return; }
+        analyser.getByteFrequencyData(buf);
+        c.clearRect(0, 0, canvas.width, canvas.height);
+        if (kind === 'wave') {
+          analyser.getByteTimeDomainData(buf);
+          c.lineWidth = 4;
+          c.strokeStyle = '#ffe066';
+          c.beginPath();
+          const step = canvas.width / buf.length;
+          for (let i = 0; i < buf.length; i++) {
+            const y = (buf[i] / 255) * canvas.height;
+            if (i === 0) c.moveTo(0, y); else c.lineTo(i * step, y);
+          }
+          c.stroke();
+        } else {
+          // bars
+          const w = canvas.width / buf.length * 1.6;
+          for (let i = 0; i < buf.length; i++) {
+            const h = (buf[i] / 255) * canvas.height;
+            const hue = (i / buf.length) * 320 + 180;
+            c.fillStyle = `hsla(${hue}, 90%, 65%, 0.9)`;
+            c.fillRect(i * w, canvas.height - h, w * 0.9, h);
+          }
+        }
+        rafId = requestAnimationFrame(draw);
+      };
+      rafId = requestAnimationFrame(draw);
+      return rafId;
+    },
+    _stopAllMedia() {
+      for (const id of Object.keys(this._activeMedia)) this._stopMedia(id);
+    },
+    resetAll() {
+      this._stopAllMedia();
+      // Remove any previously spawned [image N]/[video N] cards
+      if (this.host) {
+        for (const card of this.host.querySelectorAll('.prompt-note[data-spawned="1"]')) card.remove();
+        for (const card of this.host.querySelectorAll('.prompt-note')) {
+          card.classList.remove('visible', 'fading');
+          const body = card.querySelector('.note-body'); if (body) body.textContent = '';
+          const ft = card.querySelector('.note-footer'); if (ft) ft.style.opacity = '0';
+        }
+      }
+    },
+    async playAll() {
+      const mode = $('notes-playback')?.value || 'sequential';
+      const clearBetween = !!$('notes-clear')?.checked;
+      const gap = +($('notes-gap')?.value) || 0;
+      this.resetAll();
+      if (mode === 'sequential') {
+        for (let i = 0; i < this.list.length; i++) {
+          if (abortFlag) break;
+          const n = this.list[i];
+          if (clearBetween && i > 0) {
+            const prev = this.list[i - 1];
+            this.hideCard(prev.id);
+          }
+          await this.playOne(n);
+          if (gap > 0 && i < this.list.length - 1) await sleep(gap * 1000);
+        }
+      } else {
+        const tasks = this.list.map((n, i) => (async () => {
+          const d = (mode === 'staggered') ? (i * (gap || 0.4)) : 0;
+          if (d > 0) await sleep(d * 1000);
+          if (abortFlag) return;
+          await this.playOne(n);
+        })());
+        await Promise.all(tasks);
+      }
+    },
+    async playOne(n) {
+      const id = n.id;
+      const el = this._findStage(id); if (!el) return;
+      this.showCard(id);
+      this._startMedia(id, n);
+      // Type the body using the existing tokenizer for [[wrong|right]] / [[pause:N]]
+      const tokens = parseScript(n.body || '');
+      const s = settings();
+      const bsMs = +$('bs-ms').value;
+      const typoPause = +$('typo-pause').value;
+      for (const t of tokens) {
+        if (abortFlag) break;
+        if (t.type === 'text') {
+          const delay = charDelay(t.char, undefined, s);
+          await sleep(delay);
+          if (abortFlag) break;
+          this.appendCharTo(id, t.char);
+        } else if (t.type === 'pause') {
+          await sleep(t.ms);
+        } else if (t.type === 'media') {
+          // [image N] / [video N] / [[image:N]] / [[video:N]]: spawn a sibling note,
+          // then continue typing the current note without inserting any character.
+          this.spawnMediaNote(t.kind, t.idx, id);
+        } else if (t.type === 'typo') {
+          for (const c of t.wrong) {
+            if (abortFlag) break;
+            await sleep(charDelay(c, undefined, s));
+            this.appendCharTo(id, c);
+          }
+          await sleep(typoPause + Math.random() * typoPause);
+          for (let k = 0; k < t.wrong.length; k++) {
+            if (abortFlag) break;
+            await sleep(bsMs + Math.random() * bsMs * 0.6);
+            this.backspaceFrom(id);
+          }
+          await sleep(bsMs * 3 + Math.random() * bsMs * 4);
+          for (const c of t.right) {
+            if (abortFlag) break;
+            await sleep(charDelay(c, undefined, s));
+            this.appendCharTo(id, c);
+          }
+        }
+      }
+      if (abortFlag) return;
+      if (n.meta.footer) {
+        await sleep(220);
+        this.revealFooter(id);
+      }
+    },
+  };
+  Notes.init();
+  window.Notes = Notes;
+  const Ghost = {
+    layer: null, buf: '', alive: new Set(),
+    init() {
+      this.layer = document.getElementById('ghost-layer');
+      $('ghost-density')?.addEventListener('input', e => {
+        const v = +e.target.value;
+        const lbl = $('ghost-density-val');
+        if (lbl) lbl.textContent = (v === 0 ? 'off' : v + '× per word');
+      });
+      ['ghost-op-lo','ghost-op-hi'].forEach(id => {
+        $(id)?.addEventListener('input', e => {
+          const lbl = $(id + '-val'); if (lbl) lbl.textContent = e.target.value + '%';
+          const lo = +$('ghost-op-lo').value, hi = +$('ghost-op-hi').value;
+          root.style.setProperty('--ghost-opacity-lo', (lo / 100).toFixed(3));
+          root.style.setProperty('--ghost-opacity-hi', (hi / 100).toFixed(3));
+        });
+        $(id)?.dispatchEvent(new Event('input'));
+      });
+      $('ghost-clear')?.addEventListener('click', () => this.clear());
+      $('ghost-test')?.addEventListener('click', () => this.spawnWord('hello', { force: true }));
+    },
+    enabled() { return !!$('ghost-on')?.checked; },
+    rand(a, b) { return a + Math.random() * (b - a); },
+    pickFont() {
+      const sel = $('ghost-fontset');
+      if (!sel) return 'Georgia, serif';
+      const opts = Array.from(sel.selectedOptions).map(o => o.value);
+      const pool = opts.length ? opts : Array.from(sel.options).map(o => o.value);
+      return pool[Math.floor(Math.random() * pool.length)];
+    },
+    rectFor(area) {
+      if (!this.layer) return null;
+      if (area === 'full') return { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight, fullViewport: true };
+      const r = this.layer.getBoundingClientRect();
+      return { x: 0, y: 0, w: r.width, h: r.height };
+    },
+    pickPosition(area, w, h) {
+      const rect = this.rectFor(area);
+      if (!rect) return { x: 0, y: 0 };
+      if (area === 'ring') {
+        const promptR = document.getElementById('prompt-box').getBoundingClientRect();
+        const layerR = this.layer.getBoundingClientRect();
+        const cx = (promptR.left + promptR.width / 2) - layerR.left;
+        const cy = (promptR.top + promptR.height / 2) - layerR.top;
+        const minR = Math.max(promptR.width, promptR.height) / 2 + 40;
+        const maxR = Math.max(layerR.width, layerR.height) / 2;
+        const ang = Math.random() * Math.PI * 2;
+        const rad = this.rand(minR, Math.max(minR + 1, maxR));
+        return { x: cx + Math.cos(ang) * rad, y: cy + Math.sin(ang) * rad };
+      }
+      return { x: this.rand(rect.w * 0.05, rect.w * 0.95), y: this.rand(rect.h * 0.05, rect.h * 0.95) };
+    },
+    spawnWord(word, opts) {
+      if (!word) return;
+      if (!opts?.force && !this.enabled()) return;
+      if (!this.layer) return;
+      const density = +($('ghost-density')?.value) || 0;
+      const count = opts?.force ? Math.max(1, density) : density;
+      if (count <= 0) return;
+      const trigger = $('ghost-trigger')?.value || 'word';
+      const area = $('ghost-area')?.value || 'stage';
+      const isUpper = !!$('ghost-upper')?.checked;
+      const lifeMs = +getComputedStyle(root).getPropertyValue('--ghost-lifetime-ms') || 4200;
+      const fadeMs = +getComputedStyle(root).getPropertyValue('--ghost-fade-ms') || 600;
+      const drift = !!$('ghost-drift')?.checked;
+      const min = parseFloat(getComputedStyle(root).getPropertyValue('--ghost-min')) || 18;
+      const max = parseFloat(getComputedStyle(root).getPropertyValue('--ghost-max')) || 140;
+      const opLo = parseFloat(getComputedStyle(root).getPropertyValue('--ghost-opacity-lo')) || 0.08;
+      const opHi = parseFloat(getComputedStyle(root).getPropertyValue('--ghost-opacity-hi')) || 0.35;
+      const rotMax = parseFloat(getComputedStyle(root).getPropertyValue('--ghost-rotate-max')) || 18;
+      const txt = isUpper ? word.toUpperCase() : word;
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('span');
+        el.className = 'ghost';
+        el.textContent = txt;
+        el.style.fontFamily = this.pickFont();
+        el.style.fontSize = this.rand(min, max) + 'px';
+        const pos = this.pickPosition(area, 0, 0);
+        el.style.left = pos.x + 'px';
+        el.style.top = pos.y + 'px';
+        const targetOp = this.rand(opLo, opHi);
+        const rot = this.rand(-rotMax, rotMax);
+        el.style.transform = `translate(-50%, -50%) rotate(${rot.toFixed(1)}deg) scale(0.92)`;
+        // optional area override for full viewport
+        if (area === 'full') {
+          el.style.position = 'fixed';
+          this.layer.appendChild(el);
+        } else {
+          this.layer.appendChild(el);
+        }
+        this.alive.add(el);
+        // animate in
+        requestAnimationFrame(() => {
+          el.style.opacity = targetOp;
+          if (drift) {
+            const dx = (Math.random() - 0.5) * 40;
+            const dy = (Math.random() - 0.5) * 40;
+            const rot2 = rot + (Math.random() - 0.5) * 8;
+            el.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${rot2.toFixed(1)}deg) scale(1)`;
+          } else {
+            el.style.transform = `translate(-50%, -50%) rotate(${rot.toFixed(1)}deg) scale(1)`;
+          }
+        });
+        // fade out near end
+        setTimeout(() => { el.style.opacity = 0; }, Math.max(50, lifeMs - fadeMs));
+        // remove
+        setTimeout(() => { el.remove(); this.alive.delete(el); }, lifeMs + 50);
+      }
+    },
+    feedChar(c) {
+      if (!this.enabled()) { this.buf = ''; return; }
+      const trigger = $('ghost-trigger')?.value || 'word';
+      if (trigger === 'char') {
+        if (c && c.trim()) this.spawnWord(c);
+        return;
+      }
+      if (/[\s\n\r\t]/.test(c)) {
+        if (this.buf.trim()) this.spawnWord(this.buf.trim());
+        this.buf = '';
+        return;
+      }
+      this.buf += c;
+      if (trigger === 'sentence' && /[.!?]/.test(c)) {
+        if (this.buf.trim()) this.spawnWord(this.buf.trim());
+        this.buf = '';
+      }
+    },
+    feedBackspace() {
+      // simple: drop last char of buffer
+      if (this.buf.length > 0) this.buf = this.buf.slice(0, -1);
+    },
+    resetWordBuf() { this.buf = ''; },
+    clear() { this.alive.forEach(el => el.remove()); this.alive.clear(); }
+  };
+  Ghost.init();
+  window.Ghost = Ghost;
+
+  /* ============ SRT-DRIVEN SCRIPT TYPING ============ */
+  const SrtScript = {
+    cues: null, fileName: '',
+    parseAny(text, name) {
+      const lower = (name || '').toLowerCase();
+      try {
+        if (lower.endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+          const j = JSON.parse(text);
+          if (Array.isArray(j)) return j.map(x => ({ start: +x.start, end: +x.end, text: x.text || x.word || '' }));
+          if (Array.isArray(j.cues)) return j.cues.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+          if (Array.isArray(j.segments)) return j.segments.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+        }
+      } catch {}
+      // SRT/VTT/TXT parse: re-use audioParseSrt's robust splitter
+      const cleaned = text.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+      const out = [];
+      const blocks = cleaned.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const lines = block.trim().split(/\r?\n/);
+        if (!lines.length) continue;
+        const ti = lines.findIndex(l => l.includes('-->'));
+        if (ti < 0) continue;
+        const [sStr, eStr] = lines[ti].split('-->').map(x => x.trim());
+        const start = audioParseTimestamp(sStr) / 1000;
+        const end = audioParseTimestamp(eStr) / 1000;
+        const txt = lines.slice(ti + 1).join('\n').trim();
+        if (txt) out.push({ start, end, text: txt });
+      }
+      return out;
+    },
+    load(file) {
+      const r = new FileReader();
+      r.onload = e => {
+        try {
+          this.cues = this.parseAny(e.target.result, file.name);
+        } catch {
+          this.cues = null;
+        }
+        this.fileName = file.name;
+        const info = $('srt-script-info');
+        if (info) info.textContent = (this.cues && this.cues.length) ? `${this.cues.length} cues · ${file.name}` : 'parse failed';
+      };
+      r.readAsText(file);
+    },
+    clear() {
+      this.cues = null; this.fileName = '';
+      const info = $('srt-script-info'); if (info) info.textContent = 'no file';
+    },
+    enabled() { return !!$('srt-script-on')?.checked && this.cues && this.cues.length > 0; },
+    async play() {
+      if (!this.cues || !this.cues.length) return;
+      const fill = (+($('srt-script-fill')?.value) || 92) / 100;
+      const between = $('srt-script-between')?.value || 'keep';
+      const speakEachCue = !!$('srt-script-tts')?.checked;
+      const start = performance.now();
+      const isAbort = () => abortFlag;
+      clearScreen();
+      for (let i = 0; i < this.cues.length; i++) {
+        if (isAbort()) break;
+        const cue = this.cues[i];
+        const cueStartMs = cue.start * 1000;
+        const cueEndMs = cue.end * 1000;
+        const windowMs = Math.max(80, (cueEndMs - cueStartMs) * fill);
+        // wait until this cue's start
+        const waitMs = cueStartMs - (window.__srtElapsed ? window.__srtElapsed(start) : (performance.now() - start));
+        if (waitMs > 0) await sleep(waitMs);
+        if (isAbort()) break;
+        // optionally clear between cues
+        if (i > 0) {
+          if (between === 'clear') clearScreen();
+          else if (between === 'newline') appendChar('\n');
+          else if (between === 'keep') appendChar(' ');
+        }
+        // speak (parallel — don't block typing)
+        if (speakEachCue) speak(cue.text);
+        const text = cue.text;
+        const perChar = text.length > 0 ? windowMs / text.length : 0;
+        const cueStartAt = performance.now();
+        for (let k = 0; k < text.length; k++) {
+          if (isAbort()) break;
+          const elapsed = performance.now() - cueStartAt;
+          const target = (k + 1) * perChar;
+          const drift = target - elapsed;
+          if (drift > 0) await sleep(drift);
+          appendChar(text[k]);
+        }
+      }
+    }
+  };
+  $('srt-script-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) SrtScript.load(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('srt-script-clear')?.addEventListener('click', () => SrtScript.clear());
+  $('srt-script-fill')?.addEventListener('input', e => { const v = $('srt-script-fill-val'); if (v) v.textContent = e.target.value + '%'; });
+  window.SrtScript = SrtScript;
+
+  // Wrap play() to route to SrtScript / Notes when enabled
+  const _origPlay = play;
+  async function _runCountdown() {
+    const startDelay = (+$('start-delay').value) * 1000;
+    if (startDelay > 0) await sleep(startDelay);   // silent pre-roll (no countdown overlay)
+  }
+
+  const _flushDeferredRebuild = () => {
+    if (Notes._pendingRebuild) {
+      Notes._pendingRebuild = false;
+      try { Notes.rebuildFromScript(); } catch (e) { console.error(e); }
+    }
+  };
+  play = async function patchedPlay() {
+    if (playing) return;
+    if (SrtScript.enabled()) {
+      playing = true; abortFlag = false; Sound.resume();
+      audioState.playStartWall = performance.now();
+      startBgm();
+      try {
+        await _runCountdown();
+        await SrtScript.play();
+      } catch (e) { console.error('play (SrtScript) failed:', e); }
+      finally { playing = false; _flushDeferredRebuild(); }
+      return;
+    }
+    if (Notes.enabled() && Notes.list.length === 0) {
+      alert('Notes mode is on but no notes exist. Add one with “+ add note” or uncheck Notes mode.');
+      return;
+    }
+    if (Notes.enabled() && Notes.list.length > 0) {
+      playing = true; abortFlag = false; Sound.resume();
+      audioState.playStartWall = performance.now();
+      startBgm();
+      try {
+        const ttsOn = $('tts-on') && $('tts-on').checked;
+        if (ttsOn) { stopTts(); speak(audioStripMarkup(Notes.list.map(n => [n.meta?.subject, n.body, n.meta?.footer].filter(Boolean).join(' ')).join(' '))); }
+        await _runCountdown();
+        await Notes.playAll();
+      } catch (e) { console.error('play (Notes) failed:', e); }
+      finally { playing = false; _flushDeferredRebuild(); }
+      return;
+    }
+    return _origPlay.apply(this, arguments);
+  };
+
+  // Notes JSON I/O — exports the parsed shape list; useful for archiving a set of notes.
+  Notes.exportJson = function() {
+    const out = this.list.map(n => ({ shape: n.shape, meta: n.meta, body: n.body }));
+    const blob = new Blob([JSON.stringify({ notes: out }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'notes.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  };
+
+  $('start').addEventListener('click', () => play());
+  $('stop').addEventListener('click', stop);
+  $('reset').addEventListener('click', reset);
+  $('hide').addEventListener('click', () => body.classList.toggle('hide-controls'));
+
+  document.addEventListener('keydown', e => {
+    const target = e.target;
+    const inField = target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'SELECT');
+    if (inField) return;
+
+    if (e.key === 'h' || e.key === 'H') {
+      body.classList.toggle('hide-controls');
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      if (playing) stop(); else play();
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
+      stop();
+    }
+  });
+
+  clearScreen();
+})();
+</script>
+<!-- ===== Universal OBS present mode (#present) — shared across sims ===== -->
+<style>
+  body.present { background: #000 !important; overflow: hidden !important; }
+  body.present, body.present * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  body.present *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  body.present #controls { display: none !important; }
+  body.present #stage { padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+  body.present .present-frame {
+    position: fixed !important; inset: 0 !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; min-height: 0 !important;
+    max-width: none !important; max-height: none !important;
+    margin: 0 !important; border: none !important; border-radius: 0 !important;
+    transform: none !important; box-shadow: none !important;
+    overflow: hidden !important;
+  }
+  body.present .present-frame .phone-screen {
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; margin: 0 !important; border: none !important;
+  }
+  body.present .frame-handle,
+  body.present .frame-size-readout,
+  body.present #hint, body.present #focus-banner,
+  body.present #resize-handle, body.present #controls-toggle,
+  body.present #drop-hint, body.present #rec-indicator,
+  body.present #stage-meta, body.present #stage-scale-info,
+  body.present #tt-drag-bar, body.present #tt-resize-grip, body.present #tt-size-pill,
+  body.present .tt-grip, body.present #controls-toggle { display: none !important; }
+  #obs-link-btn {
+    position: fixed; left: 12px; bottom: 12px; z-index: 99999;
+    background: #c2410c; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 12px; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.92;
+  }
+  #obs-link-btn:hover { opacity: 1; }
+  body.present #obs-link-btn { display: none !important; }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'sim:script:' + (location.pathname.split('/').pop() || 'sim');
+  var scriptEl = $('script');
+  function buildLink() {
+    var base = location.href.replace(/[#?].*$/, '');
+    var s = scriptEl ? scriptEl.value : '';
+    return base + '#present' + (s && s.trim() ? '&s=' + encodeURIComponent(s) : '');
+  }
+  function copyText(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); } catch (e) {} }
+  }
+  if (scriptEl) {
+    scriptEl.addEventListener('input', function () { try { localStorage.setItem(KEY, scriptEl.value); } catch (e) {} });
+  }
+  var params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (params.has('present')) {
+    var s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem(KEY); } catch (e) {} }
+    if (s && scriptEl) scriptEl.value = s;
+    var stage = $('stage');
+    var frame = (stage && stage.querySelector('#gmail-frame, #tt-frame, #frame, .phone-wrap')) || stage;
+    if (frame) frame.classList.add('present-frame');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('present', 'hide-controls');
+    setTimeout(function () {
+      var b = $('start') || $('btn-play');
+      if (b) b.click();
+    }, 1200);
+  } else {
+    var btn = document.createElement('button');
+    btn.id = 'obs-link-btn'; btn.type = 'button'; btn.textContent = '📋 OBS link';
+    btn.title = 'Copy a present-mode link (with your current script) to paste into an OBS Browser Source';
+    btn.addEventListener('click', function () {
+      copyText(buildLink());
+      var t = btn.textContent; btn.textContent = '✓ Copied!';
+      setTimeout(function () { btn.textContent = t; }, 1600);
+    });
+    document.body.appendChild(btn);
+  }
+})();
+</script>
+</body>
+</html>

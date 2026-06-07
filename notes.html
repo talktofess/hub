@@ -1,0 +1,3173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notes Typer</title>
+<style>
+  :root {
+    /* Stage */
+    --stage-bg: #f4efe5;
+
+    /* Skin opacity */
+    --page-bg-alpha: 1;
+    --skin-alpha:    1;
+
+    /* Prompt area */
+    --prompt-bg: #1a1b1f;
+    --prompt-text: #ececf1;
+    --prompt-cursor: #ececf1;
+    --prompt-placeholder: rgba(236,236,241,0.35);
+    --prompt-radius: 18px;
+    --prompt-font: ui-monospace, "JetBrains Mono", Consolas, monospace;
+    --prompt-size: 18px;
+    --prompt-weight: 400;
+    --prompt-line-h: 1.55;
+    --prompt-pad-y: 20px;
+    --prompt-pad-x: 24px;
+    --prompt-min-h: 3.5em;
+
+    /* Lens / zoom (magnify prompt + vignette + centered give-way) */
+    --lens-mag: 1.5;
+    --lens-vignette: 0.5;
+    --prompt-max-w: 520px;
+    --prompt-shadow-y: 16px;
+    --prompt-shadow-blur: 48px;
+    --prompt-shadow-alpha: 0.4;
+    --prompt-cursor-w: 2px;
+    --prompt-cursor-h: 1.05em;
+    --prompt-cursor-offset: 2px;
+    --prompt-cursor-block-w: 0.55em;
+    --prompt-cursor-underline-h: 2px;
+
+    /* Note base */
+    --note-font: "Patrick Hand", "Caveat", "Comic Sans MS", "Marker Felt", "Bradley Hand", cursive;
+    --note-size: 18px;
+    --note-text: #2a2a2a;
+    --note-weight: 400;
+    --note-line-h: 1.5;
+    --note-pad-y: 18px;
+    --note-pad-x: 22px;
+    --note-radius: 8px;
+    --note-shadow-y: 8px;
+    --note-shadow-blur: 24px;
+    --note-shadow-alpha: 0.12;
+    --note-anim-fade: 400ms;
+    --note-anim-scale: 560ms;
+    --note-anim-easing: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --note-anim-scale-from: 0.7;
+
+    /* Note header / dedication / footer */
+    --note-header-fz: 11px;
+    --note-header-fw: 600;
+    --note-header-color: rgba(0,0,0,0.45);
+    --note-header-spacing: 0.08em;
+    --note-header-mb: 8px;
+    --note-ded-fz: 13px;
+    --note-ded-color: rgba(0,0,0,0.55);
+    --note-footer-fz: 12px;
+    --note-footer-color: rgba(0,0,0,0.5);
+
+    /* Sticky */
+    --sk-bg: #ffec7a;
+    --sk-w: 290px;
+    --sk-pad-t: 18px;
+    --sk-pad-x: 20px;
+    --sk-pad-b: 26px;
+    --sk-radius: 2px;
+    --sk-shadow-y: 10px;
+    --sk-shadow-blur: 22px;
+    --sk-shadow-alpha: 0.18;
+
+    /* Notebook */
+    --nb-bg: #fdfcf6;
+    --nb-w: 360px;
+    --nb-pad-t: 22px;
+    --nb-pad-x: 22px;
+    --nb-pad-l: 56px;
+    --nb-radius: 2px;
+    --nb-line-color: #b8c5d4;
+    --nb-margin-color: #ff8888;
+    --nb-line-h: 28px;
+
+    /* Polaroid */
+    --pl-bg: #ffffff;
+    --pl-w: 280px;
+    --pl-pad-t: 22px;
+    --pl-pad-x: 22px;
+    --pl-pad-b: 60px;
+    --pl-radius: 2px;
+    --pl-shadow-y: 14px;
+    --pl-shadow-blur: 28px;
+    --pl-shadow-alpha: 0.18;
+    --pl-footer-fz: 16px;
+    --pl-footer-color: #555;
+
+    /* Index card */
+    --ix-bg: #fafafa;
+    --ix-w: 380px;
+    --ix-pad-t: 18px;
+    --ix-pad-x: 22px;
+    --ix-pad-b: 22px;
+    --ix-radius: 2px;
+    --ix-top-border: 4px;
+    --ix-top-color: #f25555;
+    --ix-line-color: #b8c5d4;
+    --ix-line-h: 24px;
+    --ix-header-color: #c44;
+
+    /* Postcard */
+    --pc-bg: #f3e9d2;
+    --pc-w: 420px;
+    --pc-pad-y: 20px;
+    --pc-pad-x: 24px;
+    --pc-radius: 4px;
+    --pc-divider: #b9a273;
+    --pc-header-color: #6f5a35;
+
+    /* Plain */
+    --pn-bg: #ffffff;
+    --pn-w: 340px;
+    --pn-pad-y: 20px;
+    --pn-pad-x: 22px;
+    --pn-radius: 14px;
+
+    /* Strings */
+    --string-color: #8a857a;
+    --string-width: 1.6;
+
+    /* Frame guide */
+    --frame-border: 1px dashed rgba(0,0,0,0.18);
+
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: transparent !important;
+    color: #d6d7df;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow-x: hidden;
+    display: flex;
+    min-height: 100%;
+  }
+  #page-bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--stage-bg, #1c1c1e);
+    opacity: var(--page-bg-alpha);
+    pointer-events: none;
+  }
+
+  /* ---------- Controls panel ---------- */
+  #controls {
+    width: 380px;
+    flex: 0 0 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #15161a;
+    border-right: 1px solid #2a2c33;
+    padding: 18px 18px 28px;
+    font-size: 13px;
+    transition: margin-left 200ms ease;
+    z-index: 10;
+    position: sticky;
+    top: 0;
+    color: #c4c6cd;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+
+  #controls h1 {
+    font-size: 14px;
+    margin: 0 0 14px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #controls h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8a8d96;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #2a2c33;
+    padding-bottom: 4px;
+  }
+
+  /* Tabs */
+  #tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a2c33;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #8a8d96;
+    padding: 7px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab-btn:hover { color: #c4c6cd; background: transparent; }
+  .tab-btn.active { color: #fff; border-bottom-color: #4a6cf7; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tab-fade 160ms ease; }
+  @keyframes tab-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  details.shape-group {
+    border: 1px solid #2a2c33;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 8px 0;
+    background: #0e0f12;
+  }
+  details.shape-group > summary {
+    cursor: pointer;
+    font-size: 11px;
+    color: #c4c6cd;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 0;
+  }
+
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { flex: 1; color: #c4c6cd; }
+  .row input[type="number"], .row select, .row input[type="text"] {
+    width: 150px; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 6px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px;
+  }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="color"] {
+    width: 40px; height: 28px; padding: 0;
+    border: 1px solid #2a2c33; border-radius: 6px; background: #0e0f12;
+  }
+  .row .val { width: 56px; text-align: right; color: #8a8d96; font-variant-numeric: tabular-nums; }
+  .row input[type="checkbox"] { accent-color: #6b8fff; }
+
+  textarea#script {
+    width: 100%;
+    height: 280px;
+    background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    resize: vertical;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    background: #2b2f3a; color: #ececf1;
+    border: 1px solid #3a3f4c; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #353a47; }
+  button.primary { background: #4a6cf7; border-color: #4a6cf7; }
+  button.primary:hover { background: #5b7afa; }
+  button.danger { background: #5a2a2a; border-color: #6a3535; }
+
+  .help {
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+    color: #a8abb3; font-size: 12px; line-height: 1.6;
+  }
+  .help code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+  }
+
+  .shape-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .shape-grid label {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    background: #0e0f12;
+    border: 1px solid #2a2c33;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* ---------- Image/video list ---------- */
+  #video-list, #image-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .img-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0e0f12;
+    border: 1px solid #2a2c33;
+    border-radius: 6px;
+    padding: 4px 8px;
+  }
+  .img-item .idx {
+    width: 18px;
+    text-align: center;
+    font-weight: 600;
+    color: #f0c674;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+  }
+  .img-item video, .img-item img {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #000;
+  }
+  .img-item .name {
+    flex: 1;
+    color: #c4c6cd;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .img-item .remove {
+    flex: 0 0 24px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+  .img-item .remove:hover { color: #fff; background: none; }
+
+  /* ---------- Note video / image ---------- */
+  .note .note-video,
+  .note .note-image {
+    display: block;
+    width: 100%;
+    border-radius: 6px;
+    margin: 4px 0;
+    background: #000;
+    max-height: 280px;
+    object-fit: cover;
+  }
+  .note .note-video { cursor: pointer; }
+  .note.polaroid .note-video,
+  .note.polaroid .note-image {
+    aspect-ratio: 1 / 1;
+    max-height: none;
+  }
+  .note .note-mute {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: white;
+    cursor: pointer;
+    z-index: 10;
+    pointer-events: auto;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .note.has-video.unmuted .note-mute { display: none; }
+
+  /* ---------- Stage ---------- */
+  #stage {
+    flex: 1;
+    min-height: 100vh;
+    background: transparent;
+    padding: 0;
+    position: relative;
+  }
+  #stage::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--stage-bg);
+    z-index: 0;
+    opacity: var(--skin-alpha);
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  /* Existing children already have positioning; promote them above the ::before overlay. */
+  #stage > #frame,
+  #stage > #prompt-area,
+  #stage > #canvas-wrap { z-index: 1; }
+
+  #prompt-area {
+    position: fixed;
+    top: 50%;
+    left: 380px;
+    right: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    transition: left 200ms ease;
+    transform: translateY(-50%);
+  }
+
+  /* ---------- Layout frame ---------- */
+  #frame {
+    position: fixed;
+    top: 50%;
+    left: calc(380px + (100vw - 380px) / 2);
+    transform: translate(-50%, -50%);
+    width: 1100px;
+    height: 620px;
+    border: var(--frame-border);
+    pointer-events: none;
+    z-index: 4;
+    transition: left 200ms ease;
+    border-radius: 4px;
+    max-width: calc(100vw - 380px - 40px);
+    max-height: calc(100vh - 60px);
+  }
+  body.hide-controls #frame {
+    left: 50vw;
+    max-width: calc(100vw - 40px);
+  }
+  .frame-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: rgba(74, 108, 247, 0.85);
+    border: 2px solid white;
+    border-radius: 50%;
+    pointer-events: auto;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    z-index: 5;
+    touch-action: none;
+    transition: transform 120ms ease;
+  }
+  .frame-handle:hover { transform: scale(1.2); }
+  .frame-handle-tl { top: -8px; left: -8px; cursor: nwse-resize; }
+  .frame-handle-tr { top: -8px; right: -8px; cursor: nesw-resize; }
+  .frame-handle-bl { bottom: -8px; left: -8px; cursor: nesw-resize; }
+  .frame-handle-br { bottom: -8px; right: -8px; cursor: nwse-resize; }
+  body.hide-controls #frame { display: none; }
+  body.hide-controls #prompt-area { left: 0; }
+  #prompt-box {
+    pointer-events: auto;
+    width: 100%;
+    max-width: var(--prompt-max-w);
+    margin: 0 30px;
+    background: var(--prompt-bg);
+    color: var(--prompt-text);
+    border-radius: var(--prompt-radius);
+    padding: var(--prompt-pad-y) var(--prompt-pad-x);
+    font-family: var(--prompt-font);
+    font-size: var(--prompt-size);
+    font-weight: var(--prompt-weight);
+    line-height: var(--prompt-line-h);
+    min-height: var(--prompt-min-h);
+    box-shadow: 0 var(--prompt-shadow-y) var(--prompt-shadow-blur) rgba(0,0,0,var(--prompt-shadow-alpha)), 0 4px 12px rgba(0,0,0,0.2);
+    word-wrap: break-word;
+    transition: opacity 180ms ease, transform 220ms cubic-bezier(0.5, -0.4, 0.7, 1);
+    position: relative;
+  }
+  #prompt-box.sending {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.98);
+  }
+  body.hide-prompt #prompt-box { opacity: 0; pointer-events: none; }
+  #prompt-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  #prompt-placeholder {
+    color: var(--prompt-placeholder);
+  }
+  #prompt-cursor {
+    display: inline-block;
+    width: var(--prompt-cursor-w);
+    height: var(--prompt-cursor-h);
+    background: var(--prompt-cursor);
+    vertical-align: text-bottom;
+    margin-left: 1px;
+    transform: translateY(var(--prompt-cursor-offset));
+  }
+  #prompt-cursor.block { width: var(--prompt-cursor-block-w); opacity: 0.85; }
+  #prompt-cursor.underline { width: var(--prompt-cursor-block-w); height: var(--prompt-cursor-underline-h); transform: translateY(0); }
+
+  /* ---------- Lens / zoom: magnify the prompt text + vignette. The prompt box is
+     already vertically centered (#prompt-area); we keep its box/contrast and just
+     enlarge the text, capping height so long scenes scroll (newest stays in view). ---------- */
+  #prompt-box { transition: opacity 180ms ease, transform 220ms cubic-bezier(0.5,-0.4,0.7,1), font-size 600ms cubic-bezier(.22,1,.36,1); }
+  body.lens-on #prompt-box {
+    font-size: calc(var(--prompt-size) * var(--lens-mag, 1.5));
+    max-height: 78vh;
+    overflow-y: auto; scrollbar-width: none;
+  }
+  body.lens-on #prompt-box::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  #lens-vignette-fx {
+    position: fixed; inset: 0; pointer-events: none; z-index: 11;
+    opacity: 0; transition: opacity 600ms ease;
+    background: radial-gradient(ellipse 80% 74% at 50% 48%,
+      rgba(0,0,0,0) 38%,
+      rgba(0,0,0,calc(var(--lens-vignette, 0.5) * 0.5)) 72%,
+      rgba(0,0,0,var(--lens-vignette, 0.5)) 100%);
+  }
+  body.lens-on #lens-vignette-fx { opacity: 1; }
+  /* in edit mode keep the vignette clear of the controls panel on the left */
+  body.lens-on:not(.present):not(.hide-controls) #lens-vignette-fx { left: 380px; }
+
+  /* ---------- Canvas ---------- */
+  #canvas-wrap {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  #strings {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  #canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  }
+
+  /* ---------- Note base ---------- */
+  .note {
+    position: absolute;
+    padding: var(--note-pad-y) var(--note-pad-x);
+    font-family: var(--note-font);
+    font-size: var(--note-size);
+    font-weight: var(--note-weight);
+    line-height: var(--note-line-h);
+    color: var(--note-text);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(var(--note-anim-scale-from)) rotate(var(--rot, 0deg));
+    transition: opacity var(--note-anim-fade) ease, transform var(--note-anim-scale) var(--note-anim-easing);
+    background: #fff;
+    border-radius: var(--note-radius);
+    box-shadow: 0 var(--note-shadow-y) var(--note-shadow-blur) rgba(0,0,0,var(--note-shadow-alpha)), 0 2px 6px rgba(0,0,0,0.06);
+  }
+  .note.appear {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(var(--rot, 0deg));
+  }
+  .note .note-header {
+    font-size: var(--note-header-fz);
+    text-transform: uppercase;
+    letter-spacing: var(--note-header-spacing);
+    color: var(--note-header-color);
+    margin-bottom: var(--note-header-mb);
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-weight: var(--note-header-fw);
+  }
+  .note .note-dedication {
+    font-size: var(--note-ded-fz);
+    font-style: italic;
+    color: var(--note-ded-color);
+    margin: -2px 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed rgba(0,0,0,0.18);
+    font-family: var(--note-font);
+    line-height: 1.3;
+  }
+  .note .note-footer {
+    font-size: var(--note-footer-fz);
+    color: var(--note-footer-color);
+    margin-top: 10px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-style: italic;
+    text-align: right;
+  }
+
+  /* ---------- Shape: sticky ---------- */
+  .note.sticky {
+    background: var(--note-color, var(--sk-bg));
+    width: var(--sk-w);
+    border-radius: var(--sk-radius);
+    padding: var(--sk-pad-t) var(--sk-pad-x) var(--sk-pad-b);
+    box-shadow: 0 var(--sk-shadow-y) var(--sk-shadow-blur) rgba(0,0,0,var(--sk-shadow-alpha)), 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .note.sticky .note-footer { color: rgba(0,0,0,0.45); }
+  .note.sticky::after {
+    content: '';
+    position: absolute;
+    bottom: 0; right: 0;
+    width: 24px; height: 24px;
+    background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.12) 50%);
+  }
+
+  /* ---------- Shape: notebook ---------- */
+  .note.notebook {
+    background: var(--note-color, var(--nb-bg));
+    width: var(--nb-w);
+    padding: var(--nb-pad-t) var(--nb-pad-x) var(--nb-pad-t) var(--nb-pad-l);
+    background-image:
+      linear-gradient(to right, transparent 42px, var(--nb-margin-color) 42px, var(--nb-margin-color) 43px, transparent 43px),
+      repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--nb-line-h) - 1px), var(--nb-line-color) calc(var(--nb-line-h) - 1px), var(--nb-line-color) var(--nb-line-h));
+    background-size: 100% 100%, 100% var(--nb-line-h);
+    background-position: 0 0, 0 14px;
+    line-height: var(--nb-line-h);
+    border-radius: var(--nb-radius);
+  }
+  .note.notebook .note-header {
+    margin-bottom: 0;
+    line-height: var(--nb-line-h);
+    color: rgba(0,0,0,0.5);
+  }
+
+  /* ---------- Shape: polaroid ---------- */
+  .note.polaroid {
+    background: var(--note-color, var(--pl-bg));
+    width: var(--pl-w);
+    padding: var(--pl-pad-t) var(--pl-pad-x) var(--pl-pad-b);
+    border-radius: var(--pl-radius);
+    box-shadow: 0 var(--pl-shadow-y) var(--pl-shadow-blur) rgba(0,0,0,var(--pl-shadow-alpha)), 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .note.polaroid .note-footer {
+    position: absolute;
+    bottom: 18px;
+    left: 22px;
+    right: 22px;
+    text-align: center;
+    font-family: var(--note-font);
+    font-style: normal;
+    font-size: var(--pl-footer-fz);
+    color: var(--pl-footer-color);
+    margin-top: 0;
+  }
+
+  /* ---------- Shape: index ---------- */
+  .note.index {
+    background: var(--note-color, var(--ix-bg));
+    width: var(--ix-w);
+    border-top: var(--ix-top-border) solid var(--ix-top-color);
+    background-image:
+      linear-gradient(to bottom, transparent 0, transparent calc(var(--ix-line-h) - 1px), var(--ix-line-color) calc(var(--ix-line-h) - 1px), var(--ix-line-color) var(--ix-line-h));
+    background-size: 100% var(--ix-line-h);
+    background-position: 0 8px;
+    border-radius: var(--ix-radius);
+    padding: var(--ix-pad-t) var(--ix-pad-x) var(--ix-pad-b);
+    line-height: var(--ix-line-h);
+  }
+  .note.index .note-header { color: var(--ix-header-color); }
+
+  /* ---------- Shape: postcard ---------- */
+  .note.postcard {
+    background: var(--note-color, var(--pc-bg));
+    width: var(--pc-w);
+    padding: var(--pc-pad-y) var(--pc-pad-x);
+    border-radius: var(--pc-radius);
+    border-left: 1px dashed var(--pc-divider);
+  }
+  .note.postcard .note-header {
+    color: var(--pc-header-color);
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding-bottom: 6px;
+  }
+
+  /* ---------- Shape: plain ---------- */
+  .note.plain {
+    background: var(--note-color, var(--pn-bg));
+    width: var(--pn-w);
+    border-radius: var(--pn-radius);
+    padding: var(--pn-pad-y) var(--pn-pad-x);
+  }
+
+  /* ---------- Hint ---------- */
+  #hint {
+    position: fixed; bottom: 12px; right: 16px;
+    color: rgba(0,0,0,0.35); font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace;
+    opacity: 0; transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  body.hide-controls #hint { opacity: 1; }
+
+
+  /* ============ MOBILE LAYOUT ============ */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: visible; }
+    body {
+      flex-direction: column !important;
+      overflow-x: hidden;
+    }
+    /* Stage on top */
+    #stage, #canvas-wrap {
+      width: 100% !important;
+      height: 60vh !important;
+      min-height: 320px;
+    }
+    #stage { flex: 0 0 auto !important; min-height: 60vh; }
+    /* Controls below */
+    #controls {
+      width: 100% !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      position: relative !important;
+      top: auto !important;
+      border-right: none !important;
+      border-top: 1px solid #2a2c33 !important;
+    }
+    body.hide-controls #controls { margin-left: 0 !important; display: none !important; }
+    /* Frame and prompt area become flexible */
+    #frame {
+      position: relative !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      max-width: calc(100vw - 20px) !important;
+      max-height: 55vh !important;
+      margin: 0 auto;
+    }
+    #prompt-area {
+      left: 0 !important;
+      position: absolute !important;
+    }
+    /* Tabs scrollable */
+    #tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap !important;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+    .tab-btn { flex: 0 0 auto !important; padding: 8px 12px !important; min-height: 36px; scroll-snap-align: start; }
+    /* Inputs touch-friendly */
+    button { min-height: 38px; padding: 10px 14px; font-size: 13px; }
+    .row { gap: 12px; }
+    .row input[type="text"], .row input[type="number"], .row select { min-height: 38px; font-size: 13px; width: auto; min-width: 130px; }
+    .row input[type="color"] { width: 44px; height: 38px; }
+    .row input[type="range"] { min-height: 36px; }
+  }
+  @media (max-width: 600px) {
+    #stage { height: 55vh !important; min-height: 55vh; }
+    #frame { max-height: 50vh !important; }
+  }
+</style>
+</head>
+<body>
+<div id="bg-media-layer" style="position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;">
+  <video id="bg-video" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:1;" playsinline preload="auto"></video>
+  <video id="bg-video-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" playsinline preload="auto"></video>
+  <img id="bg-image" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;" alt="">
+  <audio id="bg-audio-only" style="display:none;"></audio>
+</div>
+<div id="page-bg-tint"></div>
+
+<aside id="controls">
+  <h1>Notes Typer</h1>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="tab-script">Script</button>
+    <button class="tab-btn" data-tab="tab-layout">Layout</button>
+    <button class="tab-btn" data-tab="tab-colors">Colors</button>
+    <button class="tab-btn" data-tab="tab-type">Type</button>
+    <button class="tab-btn" data-tab="tab-shapes">Shapes</button>
+    <button class="tab-btn" data-tab="tab-prompt">Prompt</button>
+    <button class="tab-btn" data-tab="tab-strings">Strings</button>
+    <button class="tab-btn" data-tab="tab-anim">Anim</button>
+    <button class="tab-btn" data-tab="tab-timing">Timing</button>
+    <button class="tab-btn" data-tab="tab-media">Media</button>
+    <button class="tab-btn" data-tab="tab-sound">Sound</button>
+    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+    <button class="tab-btn" data-tab="tab-tts">Sync</button>
+    <button class="tab-btn" data-tab="tab-srt-script">Script SRT</button>
+  </div>
+
+  <!-- ============ SCRIPT TAB ============ -->
+  <div class="tab-content active" id="tab-script">
+    <textarea id="script" spellcheck="false">[[shape:sticky]][[header:Tue · 6:48 AM]]
+woke up before the alarm again
+the silence in this apartment is not the same as the silence at home
+
+[[shape:notebook]][[header:Things I noticed today]]
+the bakery on Main has a new sign
+two old men play chess in the park even when it rains
+the heron came back to the bridge
+
+[[shape:polaroid]][[footer:the bridge, morning light]]
+caught it just as the [[fag|fog]] lifted
+felt like i was the only person who saw
+
+[[shape:index]][[header:errands]]
+buy bread
+fix the back window
+[[wirte|write]] back to mom
+
+[[shape:postcard]][[header:dear j]][[footer:— m]]
+the [[apartmnet|apartment]] is small. the window faces east. i wake up before the alarm now. tell me how you are</textarea>
+
+    <div class="btn-row">
+      <button id="start" class="primary">Start ▶</button>
+      <button id="stop" class="danger">Stop</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="hide">Hide panel (H)</button>
+    </div>
+
+    <h2>Presets</h2>
+    <div class="btn-row">
+      <button data-preset="fast">Fast</button>
+      <button data-preset="natural">Natural</button>
+      <button data-preset="slow">Slow</button>
+    </div>
+
+    <h2>Audio sync</h2>
+    <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+    <div class="btn-row">
+      <button id="audio-pick">Load audio</button>
+      <button id="audio-clear">Clear</button>
+    </div>
+    <div id="audio-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No audio loaded</div>
+
+    <div class="row" style="margin-top:10px;">
+      <label>Sync mode</label>
+      <select id="sync-mode">
+        <option value="off">Off</option>
+        <option value="rate">Rate-match</option>
+        <option value="words">Word-timed</option>
+      </select>
+    </div>
+
+    <input type="file" id="timing-input" accept=".srt,.vtt,.json" style="display:none;">
+    <div class="btn-row">
+      <button id="timing-pick">Load Whisper timing</button>
+      <button id="timing-clear">Clear</button>
+    </div>
+    <div id="timing-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No timing file</div>
+
+    <div class="row" style="margin-top:6px;">
+      <label>Paragraph gap (ms)</label>
+      <input type="number" id="paragraph-gap" value="1500" min="100" max="20000" step="100">
+    </div>
+
+    <details class="help" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Markup cheatsheet</summary>
+      <div style="margin-top:8px">
+        Blank line ends a note. Prefix a paragraph with:<br>
+        <code>[[shape:sticky]]</code> · <code>notebook</code> · <code>polaroid</code> · <code>index</code> · <code>postcard</code> · <code>plain</code><br>
+        <code>[[header:My Title]]</code> · <code>[[footer:signed, m]]</code> · <code>[[color:#hex]]</code><br>
+        <code>[[dedication:For Anna]]</code> · <code>[[image:1]]</code> / <code>[[video:1]]</code><br>
+        Inline: <code>[[wrong|right]]</code> · <code>[[pause:1500]]</code>
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ LAYOUT TAB ============ -->
+  <div class="tab-content" id="tab-layout">
+    <h2>Frame guide</h2>
+    <div class="row"><label>Frame width (px)</label><input type="number" id="frame-w" value="1100" min="200" max="4000" step="10"></div>
+    <div class="row"><label>Frame height (px)</label><input type="number" id="frame-h" value="620" min="200" max="4000" step="10"></div>
+    <div class="row"><label>Frame border</label>
+      <select data-css="--frame-border">
+        <option value="1px dashed rgba(0,0,0,0.18)" selected>Dashed (subtle)</option>
+        <option value="1px solid rgba(0,0,0,0.25)">Solid</option>
+        <option value="2px dashed rgba(74,108,247,0.5)">Dashed (blue)</option>
+        <option value="none">None</option>
+      </select>
+    </div>
+
+    <h2>Note layout</h2>
+    <div class="row">
+      <label>Pattern</label>
+      <select id="layout">
+        <option value="zigzag">Zigzag (recommended)</option>
+        <option value="jitter">Centered with jitter</option>
+        <option value="straight">Straight column</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Jitter strength</label>
+      <input type="range" id="jitter" min="0" max="400" value="120">
+      <span class="val" id="jitter-val">120</span>
+    </div>
+    <div class="row">
+      <label>Rotation strength</label>
+      <input type="range" id="rotation" min="0" max="200" value="25">
+      <span class="val" id="rotation-val">2.5°</span>
+    </div>
+    <div class="row">
+      <label>Send pause (ms)</label>
+      <input type="number" id="send-pause" value="700" min="0" max="10000">
+    </div>
+    <div class="row">
+      <label>Note settle (ms)</label>
+      <input type="number" id="settle-pause" value="380" min="0" max="5000">
+    </div>
+
+    <h2>Shape pool (when no <code>[[shape:]]</code>)</h2>
+    <div class="shape-grid">
+      <label><input type="checkbox" data-shape="sticky" checked> sticky</label>
+      <label><input type="checkbox" data-shape="notebook" checked> notebook</label>
+      <label><input type="checkbox" data-shape="polaroid" checked> polaroid</label>
+      <label><input type="checkbox" data-shape="index" checked> index</label>
+      <label><input type="checkbox" data-shape="postcard" checked> postcard</label>
+      <label><input type="checkbox" data-shape="plain" checked> plain</label>
+    </div>
+  </div>
+
+  <!-- ============ COLORS TAB ============ -->
+  <div class="tab-content" id="tab-colors">
+    <h2>Canvas</h2>
+    <div class="row"><label>Stage background</label><input type="color" data-css="--stage-bg" value="#f4efe5"></div>
+
+    <h2>Note body</h2>
+    <div class="row"><label>Body text color</label><input type="color" data-css="--note-text" value="#2a2a2a"></div>
+    <div class="row"><label>Header label color</label><input type="color" data-css="--note-header-color" value="#737373"></div>
+    <div class="row"><label>Dedication color</label><input type="color" data-css="--note-ded-color" value="#8c8c8c"></div>
+    <div class="row"><label>Footer color</label><input type="color" data-css="--note-footer-color" value="#808080"></div>
+
+    <h2>Prompt area</h2>
+    <div class="row"><label>Prompt background</label><input type="color" data-css="--prompt-bg" value="#1a1b1f"></div>
+    <div class="row"><label>Prompt text</label><input type="color" data-css="--prompt-text" value="#ececf1"></div>
+    <div class="row"><label>Cursor color</label><input type="color" data-css="--prompt-cursor" value="#ececf1"></div>
+    <div class="row"><label>Placeholder</label><input type="color" id="prompt-placeholder-color" value="#5a5a5a"></div>
+  </div>
+
+  <!-- ============ TYPE TAB ============ -->
+  <div class="tab-content" id="tab-type">
+    <h2>Note body font</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--note-font">
+        <option value='"Patrick Hand", "Caveat", "Comic Sans MS", "Marker Felt", cursive' selected>Handwritten</option>
+        <option value='"Caveat", "Comic Sans MS", cursive'>Caveat</option>
+        <option value='Georgia, "Times New Roman", serif'>Serif (Georgia)</option>
+        <option value='"Times New Roman", Times, serif'>Times New Roman</option>
+        <option value='ui-sans-serif, system-ui, -apple-system, sans-serif'>Sans-serif</option>
+        <option value='Inter, ui-sans-serif, sans-serif'>Inter</option>
+        <option value='"Helvetica Neue", Helvetica, sans-serif'>Helvetica</option>
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace'>Typewriter / mono</option>
+        <option value='"Courier New", Courier, monospace'>Courier</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="note-font-custom" placeholder='e.g. "Patrick Hand", cursive'></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--note-size" data-unit="px" value="18" min="6" max="80"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--note-weight">
+        <option value="100">100 Thin</option><option value="300">300 Light</option>
+        <option value="400" selected>400 Regular</option><option value="500">500 Medium</option>
+        <option value="600">600 SemiBold</option><option value="700">700 Bold</option><option value="900">900 Black</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--note-line-h" value="1.5" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Body padding Y (px)</label><input type="number" data-css="--note-pad-y" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Body padding X (px)</label><input type="number" data-css="--note-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+
+    <h2>Header label</h2>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--note-header-fz" data-unit="px" value="11" min="6" max="40"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--note-header-fw">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600" selected>600</option><option value="700">700</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--note-header-spacing" data-unit="em" value="0.08" min="0" max="0.5" step="0.01"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--note-header-mb" data-unit="px" value="8" min="0" max="40"></div>
+
+    <h2>Dedication / footer</h2>
+    <div class="row"><label>Dedication size (px)</label><input type="number" data-css="--note-ded-fz" data-unit="px" value="13" min="6" max="32"></div>
+    <div class="row"><label>Footer size (px)</label><input type="number" data-css="--note-footer-fz" data-unit="px" value="12" min="6" max="32"></div>
+  </div>
+
+  <!-- ============ SHAPES TAB ============ -->
+  <div class="tab-content" id="tab-shapes">
+    <details class="shape-group" open>
+      <summary>Sticky note</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--sk-bg" value="#ffec7a"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--sk-w" data-unit="px" value="290" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--sk-pad-t" data-unit="px" value="18" min="0" max="80"></div>
+      <div class="row"><label>Padding side (px)</label><input type="number" data-css="--sk-pad-x" data-unit="px" value="20" min="0" max="80"></div>
+      <div class="row"><label>Padding bottom (px)</label><input type="number" data-css="--sk-pad-b" data-unit="px" value="26" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--sk-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--sk-shadow-y" data-unit="px" value="10" min="0" max="80"></div>
+      <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--sk-shadow-blur" data-unit="px" value="22" min="0" max="120"></div>
+      <div class="row">
+        <label>Shadow opacity</label>
+        <input type="range" id="sk-shadow-alpha" min="0" max="100" value="18">
+        <span class="val" id="sk-shadow-alpha-val">18%</span>
+      </div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Notebook page</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--nb-bg" value="#fdfcf6"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--nb-w" data-unit="px" value="360" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--nb-pad-t" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding right (px)</label><input type="number" data-css="--nb-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Left margin (px)</label><input type="number" data-css="--nb-pad-l" data-unit="px" value="56" min="0" max="200"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--nb-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Margin line color</label><input type="color" data-css="--nb-margin-color" value="#ff8888"></div>
+      <div class="row"><label>Rule color</label><input type="color" data-css="--nb-line-color" value="#b8c5d4"></div>
+      <div class="row"><label>Line height (px)</label><input type="number" data-css="--nb-line-h" data-unit="px" value="28" min="14" max="60"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Polaroid</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--pl-bg" value="#ffffff"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--pl-w" data-unit="px" value="280" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--pl-pad-t" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding side (px)</label><input type="number" data-css="--pl-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding bottom (px)</label><input type="number" data-css="--pl-pad-b" data-unit="px" value="60" min="0" max="160"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--pl-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--pl-shadow-y" data-unit="px" value="14" min="0" max="80"></div>
+      <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--pl-shadow-blur" data-unit="px" value="28" min="0" max="120"></div>
+      <div class="row">
+        <label>Shadow opacity</label>
+        <input type="range" id="pl-shadow-alpha" min="0" max="100" value="18">
+        <span class="val" id="pl-shadow-alpha-val">18%</span>
+      </div>
+      <div class="row"><label>Footer font size (px)</label><input type="number" data-css="--pl-footer-fz" data-unit="px" value="16" min="6" max="40"></div>
+      <div class="row"><label>Footer color</label><input type="color" data-css="--pl-footer-color" value="#555555"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Index card</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--ix-bg" value="#fafafa"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--ix-w" data-unit="px" value="380" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--ix-pad-t" data-unit="px" value="18" min="0" max="80"></div>
+      <div class="row"><label>Padding side (px)</label><input type="number" data-css="--ix-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding bottom (px)</label><input type="number" data-css="--ix-pad-b" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--ix-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Top border (px)</label><input type="number" data-css="--ix-top-border" data-unit="px" value="4" min="0" max="20"></div>
+      <div class="row"><label>Top border color</label><input type="color" data-css="--ix-top-color" value="#f25555"></div>
+      <div class="row"><label>Rule color</label><input type="color" data-css="--ix-line-color" value="#b8c5d4"></div>
+      <div class="row"><label>Line height (px)</label><input type="number" data-css="--ix-line-h" data-unit="px" value="24" min="14" max="60"></div>
+      <div class="row"><label>Header color</label><input type="color" data-css="--ix-header-color" value="#cc4444"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Postcard</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--pc-bg" value="#f3e9d2"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--pc-w" data-unit="px" value="420" min="100" max="900"></div>
+      <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--pc-pad-y" data-unit="px" value="20" min="0" max="80"></div>
+      <div class="row"><label>Padding X (px)</label><input type="number" data-css="--pc-pad-x" data-unit="px" value="24" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--pc-radius" data-unit="px" value="4" min="0" max="40"></div>
+      <div class="row"><label>Divider color</label><input type="color" data-css="--pc-divider" value="#b9a273"></div>
+      <div class="row"><label>Header color</label><input type="color" data-css="--pc-header-color" value="#6f5a35"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Plain</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--pn-bg" value="#ffffff"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--pn-w" data-unit="px" value="340" min="100" max="800"></div>
+      <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--pn-pad-y" data-unit="px" value="20" min="0" max="80"></div>
+      <div class="row"><label>Padding X (px)</label><input type="number" data-css="--pn-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--pn-radius" data-unit="px" value="14" min="0" max="60"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Note base (fallback)</summary>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--note-radius" data-unit="px" value="8" min="0" max="40"></div>
+      <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--note-shadow-y" data-unit="px" value="8" min="0" max="80"></div>
+      <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--note-shadow-blur" data-unit="px" value="24" min="0" max="120"></div>
+      <div class="row">
+        <label>Shadow opacity</label>
+        <input type="range" id="note-shadow-alpha" min="0" max="100" value="12">
+        <span class="val" id="note-shadow-alpha-val">12%</span>
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ PROMPT TAB ============ -->
+  <div class="tab-content" id="tab-prompt">
+    <h2>Visibility</h2>
+    <div class="row"><label>Show prompt box</label><input type="checkbox" id="show-prompt" checked></div>
+
+    <h2>Lens / zoom</h2>
+    <div class="row"><label>Magnify &amp; center text</label><input type="checkbox" id="lens-on" checked></div>
+    <div class="row">
+      <label>Magnification (×)</label>
+      <input type="range" id="lens-mag" min="100" max="320" value="150">
+      <span class="val" id="lens-mag-val">1.5×</span>
+    </div>
+    <div class="row">
+      <label>Vignette strength</label>
+      <input type="range" id="lens-vignette" min="0" max="100" value="50">
+      <span class="val" id="lens-vignette-val">50%</span>
+    </div>
+    <div class="help">Magnifies the prompt text (author at a normal size) and frames it like a lens. Typing starts centered; as it grows, older lines scroll up and fade.</div>
+
+    <h2>Font</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--prompt-font">
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace' selected>Monospace</option>
+        <option value='"Fira Code", ui-monospace, monospace'>Fira Code</option>
+        <option value='Consolas, monospace'>Consolas</option>
+        <option value='ui-sans-serif, system-ui, -apple-system, sans-serif'>Sans-serif</option>
+        <option value='Inter, sans-serif'>Inter</option>
+        <option value='Georgia, "Times New Roman", serif'>Serif</option>
+      </select>
+    </div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--prompt-size" data-unit="px" value="18" min="6" max="80"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--prompt-weight">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option><option value="700">700</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--prompt-line-h" value="1.55" min="0.8" max="3" step="0.05"></div>
+
+    <h2>Box</h2>
+    <div class="row"><label>Max width (px)</label><input type="number" data-css="--prompt-max-w" data-unit="px" value="520" min="200" max="2000"></div>
+    <div class="row"><label>Min height (em)</label><input type="number" data-css="--prompt-min-h" data-unit="em" value="3.5" min="0.5" max="20" step="0.5"></div>
+    <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--prompt-pad-y" data-unit="px" value="20" min="0" max="80"></div>
+    <div class="row"><label>Padding X (px)</label><input type="number" data-css="--prompt-pad-x" data-unit="px" value="24" min="0" max="80"></div>
+    <div class="row"><label>Border radius (px)</label><input type="number" data-css="--prompt-radius" data-unit="px" value="18" min="0" max="80"></div>
+
+    <h2>Shadow</h2>
+    <div class="row"><label>Offset Y (px)</label><input type="number" data-css="--prompt-shadow-y" data-unit="px" value="16" min="-50" max="100"></div>
+    <div class="row"><label>Blur (px)</label><input type="number" data-css="--prompt-shadow-blur" data-unit="px" value="48" min="0" max="200"></div>
+    <div class="row">
+      <label>Opacity</label>
+      <input type="range" id="prompt-shadow-alpha" min="0" max="100" value="40">
+      <span class="val" id="prompt-shadow-alpha-val">40%</span>
+    </div>
+
+    <h2>Cursor</h2>
+    <div class="row">
+      <label>Style</label>
+      <select id="cursor-style">
+        <option value="bar">Bar (│)</option>
+        <option value="block">Block (█)</option>
+        <option value="underline">Underline (_)</option>
+      </select>
+    </div>
+    <div class="row"><label>Bar width (px)</label><input type="number" data-css="--prompt-cursor-w" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Height (em)</label><input type="number" data-css="--prompt-cursor-h" data-unit="em" value="1.05" min="0.4" max="3" step="0.05"></div>
+    <div class="row"><label>Block/underline (em)</label><input type="number" data-css="--prompt-cursor-block-w" data-unit="em" value="0.55" min="0.1" max="3" step="0.05"></div>
+    <div class="row"><label>Underline thickness (px)</label><input type="number" data-css="--prompt-cursor-underline-h" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Vertical offset (px)</label><input type="number" data-css="--prompt-cursor-offset" data-unit="px" value="2" min="-30" max="30"></div>
+  </div>
+
+  <!-- ============ STRINGS TAB ============ -->
+  <div class="tab-content" id="tab-strings">
+    <h2>Strings between notes</h2>
+    <div class="row"><label>Color</label><input type="color" id="string-color" value="#8a857a"></div>
+    <div class="row">
+      <label>Width</label>
+      <input type="range" id="string-width" min="1" max="80" value="16">
+      <span class="val" id="string-width-val">1.6</span>
+    </div>
+    <div class="row">
+      <label>Style</label>
+      <select id="string-style">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="dotted">Dotted</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Curviness</label>
+      <input type="range" id="string-curve" min="0" max="200" value="40">
+      <span class="val" id="string-curve-val">40%</span>
+    </div>
+    <div class="row"><label>Draw-on animation (ms)</label><input type="number" id="string-anim-ms" value="700" min="0" max="5000"></div>
+  </div>
+
+  <!-- ============ ANIM TAB ============ -->
+  <div class="tab-content" id="tab-anim">
+    <h2>Note entrance</h2>
+    <div class="row"><label>Fade duration (ms)</label><input type="number" data-css="--note-anim-fade" data-unit="ms" value="400" min="0" max="3000"></div>
+    <div class="row"><label>Scale duration (ms)</label><input type="number" data-css="--note-anim-scale" data-unit="ms" value="560" min="0" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--note-anim-easing">
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)" selected>Pop (overshoot)</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="linear">Linear</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+        <option value="cubic-bezier(0.68, -0.55, 0.27, 1.55)">Bouncy</option>
+      </select>
+    </div>
+    <div class="row"><label>Scale from</label><input type="number" data-css="--note-anim-scale-from" value="0.7" min="0" max="2" step="0.05"></div>
+
+    <h2>Prompt send animation</h2>
+    <div class="row"><label>Pre-send anim (ms)</label><input type="number" id="prompt-send-anim" value="220" min="0" max="2000"></div>
+  </div>
+
+  <!-- ============ TIMING TAB ============ -->
+  <div class="tab-content" id="tab-timing">
+    <h2>Typing feel</h2>
+    <div class="row">
+      <label>Avg ms / char</label>
+      <input type="range" id="base-ms" min="5" max="500" value="65">
+      <span class="val" id="base-ms-val">65</span>
+    </div>
+    <div class="row">
+      <label>Variance ±</label>
+      <input type="range" id="variance-ms" min="0" max="300" value="45">
+      <span class="val" id="variance-ms-val">45</span>
+    </div>
+    <div class="row">
+      <label>Think pause chance</label>
+      <input type="range" id="think-chance" min="0" max="100" value="10">
+      <span class="val" id="think-chance-val">10%</span>
+    </div>
+    <div class="row">
+      <label>Max think (ms)</label>
+      <input type="number" id="think-max" value="2400" min="0" max="20000">
+    </div>
+    <div class="row">
+      <label>Start delay (s)</label>
+      <input type="number" id="start-delay" value="0" min="0" max="60" step="0.5">
+    </div>
+
+    <h2>Punctuation pauses</h2>
+    <div class="row"><label>Sentence base (ms)</label><input type="number" id="punct-sentence" value="220" min="0" max="5000"></div>
+    <div class="row"><label>Sentence jitter (ms)</label><input type="number" id="punct-sentence-j" value="380" min="0" max="5000"></div>
+    <div class="row"><label>Comma base (ms)</label><input type="number" id="punct-comma" value="70" min="0" max="2000"></div>
+    <div class="row"><label>Comma jitter (ms)</label><input type="number" id="punct-comma-j" value="160" min="0" max="2000"></div>
+
+    <h2>Typo handling</h2>
+    <div class="row"><label>Typo pause before bs (ms)</label><input type="number" id="typo-pause" value="280" min="0" max="3000"></div>
+    <div class="row"><label>Backspace ms / char</label><input type="number" id="bs-ms" value="45" min="5" max="500"></div>
+
+  </div>
+
+  <!-- ============ MEDIA TAB ============ -->
+  <div class="tab-content" id="tab-media">
+    <h2>Images</h2>
+    <input type="file" id="image-input" accept="image/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-images">＋ Add image(s)</button>
+      <button id="clear-images">Clear all</button>
+    </div>
+    <div id="image-list"></div>
+    <div class="help" style="margin-top:8px">
+      <code>[[image:1]]</code> drops image #1 into the note.<br>
+      Body text becomes a caption.<br>
+      Combine: <code>[[shape:polaroid]][[image:1]]</code>
+    </div>
+
+    <h2>Videos</h2>
+    <input type="file" id="video-input" accept="video/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-videos">＋ Add video(s)</button>
+      <button id="clear-videos">Clear all</button>
+    </div>
+    <div id="video-list"></div>
+    <div class="help" style="margin-top:8px">
+      <code>[[video:1]]</code> drops video #1 into the note. Loops, muted by default. Tap to unmute.
+    </div>
+  </div>
+
+  <!-- ============ SOUND TAB ============ -->
+  <div class="tab-content" id="tab-sound">
+    <h2>Typing sound</h2>
+    <div class="row"><label>Enable sound</label><input type="checkbox" id="sound-on" checked></div>
+    <div class="row">
+      <label>Style</label>
+      <select id="sound-style">
+        <option value="soft">Soft tock</option>
+        <option value="mechanical">Mechanical click</option>
+        <option value="typewriter">Typewriter</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Volume</label>
+      <input type="range" id="sound-vol" min="0" max="100" value="40">
+      <span class="val" id="sound-vol-val">40%</span>
+    </div>
+
+    <h2>Note-placed sound</h2>
+    <div class="row">
+      <label>Volume multiplier</label>
+      <input type="range" id="snd-place" min="0" max="200" value="100">
+      <span class="val" id="snd-place-val">1.0×</span>
+    </div>
+  </div>
+
+  <!-- ===== AUDIO (BGM + TTS + Sync) ===== -->
+  <div class="tab-content" id="tab-audio">
+    <h2>Background music (BGM)</h2>
+    <div class="row">
+      <label>Upload audio</label>
+      <input type="file" id="bgm-file" accept="audio/*">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>File</label>
+      <span id="bgm-name" style="color:#888;flex:1;">none</span>
+      <button id="bgm-clear" style="flex:none;padding:3px 8px;font-size:10px;">clear</button>
+    </div>
+    <div class="row"><label>Auto-play with show</label><input type="checkbox" id="bgm-auto" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bgm-loop"></div>
+    <div class="row"><label>Volume</label><input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6"></div>
+    <div class="row"><label>Start offset (s)</label><input type="number" id="bgm-start" value="0" step="0.1" min="0"></div>
+    <div class="row"><label>Fade in (ms)</label><input type="number" id="bgm-fadein" value="0" min="0" step="50"></div>
+    <div class="row"><label>Fade out (ms)</label><input type="number" id="bgm-fadeout" value="0" min="0" step="50"></div>
+    <div class="btn-row">
+      <button id="bgm-test">▶ Preview 4s</button>
+      <button id="bgm-stop-test">⏹ Stop</button>
+    </div>
+
+    <h2>Background media (image / video / audio)</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Full-screen background layer. Image OR video (with or without sound), plus optional separate audio-only track. Ducks during TTS.
+    </div>
+    <div class="row"><label>Background video</label><input type="file" id="bg-video-file" accept="video/*"></div>
+    <div class="row"><label>Background image</label><input type="file" id="bg-image-file" accept="image/*"></div>
+    <div class="row"><label>Audio-only file</label><input type="file" id="bg-audio-file" accept="audio/*"></div>
+    <div class="row"><label>Video playlist (multiple)</label><input type="file" id="bg-playlist-files" accept="video/*" multiple></div>
+    <div class="row" style="align-items:flex-start;"><label>Queue</label>
+      <ol id="bg-playlist-list" style="flex:1;font-size:11px;color:#aaa;padding-left:20px;margin:0;list-style:decimal;max-height:120px;overflow-y:auto;"></ol>
+    </div>
+    <div class="row"><label>Playlist mode</label><input type="checkbox" id="bg-playlist-on" checked></div>
+    <div class="row"><label>Loop playlist</label><input type="checkbox" id="bg-playlist-loop" checked></div>
+    <div class="row"><label>Crossfade (ms)</label><input type="number" id="bg-crossfade-ms" value="250" min="0" max="3000" step="50"></div>
+    <div class="row">
+      <button id="bg-playlist-next" style="padding:4px 10px;font-size:11px;">⏭ next</button>
+      <button id="bg-playlist-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear queue</button>
+    </div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="bg-mute" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bg-loop" checked></div>
+    <div class="row"><label>Volume</label><input type="range" id="bg-volume" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="row"><label>Fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="fill">stretch (fill)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+    <div class="row"><label>Auto-start with show</label><input type="checkbox" id="bg-auto" checked></div>
+    <div class="row"><label>Duck during TTS</label><input type="checkbox" id="bg-duck-on" checked></div>
+    <div class="row"><label>Duck to (factor)</label><input type="range" id="bg-duck-to" min="0" max="1" step="0.05" value="0.3"></div>
+    <div class="row">
+      <button id="bg-play" style="padding:4px 10px;font-size:11px;">▶ play bg</button>
+      <button id="bg-stop" style="padding:4px 10px;font-size:11px;margin-left:4px;">⏹ stop</button>
+      <button id="bg-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear</button>
+    </div>
+
+    <h2>Skin transparency</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Drop these to let the bg video peep through the chrome. Note text stays opaque.
+    </div>
+    <div class="row">
+      <label>Page bg opacity</label>
+      <input type="range" id="page-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="page-bg-alpha-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Skin bg opacity</label>
+      <input type="range" id="skin-alpha" min="0" max="100" value="100">
+      <span class="val" id="skin-alpha-val">100%</span>
+    </div>
+  </div>
+
+  <!-- ============ TTS TAB ============ -->
+  <div class="tab-content" id="tab-tts">
+    <h2>Audio-driven timing (sync)</h2>
+    <div class="row">
+      <label>Sync file</label>
+      <input type="file" id="sync-file" accept=".srt,.vtt,.json,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="sync-marker-count" style="color:#888;flex:1;">no markers</span>
+      <button id="sync-clear" style="flex:none;padding:3px 8px;font-size:10px;">clear</button>
+    </div>
+    <div class="row"><label>Use sync triggers</label><input type="checkbox" id="sync-enabled"></div>
+    <div class="row">
+      <label>Sync to</label>
+      <select id="sync-source">
+        <option value="bgm" selected>BGM playhead</option>
+        <option value="clock">Wall clock from play()</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Marker → scene map</label>
+      <select id="sync-map">
+        <option value="one-to-one" selected>One marker per scene (in order)</option>
+        <option value="advance">Marker just advances to next scene</option>
+        <option value="replace-text">Marker also replaces scene prompt</option>
+      </select>
+    </div>
+    <div class="help">
+      Accepts <b>.srt</b>, <b>.vtt</b>, or <b>.json</b> (array of <code>{start, end, text}</code> in ms). When enabled, scenes advance at each marker's start time.
+    </div>
+
+  </div>
+
+  <!-- ============ SRT SCRIPT TAB ============ -->
+  <div class="tab-content" id="tab-srt-script">
+    <h2>Script from SRT / timestamped file</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Load an <b>.srt / .vtt / .json / .txt</b>. Each cue's text appears so it fills its [start..end] window. Wall-clock from <i>Play</i>. Overrides natural pacing.
+    </div>
+    <div class="row">
+      <label>Timed script file</label>
+      <input type="file" id="srt-script-file" accept=".srt,.vtt,.json,.txt,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="srt-script-info" style="color:#888;flex:1;">no file</span>
+      <button id="srt-script-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use timed script</label><input type="checkbox" id="srt-script-on"></div>
+    <div class="row">
+      <label>Cue typing fill</label>
+      <input type="range" id="srt-script-fill" min="20" max="100" value="92">
+      <span class="val" id="srt-script-fill-val">92%</span>
+    </div>
+    <div class="row">
+      <label>Between cues</label>
+      <select id="srt-script-between">
+        <option value="keep" selected>Keep previous on screen</option>
+        <option value="clear">Clear between cues</option>
+        <option value="newline">Add newline between</option>
+      </select>
+    </div>
+  </div>
+</aside>
+
+<main id="stage">
+  <div id="frame">
+    <div class="frame-handle frame-handle-tl"></div>
+    <div class="frame-handle frame-handle-tr"></div>
+    <div class="frame-handle frame-handle-bl"></div>
+    <div class="frame-handle frame-handle-br"></div>
+  </div>
+  <div id="prompt-area">
+    <div id="prompt-box">
+      <span id="prompt-text"></span><span id="prompt-placeholder">your thought…</span><span id="prompt-cursor"></span>
+    </div>
+  </div>
+  <div id="canvas-wrap">
+    <svg id="strings" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div id="canvas"></div>
+  </div>
+  <div id="lens-vignette-fx" aria-hidden="true"></div>
+</main>
+
+<div id="hint">press H to show controls · Space to play · Esc to stop</div>
+
+<script>
+(() => {
+  // ---------- Sound ----------
+  const Sound = (() => {
+    let ctx;
+    const ensureCtx = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    let enabled = true, volume = 0.4, style = 'soft';
+    let mulPlace = 1;
+    let duckFactor = 1, duckAnim = null;
+
+    function setDuckFactor(target, durMs) {
+      if (duckAnim) cancelAnimationFrame(duckAnim);
+      duckAnim = null;
+      target = Math.max(0, Math.min(1, target));
+      if (!durMs || durMs <= 0) { duckFactor = target; return; }
+      const start = duckFactor;
+      const t0 = performance.now();
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) { duckFactor = target; duckAnim = null; return; }
+        duckFactor = start + (target - start) * t;
+        duckAnim = requestAnimationFrame(step);
+      };
+      duckAnim = requestAnimationFrame(step);
+    }
+    function duck(amountPct, fadeMs) { setDuckFactor(Math.max(0, 1 - (amountPct || 0) / 100), fadeMs); }
+    function unduck(fadeMs) { setDuckFactor(1, fadeMs); }
+
+    function noiseBurst(c, durationS, decayPow = 4) {
+      const n = Math.floor(c.sampleRate * durationS);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decayPow);
+      }
+      return buf;
+    }
+
+    function key() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      if (style === 'typewriter') {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, 0.06, 5);
+        const bf = c.createBiquadFilter();
+        bf.type = 'bandpass'; bf.frequency.value = 2200 + Math.random() * 400; bf.Q.value = 1.2;
+        const bg = c.createGain();
+        bg.gain.setValueAtTime(volume * duckFactor * 0.5, now);
+        bg.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        burst.connect(bf).connect(bg).connect(c.destination);
+        burst.start(now);
+        const ping = c.createOscillator();
+        ping.type = 'triangle';
+        ping.frequency.value = 1600 + Math.random() * 600;
+        const pg = c.createGain();
+        pg.gain.setValueAtTime(volume * duckFactor * 0.15, now + 0.005);
+        pg.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        ping.connect(pg).connect(c.destination);
+        ping.start(now + 0.005); ping.stop(now + 0.05);
+      } else if (style === 'mechanical') {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, 0.05, 6);
+        const f = c.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 1500 + Math.random() * 500; f.Q.value = 3;
+        const g = c.createGain();
+        g.gain.setValueAtTime(volume * duckFactor * 0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        burst.connect(f).connect(g).connect(c.destination);
+        burst.start(now);
+      } else {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, 0.04, 4);
+        const f = c.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = 900 + Math.random() * 200; f.Q.value = 1;
+        const g = c.createGain();
+        g.gain.setValueAtTime(volume * duckFactor * 0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        burst.connect(f).connect(g).connect(c.destination);
+        burst.start(now);
+      }
+    }
+
+    function backspace() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      const burst = c.createBufferSource();
+      burst.buffer = noiseBurst(c, 0.03, 5);
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = (style === 'mechanical' ? 1300 : style === 'typewriter' ? 2000 : 800) + Math.random() * 200;
+      f.Q.value = 1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume * duckFactor * 0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      burst.connect(f).connect(g).connect(c.destination);
+      burst.start(now);
+    }
+
+    function notePlaceImpl(vol) {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.2);
+      const og = c.createGain();
+      og.gain.setValueAtTime(vol * duckFactor * 0.45, now);
+      og.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(og).connect(c.destination);
+      osc.start(now); osc.stop(now + 0.26);
+      const burst = c.createBufferSource();
+      burst.buffer = noiseBurst(c, 0.18, 2);
+      const f = c.createBiquadFilter();
+      f.type = 'highpass'; f.frequency.value = 2400;
+      const g = c.createGain();
+      g.gain.setValueAtTime(vol * duckFactor * 0.18, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      burst.connect(f).connect(g).connect(c.destination);
+      burst.start(now);
+    }
+
+    return {
+      key, backspace,
+      notePlace: () => notePlaceImpl(volume * mulPlace),
+      setEnabled: v => enabled = v,
+      setVolume: v => volume = v,
+      setStyle: v => style = v,
+      setPlaceMul: v => mulPlace = v,
+      duck, unduck,
+      get duckFactor() { return duckFactor; },
+      resume: ensureCtx,
+    };
+  })();
+
+  // ---------- DOM refs ----------
+  const $ = id => document.getElementById(id);
+  const promptText = $('prompt-text');
+  const promptPlaceholder = $('prompt-placeholder');
+  const promptBox = $('prompt-box');
+  const promptCursor = $('prompt-cursor');
+  const canvas = $('canvas');
+  const canvasWrap = $('canvas-wrap');
+  const stringsSvg = $('strings');
+  const root = document.documentElement;
+  const body = document.body;
+
+  // ---------- Setting bindings ----------
+  const setVar = (k, v) => root.style.setProperty(k, v);
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Generic CSS-var binding
+  document.querySelectorAll('[data-css]').forEach(el => {
+    const prop = el.dataset.css;
+    const unit = el.dataset.unit || '';
+    const apply = () => {
+      let v = el.value;
+      if (unit && v !== '' && !String(v).endsWith(unit)) v = v + unit;
+      setVar(prop, v);
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+    apply();
+  });
+
+  // ---------- Lens / zoom: magnify the centered prompt + vignette ----------
+  // The prompt box stays put (already centered) and keeps its box/contrast; we just
+  // enlarge the text and keep the newest line in view as a long scene grows.
+  function lensOn() { return body.classList.contains('lens-on'); }
+  function lensMeasure() {}
+  function lensFollow() {
+    if (!lensOn() || !promptBox) return;
+    promptBox.scrollTop = promptBox.scrollHeight;
+  }
+  function applyLens(on) {
+    body.classList.toggle('lens-on', !!on);
+    if (on) requestAnimationFrame(lensFollow);
+    else if (promptBox) promptBox.scrollTop = 0;
+  }
+  if ($('lens-on')) {
+    $('lens-on').addEventListener('change', e => applyLens(e.target.checked));
+    applyLens($('lens-on').checked);
+  }
+  (() => {
+    const sl = $('lens-mag'), out = $('lens-mag-val');
+    if (!sl) return;
+    const apply = () => { const m = +sl.value / 100; out.textContent = m.toFixed(2).replace(/0$/, '') + '×'; setVar('--lens-mag', m.toFixed(3)); requestAnimationFrame(lensFollow); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  (() => {
+    const sl = $('lens-vignette'), out = $('lens-vignette-val');
+    if (!sl) return;
+    const apply = () => { out.textContent = sl.value + '%'; setVar('--lens-vignette', (+sl.value / 100).toFixed(2)); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  window.addEventListener('resize', () => { if (lensOn()) { lensMeasure(); lensFollow(); } });
+
+  // ---------- Skin opacity sliders ----------
+  function bindAlphaSlider(sliderId, cssVar, valId) {
+    const s = document.getElementById(sliderId), v = document.getElementById(valId);
+    if (!s) return;
+    const apply = () => {
+      const pct = +s.value;
+      document.documentElement.style.setProperty(cssVar, (pct / 100).toFixed(3));
+      if (v) v.textContent = pct + '%';
+    };
+    s.addEventListener('input', apply); apply();
+  }
+  bindAlphaSlider('page-bg-alpha', '--page-bg-alpha', 'page-bg-alpha-val');
+  bindAlphaSlider('skin-alpha', '--skin-alpha', 'skin-alpha-val');
+
+  // ---------- Timed-script (SRT/VTT/JSON) module ----------
+  const SrtScript = {
+    cues: null,
+    parseTimestamp(s) {
+      const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+      if (m) return (+m[1])*3600 + (+m[2])*60 + (+m[3]) + (+m[4])/1000;
+      const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+      if (m2) return (+m2[1])*60 + (+m2[2]) + (+m2[3])/1000;
+      return parseFloat(s) || 0;
+    },
+    parseAny(text, name) {
+      const lower = (name || '').toLowerCase();
+      try {
+        if (lower.endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+          const j = JSON.parse(text);
+          if (Array.isArray(j)) return j.map(x => ({ start: +x.start, end: +x.end, text: x.text || x.word || '' }));
+          if (Array.isArray(j.cues)) return j.cues.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+          if (Array.isArray(j.segments)) return j.segments.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+        }
+      } catch {}
+      const cleaned = text.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+      const out = [];
+      const blocks = cleaned.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const lines = block.trim().split(/\r?\n/);
+        if (!lines.length) continue;
+        const ti = lines.findIndex(l => l.includes('-->'));
+        if (ti < 0) continue;
+        const [sStr, eStr] = lines[ti].split('-->').map(x => x.trim());
+        const start = this.parseTimestamp(sStr);
+        const end   = this.parseTimestamp(eStr);
+        const txt   = lines.slice(ti + 1).join('\n').trim();
+        if (txt) out.push({ start, end, text: txt });
+      }
+      return out;
+    },
+    load(file) {
+      const r = new FileReader();
+      r.onload = e => {
+        try { this.cues = this.parseAny(e.target.result, file.name); } catch { this.cues = null; }
+        const info = document.getElementById('srt-script-info');
+        if (info) info.textContent = (this.cues && this.cues.length) ? `${this.cues.length} cues · ${file.name}` : 'parse failed';
+      };
+      r.readAsText(file);
+    },
+    clear() {
+      this.cues = null;
+      const info = document.getElementById('srt-script-info'); if (info) info.textContent = 'no file';
+    },
+    enabled() { return !!document.getElementById('srt-script-on')?.checked && this.cues && this.cues.length > 0; }
+  };
+  document.getElementById('srt-script-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) SrtScript.load(e.target.files[0]);
+    e.target.value = '';
+  });
+  document.getElementById('srt-script-clear')?.addEventListener('click', () => SrtScript.clear());
+  document.getElementById('srt-script-fill')?.addEventListener('input', e => {
+    const v = document.getElementById('srt-script-fill-val'); if (v) v.textContent = e.target.value + '%';
+  });
+  window.SrtScript = SrtScript;
+
+  // Cursor style classes
+  $('cursor-style').addEventListener('change', e => {
+    promptCursor.classList.remove('block', 'underline');
+    if (e.target.value === 'block') promptCursor.classList.add('block');
+    if (e.target.value === 'underline') promptCursor.classList.add('underline');
+  });
+
+  // Show/hide prompt
+  $('show-prompt').addEventListener('change', e => body.classList.toggle('hide-prompt', !e.target.checked));
+
+  // Custom note font
+  $('note-font-custom').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v) setVar('--note-font', v);
+  });
+
+  // Placeholder color (hex → rgba with full alpha)
+  $('prompt-placeholder-color').addEventListener('input', e => {
+    const hex = e.target.value;
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    setVar('--prompt-placeholder', `rgba(${r},${g},${b},0.6)`);
+  });
+
+  // Countdown color
+  $('countdown-color').addEventListener('input', e => {
+    const hex = e.target.value;
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    setVar('--countdown-color', `rgba(${r},${g},${b},0.85)`);
+  });
+
+  // Shadow alpha binders
+  function bindAlpha(sliderId, varName, defaultPct) {
+    const sl = $(sliderId), out = $(sliderId + '-val');
+    const apply = () => {
+      out.textContent = sl.value + '%';
+      setVar(varName, (+sl.value / 100).toFixed(2));
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindAlpha('sk-shadow-alpha', '--sk-shadow-alpha');
+  bindAlpha('pl-shadow-alpha', '--pl-shadow-alpha');
+  bindAlpha('note-shadow-alpha', '--note-shadow-alpha');
+  bindAlpha('prompt-shadow-alpha', '--prompt-shadow-alpha');
+
+  // String bindings
+  $('string-color').addEventListener('input', e => { setVar('--string-color', e.target.value); redrawStrings(); });
+  const stringWidth = $('string-width'), stringWidthVal = $('string-width-val');
+  const updateStringWidth = () => {
+    const v = (+stringWidth.value / 10).toFixed(1);
+    stringWidthVal.textContent = v;
+    setVar('--string-width', v);
+    redrawStrings();
+  };
+  stringWidth.addEventListener('input', updateStringWidth);
+  $('string-style').addEventListener('change', () => redrawStrings());
+  const stringCurve = $('string-curve'), stringCurveVal = $('string-curve-val');
+  const updateCurve = () => { stringCurveVal.textContent = stringCurve.value + '%'; redrawStrings(); };
+  stringCurve.addEventListener('input', updateCurve);
+
+  // Jitter / rotation displays
+  const jitter = $('jitter'), jitterVal = $('jitter-val');
+  jitter.addEventListener('input', () => jitterVal.textContent = jitter.value);
+  const rotation = $('rotation'), rotationVal = $('rotation-val');
+  const updateRotation = () => rotationVal.textContent = (+rotation.value / 10).toFixed(1) + '°';
+  rotation.addEventListener('input', updateRotation);
+
+  // Frame size inputs
+  $('frame-w').addEventListener('input', e => { frameW = Math.max(200, +e.target.value); applyFrame(); relayoutNotes(); });
+  $('frame-h').addEventListener('input', e => { frameH = Math.max(200, +e.target.value); applyFrame(); relayoutNotes(); });
+
+  const bindRange = (id, suffix = '') => {
+    const el = $(id), out = $(id + '-val');
+    if (!el || !out) return;
+    const update = () => out.textContent = el.value + suffix;
+    el.addEventListener('input', update); update();
+  };
+  bindRange('base-ms');
+  bindRange('variance-ms');
+  bindRange('think-chance', '%');
+
+  $('sound-on').addEventListener('change', e => Sound.setEnabled(e.target.checked));
+  $('sound-style').addEventListener('change', e => Sound.setStyle(e.target.value));
+  const soundVol = $('sound-vol'), soundVolVal = $('sound-vol-val');
+  const updateVol = () => {
+    soundVolVal.textContent = soundVol.value + '%';
+    Sound.setVolume(+soundVol.value / 100);
+  };
+  soundVol.addEventListener('input', updateVol);
+  updateVol();
+
+  // Note-placed sound mul
+  const sndPlace = $('snd-place'), sndPlaceVal = $('snd-place-val');
+  const updPlace = () => {
+    sndPlaceVal.textContent = (sndPlace.value / 100).toFixed(1) + '×';
+    Sound.setPlaceMul(+sndPlace.value / 100);
+  };
+  sndPlace.addEventListener('input', updPlace);
+  updPlace();
+
+  updateStringWidth();
+  updateCurve();
+  updateRotation();
+
+  const presets = {
+    fast:    { base: 32,  variance: 18, think: 4,  thinkMax: 800 },
+    natural: { base: 65,  variance: 45, think: 10, thinkMax: 2400 },
+    slow:    { base: 130, variance: 65, think: 22, thinkMax: 4200 },
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      $('base-ms').value = p.base; $('base-ms').dispatchEvent(new Event('input'));
+      $('variance-ms').value = p.variance; $('variance-ms').dispatchEvent(new Event('input'));
+      $('think-chance').value = p.think; $('think-chance').dispatchEvent(new Event('input'));
+      $('think-max').value = p.thinkMax;
+    });
+  });
+
+  function getShapePool() {
+    const pool = [];
+    document.querySelectorAll('.shape-grid input[type=checkbox]').forEach(cb => {
+      if (cb.checked) pool.push(cb.dataset.shape);
+    });
+    return pool.length > 0 ? pool : ['plain'];
+  }
+
+  // ---------- Audio sync ----------
+  const audioEl = new Audio();
+  audioEl.preload = 'auto';
+  let audioUrl = null;
+  let timingData = null;
+
+  function setAudioInfo() {
+    const info = $('audio-info');
+    if (audioUrl && audioEl.duration && !isNaN(audioEl.duration)) {
+      info.textContent = `Loaded · ${audioEl.duration.toFixed(1)}s`;
+    } else if (audioUrl) {
+      info.textContent = 'Loaded · reading metadata…';
+    } else {
+      info.textContent = 'No audio loaded';
+    }
+  }
+
+  $('audio-pick').addEventListener('click', () => $('audio-input').click());
+  $('audio-clear').addEventListener('click', () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = null;
+    audioEl.src = '';
+    setAudioInfo();
+  });
+  $('audio-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(file);
+    audioEl.src = audioUrl;
+    audioEl.addEventListener('loadedmetadata', setAudioInfo, { once: true });
+    setAudioInfo();
+    e.target.value = '';
+  });
+
+  $('timing-pick').addEventListener('click', () => $('timing-input').click());
+  $('timing-clear').addEventListener('click', () => {
+    timingData = null;
+    $('timing-info').textContent = 'No timing file';
+  });
+  $('timing-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      timingData = parseTimingFile(content, file.name);
+      $('timing-info').textContent = timingData
+        ? `Loaded · ${timingData.length} ${timingData.length === 1 ? 'item' : 'items'}`
+        : 'Failed to parse — check file format';
+    } catch (err) {
+      timingData = null;
+      $('timing-info').textContent = 'Read error: ' + err.message;
+    }
+    e.target.value = '';
+  });
+
+  function parseTimingFile(content, filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'json') return parseWhisperJson(content);
+      if (ext === 'srt')  return parseSrt(content);
+      if (ext === 'vtt')  return parseVtt(content);
+    } catch (e) { console.error('Timing parse error', e); }
+    return null;
+  }
+
+  function parseWhisperJson(content) {
+    const data = JSON.parse(content);
+    const words = [];
+    if (Array.isArray(data.segments)) {
+      for (const seg of data.segments) {
+        if (Array.isArray(seg.words) && seg.words.length > 0) {
+          for (const w of seg.words) {
+            words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+          }
+        } else if (typeof seg.text === 'string') {
+          words.push({ text: seg.text, start: +seg.start, end: +seg.end });
+        }
+      }
+    } else if (Array.isArray(data.words)) {
+      for (const w of data.words) {
+        words.push({ text: w.word ?? w.text ?? '', start: +w.start, end: +w.end });
+      }
+    }
+    return words.length > 0 ? words : null;
+  }
+
+  function parseSrt(content) {
+    const lines = content.replace(/\r/g, '').split('\n');
+    const items = [];
+    let i = 0;
+    while (i < lines.length) {
+      while (i < lines.length && lines[i].trim() === '') i++;
+      if (i >= lines.length) break;
+      if (/^\d+$/.test(lines[i].trim())) i++;
+      if (i >= lines.length) break;
+      const m = lines[i].match(/(\d{1,2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{3})/);
+      if (!m) { i++; continue; }
+      const start = parseTimestamp(m[1]);
+      const end = parseTimestamp(m[2]);
+      i++;
+      const textLines = [];
+      while (i < lines.length && lines[i].trim() !== '') {
+        textLines.push(lines[i]);
+        i++;
+      }
+      items.push({ text: textLines.join(' ').trim(), start, end });
+    }
+    return items.length > 0 ? items : null;
+  }
+
+  function parseVtt(content) {
+    const noHeader = content.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+    return parseSrt(noHeader);
+  }
+
+  function parseTimestamp(ts) {
+    const m = ts.match(/(\d+):(\d{2}):(\d{2})[,.](\d{3})/);
+    if (!m) return 0;
+    return +m[1] * 3600 + +m[2] * 60 + +m[3] + +m[4] / 1000;
+  }
+
+  function applyRateMatch() {
+    if (!audioEl.src || !audioEl.duration || isNaN(audioEl.duration)) return;
+    const scenes = parseScript($('script').value);
+    let totalChars = 0;
+    for (const scene of scenes) {
+      for (const t of scene.body) {
+        if (t.type === 'text') totalChars++;
+        else if (t.type === 'typo') totalChars += t.right.length;
+      }
+    }
+    if (totalChars === 0) return;
+
+    const totalMs = audioEl.duration * 1000;
+    const sendPause = +$('send-pause').value;
+    const settle = +$('settle-pause').value;
+    const overheadMs = scenes.length * (sendPause + settle);
+    const typingMs = Math.max(1000, totalMs - overheadMs);
+    const msPerChar = typingMs / totalChars;
+
+    const baseSlider = $('base-ms');
+    baseSlider.value = Math.max(+baseSlider.min, Math.min(+baseSlider.max, Math.round(msPerChar)));
+    baseSlider.dispatchEvent(new Event('input'));
+    const varSlider = $('variance-ms');
+    varSlider.value = Math.max(0, Math.min(+varSlider.max, Math.round(msPerChar * 0.25)));
+    varSlider.dispatchEvent(new Event('input'));
+  }
+
+  // ---------- Script parsing ----------
+  function parseScript(input) {
+    const paragraphs = input.split(/\n[ \t]*\n+/).map(p => p.trim()).filter(Boolean);
+    return paragraphs.map(parseParagraph);
+  }
+
+  function parseParagraph(para) {
+    const meta = {};
+    let body = para;
+    const directiveRe = /^\[\[(\w+):([^\]]*)\]\]\s*/;
+    let m;
+    while ((m = body.match(directiveRe))) {
+      const key = m[1].toLowerCase();
+      if (['shape','header','footer','color','bg','dedication','dedicated','for','video','vid','image','img','sync','ttstext','narrate','ttsvoice','ttsrate','ttspitch','ttsvolume','ttsfx','ttsssml','ttspreset','ttspredelay','ttspostdelay','ttsboost','duck'].includes(key)) {
+        const normalizedKey = key === 'bg' ? 'color'
+          : (key === 'dedicated' || key === 'for') ? 'dedication'
+          : key === 'vid' ? 'video'
+          : key === 'img' ? 'image'
+          : key === 'narrate' ? 'ttstext'
+          : key;
+        meta[normalizedKey] = m[2];
+      }
+      body = body.slice(m[0].length);
+    }
+    body = body.trimStart();
+    return { meta, body: parseInline(body) };
+  }
+
+  function parseInline(input) {
+    const tokens = [];
+    let i = 0;
+    while (i < input.length) {
+      if (input[i] === '\\' && input.startsWith('[[', i + 1)) {
+        tokens.push({ type: 'text', char: '[' });
+        tokens.push({ type: 'text', char: '[' });
+        i += 3; continue;
+      }
+      if (input.startsWith('[[', i)) {
+        const end = input.indexOf(']]', i + 2);
+        if (end !== -1) {
+          const inner = input.slice(i + 2, end);
+          if (inner.startsWith('pause:') || inner.startsWith('wait:')) {
+            const ms = parseInt(inner.split(':')[1], 10);
+            if (!isNaN(ms)) tokens.push({ type: 'pause', ms });
+          } else if (inner.includes('|')) {
+            const idx = inner.indexOf('|');
+            tokens.push({ type: 'typo', wrong: inner.slice(0, idx), right: inner.slice(idx + 1) });
+          } else {
+            for (const c of '[[' + inner + ']]') tokens.push({ type: 'text', char: c });
+          }
+          i = end + 2;
+          continue;
+        }
+      }
+      tokens.push({ type: 'text', char: input[i] });
+      i++;
+    }
+    return tokens;
+  }
+
+  // ---------- Timing ----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  function settings() {
+    return {
+      base: +$('base-ms').value,
+      variance: +$('variance-ms').value,
+      thinkChance: (+$('think-chance').value) / 100,
+      thinkMax: +$('think-max').value,
+      sentence: +$('punct-sentence').value,
+      sentenceJ: +$('punct-sentence-j').value,
+      comma: +$('punct-comma').value,
+      commaJ: +$('punct-comma-j').value,
+    };
+  }
+  function jitterFn() {
+    return (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
+  }
+  function charDelay(ch, prevCh, s) {
+    let d = s.base + jitterFn() * 2 * s.variance;
+    if (/[.!?]/.test(ch)) d += s.sentence + Math.random() * s.sentenceJ;
+    else if (/[,;:]/.test(ch)) d += s.comma + Math.random() * s.commaJ;
+    if (ch === '\n') d += 150 + Math.random() * 250;
+    if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) {
+      if (Math.random() < s.thinkChance) {
+        d += 400 + Math.random() * Math.max(0, s.thinkMax - 400);
+      }
+    }
+    return Math.max(5, d);
+  }
+
+  // ---------- Prompt ----------
+  let prevCh;
+  function updatePromptPlaceholder() {
+    promptPlaceholder.style.display = promptText.textContent.length > 0 ? 'none' : '';
+  }
+  function appendChar(c) {
+    promptText.textContent += c;
+    updatePromptPlaceholder();
+    Sound.key();
+    prevCh = c;
+    lensFollow();
+  }
+  function backspaceChar() {
+    promptText.textContent = promptText.textContent.slice(0, -1);
+    updatePromptPlaceholder();
+    Sound.backspace();
+    prevCh = promptText.textContent.slice(-1) || undefined;
+    lensFollow();
+  }
+  function clearPrompt() {
+    promptText.textContent = '';
+    prevCh = undefined;
+    updatePromptPlaceholder();
+    if (promptBox && lensOn()) promptBox.scrollTop = 0;
+  }
+
+  // ---------- Image management ----------
+  const images = [];
+  const imageList = $('image-list');
+  const imageInput = $('image-input');
+
+  $('add-images').addEventListener('click', () => imageInput.click());
+  $('clear-images').addEventListener('click', () => { images.length = 0; renderImageList(); });
+  imageInput.addEventListener('change', async (e) => {
+    for (const file of e.target.files) {
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
+        images.push({ dataUrl, name: file.name });
+      } catch (err) { console.error('image read failed', err); }
+    }
+    renderImageList();
+    e.target.value = '';
+  });
+  function renderImageList() {
+    imageList.innerHTML = '';
+    images.forEach((img, i) => {
+      const item = document.createElement('div');
+      item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement('img'); thumb.src = img.dataUrl;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = img.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => { images.splice(i, 1); renderImageList(); });
+      item.append(idx, thumb, name, rm);
+      imageList.appendChild(item);
+    });
+  }
+
+  // ---------- Video management ----------
+  const videos = [];
+  const videoList = $('video-list');
+  const videoInput = $('video-input');
+
+  $('add-videos').addEventListener('click', () => videoInput.click());
+  $('clear-videos').addEventListener('click', () => {
+    for (const v of videos) URL.revokeObjectURL(v.url);
+    videos.length = 0;
+    renderVideoList();
+  });
+  videoInput.addEventListener('change', (e) => {
+    for (const file of e.target.files) {
+      const url = URL.createObjectURL(file);
+      videos.push({ url, name: file.name });
+    }
+    renderVideoList();
+    e.target.value = '';
+  });
+  function renderVideoList() {
+    videoList.innerHTML = '';
+    videos.forEach((v, i) => {
+      const item = document.createElement('div');
+      item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement('video');
+      thumb.src = v.url;
+      thumb.muted = true;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = v.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => {
+        URL.revokeObjectURL(videos[i].url);
+        videos.splice(i, 1);
+        renderVideoList();
+      });
+      item.append(idx, thumb, name, rm);
+      videoList.appendChild(item);
+    });
+  }
+
+  // ---------- Notes & strings ----------
+  let noteIndex = 0;
+
+  let frameW = 1100, frameH = 620;
+  const frameEl = $('frame');
+  function applyFrame() {
+    frameEl.style.width = frameW + 'px';
+    frameEl.style.height = frameH + 'px';
+  }
+  applyFrame();
+
+  function computeNotePosition(index) {
+    const promptRect = promptBox.getBoundingClientRect();
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const promptCx = promptRect.left + promptRect.width / 2 - wrapRect.left;
+    const promptCy = promptRect.top + promptRect.height / 2 - wrapRect.top;
+
+    if (index < 8) {
+      const slots = [
+        { dx:  0, dy: -1 }, { dx:  1, dy: -1 }, { dx:  1, dy:  0 }, { dx:  1, dy:  1 },
+        { dx:  0, dy:  1 }, { dx: -1, dy:  1 }, { dx: -1, dy:  0 }, { dx: -1, dy: -1 },
+      ];
+      const s = slots[index];
+      const offsetX = Math.min(
+        Math.max(promptRect.width / 2 + 200, frameW * 0.22),
+        frameW * 0.46
+      );
+      const offsetY = Math.min(
+        Math.max(promptRect.height / 2 + 150, frameH * 0.22),
+        frameH * 0.42
+      );
+      const dxScale = (s.dx !== 0 && s.dy !== 0) ? 0.78 : 1;
+      const dyScale = (s.dx !== 0 && s.dy !== 0) ? 0.78 : 1;
+      const x = promptCx + s.dx * offsetX * dxScale + (Math.random() - 0.5) * 24;
+      const y = promptCy + s.dy * offsetY * dyScale + (Math.random() - 0.5) * 18;
+      return { x, y };
+    }
+
+    const idx2 = index - 8;
+    const layout = $('layout').value;
+    const jStrength = +$('jitter').value;
+    const wrapWidth = canvasWrap.offsetWidth;
+    const cx = wrapWidth / 2;
+    const offsetY = Math.max(promptRect.height / 2 + 150, frameH * 0.22);
+    const ring2Start = promptCy + offsetY * 1.2 + 200;
+
+    let x;
+    if (layout === 'zigzag') {
+      x = cx + (idx2 % 2 === 0 ? -1 : 1) * jStrength * 0.7 + (Math.random() - 0.5) * 30;
+    } else if (layout === 'jitter') {
+      x = cx + (Math.random() - 0.5) * 2 * jStrength;
+    } else {
+      x = cx;
+    }
+    const y = ring2Start + idx2 * 320 + (Math.random() - 0.5) * 30;
+    return { x, y };
+  }
+
+  function relayoutNotes() {
+    const notes = canvas.querySelectorAll('.note');
+    notes.forEach((note, idx) => {
+      const pos = computeNotePosition(idx);
+      note.style.left = pos.x + 'px';
+      note.style.top = pos.y + 'px';
+    });
+    let maxBottom = 0;
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    notes.forEach(n => {
+      const r = n.getBoundingClientRect();
+      const bottomInWrap = r.bottom - wrapRect.top;
+      if (bottomInWrap > maxBottom) maxBottom = bottomInWrap;
+    });
+    if (maxBottom > 0) {
+      canvasWrap.style.minHeight = Math.max(window.innerHeight, maxBottom + 220) + 'px';
+    }
+    redrawStrings();
+  }
+
+  // Frame drag-resize
+  let resizingFrame = null;
+  document.querySelectorAll('.frame-handle').forEach(h => {
+    h.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const cls = h.className;
+      let dirX = 0, dirY = 0;
+      if (cls.includes('-tl')) { dirX = -1; dirY = -1; }
+      else if (cls.includes('-tr')) { dirX = 1; dirY = -1; }
+      else if (cls.includes('-bl')) { dirX = -1; dirY = 1; }
+      else if (cls.includes('-br')) { dirX = 1; dirY = 1; }
+      resizingFrame = {
+        handle: h, startX: e.clientX, startY: e.clientY,
+        startW: frameW, startH: frameH, dirX, dirY,
+      };
+      try { h.setPointerCapture(e.pointerId); } catch {}
+    });
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!resizingFrame) return;
+    const r = resizingFrame;
+    const dW = r.dirX * (e.clientX - r.startX) * 2;
+    const dH = r.dirY * (e.clientY - r.startY) * 2;
+    frameW = Math.max(200, Math.min(4000, r.startW + dW));
+    frameH = Math.max(200, Math.min(4000, r.startH + dH));
+    $('frame-w').value = Math.round(frameW);
+    $('frame-h').value = Math.round(frameH);
+    applyFrame();
+  });
+  document.addEventListener('pointerup', (e) => {
+    if (!resizingFrame) return;
+    const h = resizingFrame.handle;
+    resizingFrame = null;
+    try { h.releasePointerCapture(e.pointerId); } catch {}
+    relayoutNotes();
+  });
+
+  function addNote(text, meta) {
+    const shapePool = getShapePool();
+    const shape = meta.shape && ['plain','sticky','notebook','polaroid','index','postcard'].includes(meta.shape)
+      ? meta.shape
+      : shapePool[noteIndex % shapePool.length];
+
+    const note = document.createElement('div');
+    note.className = 'note ' + shape;
+
+    if (meta.color) note.style.setProperty('--note-color', meta.color);
+
+    if (meta.header) {
+      const h = document.createElement('div');
+      h.className = 'note-header';
+      h.textContent = meta.header;
+      note.appendChild(h);
+    }
+    if (meta.dedication) {
+      const d = document.createElement('div');
+      d.className = 'note-dedication';
+      d.textContent = meta.dedication;
+      note.appendChild(d);
+    }
+    if (meta.image) {
+      const im = images[+meta.image - 1];
+      if (im) {
+        const imgEl = document.createElement('img');
+        imgEl.src = im.dataUrl;
+        imgEl.className = 'note-image';
+        note.appendChild(imgEl);
+      }
+    }
+    if (meta.video) {
+      const v = videos[+meta.video - 1];
+      if (v) {
+        note.classList.add('has-video');
+        const videoEl = document.createElement('video');
+        videoEl.src = v.url;
+        videoEl.autoplay = true;
+        videoEl.loop = true;
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        videoEl.className = 'note-video';
+        const muteBtn = document.createElement('div');
+        muteBtn.className = 'note-mute';
+        muteBtn.textContent = '🔇';
+        function toggleMute() {
+          if (videoEl.muted) {
+            videoEl.muted = false;
+            videoEl.controls = true;
+            note.classList.add('unmuted');
+          } else {
+            videoEl.muted = true;
+            videoEl.controls = false;
+            note.classList.remove('unmuted');
+          }
+        }
+        videoEl.addEventListener('click', toggleMute);
+        muteBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
+        note.appendChild(videoEl);
+        note.appendChild(muteBtn);
+      }
+    }
+    if (text || (!meta.video && !meta.image)) {
+      const b = document.createElement('div');
+      b.className = 'note-body';
+      b.textContent = text;
+      note.appendChild(b);
+    }
+    if (meta.footer) {
+      const f = document.createElement('div');
+      f.className = 'note-footer';
+      f.textContent = meta.footer;
+      note.appendChild(f);
+    }
+
+    const rStrength = (+$('rotation').value) / 10;
+    const rot = (Math.random() - 0.5) * 2 * rStrength;
+    note.style.setProperty('--rot', rot + 'deg');
+
+    const pos = computeNotePosition(noteIndex);
+    note.style.left = pos.x + 'px';
+    note.style.top = pos.y + 'px';
+
+    canvas.appendChild(note);
+    noteIndex++;
+
+    requestAnimationFrame(() => {
+      note.classList.add('appear');
+      setTimeout(() => {
+        const noteRect = note.getBoundingClientRect();
+        const wrapRect = canvasWrap.getBoundingClientRect();
+        const noteBottomInWrap = noteRect.bottom - wrapRect.top;
+        const required = noteBottomInWrap + 220;
+        if (canvasWrap.offsetHeight < required) {
+          canvasWrap.style.minHeight = required + 'px';
+        }
+        redrawStrings();
+        scrollToShowIfNeeded(note);
+      }, 80);
+    });
+
+    Sound.notePlace();
+    return note;
+  }
+
+  function scrollToShowIfNeeded(note) {
+    const r = note.getBoundingClientRect();
+    const vpH = window.innerHeight;
+    if (r.bottom > vpH - 40) {
+      const delta = r.bottom - (vpH - 80);
+      window.scrollBy({ top: delta, behavior: 'smooth' });
+    } else if (r.top < 20) {
+      window.scrollBy({ top: r.top - 30, behavior: 'smooth' });
+    }
+  }
+
+  function redrawStrings() {
+    stringsSvg.innerHTML = '';
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    const totalH = canvasWrap.offsetHeight;
+    const totalW = canvasWrap.offsetWidth;
+    stringsSvg.setAttribute('width', totalW);
+    stringsSvg.setAttribute('height', totalH);
+    stringsSvg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+    stringsSvg.style.height = totalH + 'px';
+
+    const notes = canvas.querySelectorAll('.note');
+    if (notes.length < 2) return;
+
+    const promptRect = promptBox.getBoundingClientRect();
+    const promptCxWrap = promptRect.left + promptRect.width / 2 - wrapRect.left;
+    const promptCyWrap = promptRect.top + promptRect.height / 2 - wrapRect.top;
+
+    const curveStrength = +$('string-curve').value / 100;
+    const styleAttr = $('string-style').value;
+    const dashAttr = styleAttr === 'dashed' ? '8,5' : styleAttr === 'dotted' ? '1,6' : null;
+    const strokeColor = getComputedStyle(root).getPropertyValue('--string-color').trim();
+    const strokeWidth = getComputedStyle(root).getPropertyValue('--string-width').trim();
+    const animMs = +$('string-anim-ms').value;
+
+    for (let i = 0; i < notes.length - 1; i++) {
+      const a = notes[i].getBoundingClientRect();
+      const b = notes[i + 1].getBoundingClientRect();
+      const ax = a.left + a.width / 2 - wrapRect.left;
+      const ay = a.top + a.height / 2 - wrapRect.top;
+      const bx = b.left + b.width / 2 - wrapRect.left;
+      const by = b.top + b.height / 2 - wrapRect.top;
+
+      const mx = (ax + bx) / 2;
+      const my = (ay + by) / 2;
+      let outX = mx - promptCxWrap;
+      let outY = my - promptCyWrap;
+      const outLen = Math.sqrt(outX * outX + outY * outY) || 1;
+      outX /= outLen;
+      outY /= outLen;
+
+      const dist = Math.sqrt((bx - ax) ** 2 + (by - ay) ** 2);
+      const curveAmt = dist * 0.18 * (0.4 + curveStrength * 1.6);
+      const cmx = mx + outX * curveAmt;
+      const cmy = my + outY * curveAmt;
+      const cp1x = ax * 0.5 + cmx * 0.5;
+      const cp1y = ay * 0.5 + cmy * 0.5;
+      const cp2x = bx * 0.5 + cmx * 0.5;
+      const cp2y = by * 0.5 + cmy * 0.5;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${ax} ${ay} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${bx} ${by}`);
+      path.setAttribute('stroke', strokeColor);
+      path.setAttribute('stroke-width', strokeWidth);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-linecap', 'round');
+      if (dashAttr) path.setAttribute('stroke-dasharray', dashAttr);
+
+      if (i === notes.length - 2 && !dashAttr && animMs > 0) {
+        stringsSvg.appendChild(path);
+        try {
+          const L = path.getTotalLength();
+          path.style.strokeDasharray = L;
+          path.style.strokeDashoffset = L;
+          path.getBBox();
+          path.style.transition = `stroke-dashoffset ${animMs}ms ease-out`;
+          requestAnimationFrame(() => { path.style.strokeDashoffset = 0; });
+        } catch (e) {}
+      } else {
+        stringsSvg.appendChild(path);
+      }
+    }
+  }
+
+  window.addEventListener('resize', () => redrawStrings());
+
+  // ---------- Playback ----------
+  let abortFlag = false;
+  let playing = false;
+
+  function reset() {
+    abortFlag = true;
+    canvas.innerHTML = '';
+    stringsSvg.innerHTML = '';
+    canvasWrap.style.minHeight = '';
+    promptBox.classList.remove('sending');
+    clearPrompt();
+    noteIndex = 0;
+    if (audioEl.src) { audioEl.pause(); audioEl.currentTime = 0; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function sendNote(meta) {
+    const text = promptText.textContent;
+    if (!text.length && !meta.header && !meta.footer) return;
+    promptBox.classList.add('sending');
+    await sleep(+$('prompt-send-anim').value);
+    clearPrompt();
+    promptBox.classList.remove('sending');
+    addNote(text, meta);
+  }
+
+  async function play() {
+    if (playing) return;
+    if (SrtScript && SrtScript.enabled && SrtScript.enabled()) {
+      playing = true;
+      abortFlag = false;
+      Sound.resume();
+      if (lensOn()) lensMeasure();
+      try { await playSrtScript(); }
+      finally { playing = false; }
+      return;
+    }
+    playing = true;
+    abortFlag = false;
+    Sound.resume();
+    if (lensOn()) lensMeasure();   // recompute centering for the current viewport
+
+    audioState.playStartWall = performance.now();
+    startBgm();
+
+    const startDelay = (+$('start-delay').value) * 1000;
+    if (startDelay > 0) await sleep(startDelay);   // silent pre-roll (no countdown overlay)
+
+    canvas.innerHTML = '';
+    stringsSvg.innerHTML = '';
+    canvasWrap.style.minHeight = '';
+    clearPrompt();
+    noteIndex = 0;
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+
+    const syncMode = $('sync-mode').value;
+    const audioReady = !!audioEl.src && audioEl.duration && !isNaN(audioEl.duration);
+
+    if (syncMode === 'words' && timingData && audioReady) {
+      await playWordTimedNotes();
+    } else {
+      if (syncMode === 'rate' && audioReady) {
+        applyRateMatch();
+      }
+      if ((syncMode === 'rate' || syncMode === 'words') && audioReady) {
+        try {
+          audioEl.currentTime = 0;
+          await audioEl.play();
+        } catch (e) { console.warn('audio play blocked:', e); }
+      }
+      await playNormalNotes();
+      if (audioReady) audioEl.pause();
+    }
+
+    stopBgm();
+    const naturalEnd = !abortFlag;
+    playing = false;
+    // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+    // (present/render/audiocap) does one take — refresh the source for a fresh take.
+    if (naturalEnd && !(window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash))) setTimeout(() => { if (!abortFlag) play(); }, 800);
+  }
+
+  // ---------- TTS ↔ typing sync helpers ----------
+  function tokensToPlainText(tokens) {
+    let s = '';
+    for (const t of tokens) {
+      if (t.type === 'text') s += t.char;
+      else if (t.type === 'typo') s += t.right;
+    }
+    return s;
+  }
+  function countTypedChars(tokens) {
+    let n = 0;
+    for (const t of tokens) {
+      if (t.type === 'text') n++;
+      else if (t.type === 'typo') n += t.wrong.length * 2 + t.right.length;
+    }
+    return n;
+  }
+  function estimatePauseMs(tokens) {
+    let ms = 0;
+    for (const t of tokens) if (t.type === 'pause') ms += t.ms;
+    return ms;
+  }
+  // Estimate total natural typing time for a token list (mean — variance/jitter zero out).
+  function estimateTypingMs(tokens, s) {
+    const typoPause = +($('typo-pause')?.value) || 0;
+    const bsMs = +($('bs-ms')?.value) || 50;
+    const sentenceMean = (s.sentence || 0) + (s.sentenceJ || 0) / 2;
+    const commaMean = (s.comma || 0) + (s.commaJ || 0) / 2;
+    const thinkMean = (s.thinkChance || 0) * (400 + Math.max(0, (s.thinkMax || 0) - 400) / 2);
+    const nlMean = 275;
+    let total = 0, prevCh;
+    const contrib = (ch) => {
+      let d = s.base;
+      if (/[.!?]/.test(ch)) d += sentenceMean;
+      else if (/[,;:]/.test(ch)) d += commaMean;
+      if (ch === '\n') d += nlMean;
+      if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) d += thinkMean;
+      return Math.max(5, d);
+    };
+    for (const tok of tokens) {
+      if (tok.type === 'pause') { total += tok.ms; continue; }
+      if (tok.type === 'typo') {
+        for (const c of tok.wrong) { total += contrib(c); prevCh = c; }
+        total += typoPause * 1.75;
+        total += tok.wrong.length * bsMs * 1.3;
+        total += bsMs * 2;
+        for (const c of tok.right) { total += contrib(c); prevCh = c; }
+        continue;
+      }
+      total += contrib(tok.char);
+      prevCh = tok.char;
+    }
+    return total;
+  }
+  // Set audio.playbackRate so audio finishes in targetMs. Preserves pitch. Clamped 0.5–2.0.
+  function fitAudioToWindow(audio, targetMs, opts) {
+    opts = opts || {};
+    const minR = opts.minRate || 0.5;
+    const maxR = opts.maxRate || 2.0;
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0 || targetMs <= 0) return 1;
+    const desiredSec = targetMs / 1000;
+    let rate = audio.duration / desiredSec;
+    rate = Math.min(maxR, Math.max(minR, rate));
+    audio.playbackRate = rate;
+    try { audio.preservesPitch = true; } catch {}
+    try { audio.mozPreservesPitch = true; } catch {}
+    try { audio.webkitPreservesPitch = true; } catch {}
+    return rate;
+  }
+  function chunkTokensBySentence(tokens) {
+    const chunks = []; let cur = [];
+    const flush = () => { if (cur.length) { chunks.push(cur); cur = []; } };
+    for (const t of tokens) {
+      cur.push(t);
+      if (t.type === 'text' && /[.!?]/.test(t.char)) flush();
+      else if (t.type === 'typo' && /[.!?]/.test(t.right.slice(-1))) flush();
+    }
+    flush();
+    return chunks;
+  }
+  function getSyncMode(scene) {
+    const o = (scene?.meta?.sync || '').toLowerCase();
+    if (o === 'off' || o === 'stretch' || o === 'sentence') return o;
+    return $('tts-sync-mode')?.value || 'off';
+  }
+  function getNarrationText(scene, allScenes) {
+    const ov = scene?.meta?.ttstext;
+    if (ov && ov.trim()) return ov;
+    if ($('tts-narr-on')?.checked) {
+      const t = ($('tts-narr-text')?.value || '').trim();
+      if (t) return t;
+    }
+    return buildSpeechText(scene, allScenes);
+  }
+  function webSpeechUtter(text) {
+    if (!text || !text.trim() || !window.speechSynthesis) return null;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = parseFloat($('tts-rate').value) || 1;
+    u.pitch = parseFloat($('tts-pitch').value) || 1;
+    u.volume = parseFloat($('tts-volume').value) || 1;
+    const voiceName = $('tts-voice').value;
+    if (voiceName) {
+      const v = speechSynthesis.getVoices().find(x => x.name === voiceName);
+      if (v) u.voice = v;
+    }
+    return u;
+  }
+  function speakAndAwait(text, sceneOverride) {
+    return new Promise(async (resolve) => {
+      if (!text || !text.trim()) return resolve();
+      if (useEdge) {
+        stopEdgeTts();
+        const handle = await edgeTtsSynth(text, sceneOverride);
+        if (!handle) return resolve();
+        edgeTtsAudio = handle.audio; edgeTtsAudioUrl = handle.url;
+        await handle.play();
+        await handle.donePromise;
+        await handle.postDelayWait();
+        resolve();
+      } else {
+        const u = webSpeechUtter(text);
+        if (!u) return resolve();
+        u.onend = () => resolve(); u.onerror = () => resolve();
+        try { speechSynthesis.speak(u); } catch { resolve(); }
+      }
+    });
+  }
+  async function typeBodyChunk(tokens, s, bsMs, typoPause) {
+    for (const t of tokens) {
+      if (abortFlag) break;
+      if (t.type === 'text') {
+        await sleep(charDelay(t.char, prevCh, s));
+        if (abortFlag) break;
+        appendChar(t.char);
+      } else if (t.type === 'pause') {
+        await sleep(t.ms);
+      } else if (t.type === 'typo') {
+        for (const c of t.wrong) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+        }
+        await sleep(typoPause + Math.random() * typoPause * 1.5);
+        for (let k = 0; k < t.wrong.length; k++) {
+          if (abortFlag) break;
+          await sleep(bsMs + Math.random() * bsMs * 0.6);
+          backspaceChar();
+        }
+        await sleep(bsMs * 3 + Math.random() * bsMs * 5);
+        for (const c of t.right) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+        }
+      }
+    }
+  }
+
+  async function playSrtScript() {
+    if (!SrtScript.cues || !SrtScript.cues.length) return;
+    const fill = (+(document.getElementById('srt-script-fill')?.value) || 92) / 100;
+    const between = document.getElementById('srt-script-between')?.value || 'keep';
+    const useEdge = $('edge-tts-on')?.checked && edgeTtsConnected;
+
+    const target = document.getElementById('prompt-text') || document.getElementById('prompt-box');
+    // Hide placeholder while we drive the prompt directly.
+    if (promptPlaceholder) promptPlaceholder.style.display = 'none';
+    if (target) target.textContent = '';
+    const t0 = performance.now();
+    for (let i = 0; i < SrtScript.cues.length; i++) {
+      if (typeof abortFlag !== 'undefined' && abortFlag) break;
+      const cue = SrtScript.cues[i];
+      const waitMs = cue.start * 1000 - (window.__srtElapsed ? window.__srtElapsed(t0) : (performance.now() - t0));
+      if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+      if (typeof abortFlag !== 'undefined' && abortFlag) break;
+      if (i > 0 && target) {
+        if (between === 'clear') target.textContent = '';
+        else if (between === 'newline') target.appendChild(document.createTextNode('\n'));
+        else if (between === 'keep') target.appendChild(document.createTextNode(' '));
+      }
+
+      const winMs = Math.max(80, (cue.end - cue.start) * 1000 * fill);
+      const perChar = cue.text.length ? winMs / cue.text.length : 0;
+      const cueStartAt = performance.now();
+      for (let k = 0; k < cue.text.length; k++) {
+        if (typeof abortFlag !== 'undefined' && abortFlag) break;
+        const elapsed = performance.now() - cueStartAt;
+        const drift = ((k + 1) * perChar) - elapsed;
+        if (drift > 0) await new Promise(r => setTimeout(r, drift));
+        if (target) target.appendChild(document.createTextNode(cue.text[k]));
+      }
+    }
+  }
+
+  async function playNormalNotes() {
+    const scenes = parseScript($('script').value);
+    const baseS = settings();
+    const sendPause = +$('send-pause').value;
+    const settle = +$('settle-pause').value;
+    const typoPause = +$('typo-pause').value;
+    const bsMs = +$('bs-ms').value;
+    for (const scene of scenes) {
+      if (abortFlag) break;
+      await typeBodyChunk(scene.body, baseS, bsMs, typoPause);
+
+      if (abortFlag) break;
+      await sleep(sendPause);
+      await sendNote(scene.meta);
+      await sleep(settle);
+    }
+  }
+
+  async function playWordTimedNotes() {
+    try {
+      audioEl.currentTime = 0;
+      await audioEl.play();
+    } catch (e) { console.warn('audio play blocked:', e); }
+
+    const gapThreshold = (+$('paragraph-gap').value) / 1000;
+    const paragraphs = [];
+    let current = [];
+    for (let i = 0; i < timingData.length; i++) {
+      const w = timingData[i];
+      if (i > 0) {
+        const prev = timingData[i - 1];
+        if ((w.start - prev.end) > gapThreshold && current.length > 0) {
+          paragraphs.push(current);
+          current = [];
+        }
+      }
+      current.push(w);
+    }
+    if (current.length > 0) paragraphs.push(current);
+
+    const scriptScenes = parseScript($('script').value);
+    const useScriptMeta = scriptScenes.length === paragraphs.length;
+
+    const settle = +$('settle-pause').value;
+
+    for (let pi = 0; pi < paragraphs.length; pi++) {
+      if (abortFlag) break;
+      const para = paragraphs[pi];
+
+      while (audioEl.currentTime < para[0].start && !abortFlag && !audioEl.ended) {
+        await sleep(15);
+      }
+      if (abortFlag) break;
+
+
+      for (const w of para) {
+        if (abortFlag) break;
+        while (audioEl.currentTime < w.start && !abortFlag && !audioEl.ended) {
+          await sleep(15);
+        }
+        if (abortFlag) break;
+        const text = w.text;
+        if (!text) continue;
+        const wordDuration = Math.max(50, (w.end - w.start) * 1000);
+        const perChar = wordDuration / text.length;
+        for (const c of text) {
+          if (abortFlag) break;
+          appendChar(c);
+          await sleep(perChar);
+        }
+      }
+
+      if (abortFlag) break;
+      await sleep(180);
+      const meta = useScriptMeta ? scriptScenes[pi].meta : {};
+      await sendNote(meta);
+      await sleep(settle);
+    }
+
+    if (!abortFlag) {
+      while (!audioEl.ended && !abortFlag) await sleep(50);
+    }
+    audioEl.pause();
+  }
+
+  function stop() {
+    abortFlag = true;
+    if (audioEl.src) audioEl.pause();
+    stopBgm();
+  }
+
+  /* ============ BGM / TTS / SYNC ============ */
+  const audioState = {
+    bgm: null,
+    bgmUrl: null,
+    bgmName: '',
+    markers: [],
+    playStartWall: 0,
+    fadeTimer: null,
+  };
+
+  function setBgmFile(file) {
+    clearBgm();
+    audioState.bgmUrl = URL.createObjectURL(file);
+    audioState.bgmName = file.name;
+    audioState.bgm = new Audio(audioState.bgmUrl);
+    audioState.bgm.preload = 'auto';
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.volume = parseFloat($('bgm-volume').value) || 0;
+    $('bgm-name').textContent = file.name;
+  }
+
+  function clearBgm() {
+    if (audioState.bgm) {
+      audioState.bgm.pause();
+      audioState.bgm.src = '';
+    }
+    if (audioState.bgmUrl) URL.revokeObjectURL(audioState.bgmUrl);
+    audioState.bgm = null;
+    audioState.bgmUrl = null;
+    audioState.bgmName = '';
+    $('bgm-name').textContent = 'none';
+  }
+
+  function startBgm(opts) {
+    if (!audioState.bgm) return;
+    if (!$('bgm-auto').checked && !opts?.force) return;
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.currentTime = parseFloat($('bgm-start').value) || 0;
+    const targetVol = parseFloat($('bgm-volume').value) || 0;
+    const fadeIn = parseFloat($('bgm-fadein').value) || 0;
+    if (fadeIn > 0) {
+      audioState.bgm.volume = 0;
+      audioState.bgm.play().catch(() => {});
+      const steps = 20;
+      const stepMs = fadeIn / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.min(targetVol, (i / steps) * targetVol);
+        if (i >= steps) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+      }, stepMs);
+    } else {
+      audioState.bgm.volume = targetVol;
+      audioState.bgm.play().catch(() => {});
+    }
+  }
+
+  function stopBgm() {
+    if (!audioState.bgm) return;
+    if (audioState.fadeTimer) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+    const fadeOut = parseFloat($('bgm-fadeout').value) || 0;
+    if (fadeOut > 0) {
+      const startVol = audioState.bgm.volume;
+      const steps = 20;
+      const stepMs = fadeOut / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.max(0, startVol * (1 - i / steps));
+        if (i >= steps) {
+          clearInterval(audioState.fadeTimer); audioState.fadeTimer = null;
+          audioState.bgm.pause();
+        }
+      }, stepMs);
+    } else {
+      audioState.bgm.pause();
+    }
+  }
+
+  $('bgm-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) setBgmFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('bgm-clear')?.addEventListener('click', clearBgm);
+  $('bgm-volume')?.addEventListener('input', e => {
+    if (audioState.bgm) audioState.bgm.volume = parseFloat(e.target.value);
+  });
+  $('bgm-loop')?.addEventListener('change', e => {
+    if (audioState.bgm) audioState.bgm.loop = e.target.checked;
+  });
+  $('bgm-test')?.addEventListener('click', () => {
+    if (!audioState.bgm) return;
+    startBgm({ force: true });
+    setTimeout(() => stopBgm(), 4000);
+  });
+  $('bgm-stop-test')?.addEventListener('click', () => stopBgm());
+
+  /* ===== SYNC FILE ===== */
+  function parseTimestamp(s) {
+    const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+    if (m) return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
+    const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+    if (m2) return (+m2[1]) * 60000 + (+m2[2]) * 1000 + (+m2[3]);
+    return parseFloat(s) || 0;
+  }
+
+  function parseSrt(text) {
+    const out = [];
+    text = text.replace(/^WEBVTT.*?\n\n/s, '');
+    const blocks = text.split(/\n\s*\n/);
+    for (const block of blocks) {
+      const lines = block.trim().split(/\r?\n/);
+      if (!lines.length) continue;
+      const tIdx = lines.findIndex(l => l.includes('-->'));
+      if (tIdx < 0) continue;
+      const [s, e] = lines[tIdx].split('-->').map(x => parseTimestamp(x.trim()));
+      const txt = lines.slice(tIdx + 1).join(' ').trim();
+      out.push({ start: s, end: e, text: txt });
+    }
+    return out;
+  }
+
+  function loadSyncFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      let markers = [];
+      try {
+        if (/\.json$/i.test(file.name) || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+          const parsed = JSON.parse(text);
+          markers = Array.isArray(parsed) ? parsed : parsed.markers || [];
+        } else {
+          markers = parseSrt(text);
+        }
+      } catch (err) {
+        markers = parseSrt(text);
+      }
+      audioState.markers = markers;
+      $('sync-marker-count').textContent = `${markers.length} markers loaded from ${file.name}`;
+    };
+    reader.readAsText(file);
+  }
+
+  $('sync-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) loadSyncFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('sync-clear')?.addEventListener('click', () => {
+    audioState.markers = [];
+    $('sync-marker-count').textContent = 'no markers';
+  });
+
+  function getPlayElapsed() {
+    if ($('sync-source').value === 'bgm' && audioState.bgm && !audioState.bgm.paused) {
+      return audioState.bgm.currentTime * 1000;
+    }
+    return performance.now() - audioState.playStartWall;
+  }
+
+  $('start').addEventListener('click', play);
+  $('stop').addEventListener('click', stop);
+  $('reset').addEventListener('click', () => { stop(); reset(); });
+  $('hide').addEventListener('click', () => body.classList.toggle('hide-controls'));
+
+  document.addEventListener('keydown', e => {
+    const target = e.target;
+    const inField = target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'SELECT');
+    if (inField) return;
+    if (e.key === 'h' || e.key === 'H') {
+      body.classList.toggle('hide-controls');
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      if (playing) stop(); else play();
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
+      stop();
+    }
+  });
+
+  updatePromptPlaceholder();
+})();
+</script>
+<!-- ===== Universal OBS present mode (#present) — shared across sims ===== -->
+<style>
+  body.present { background: #000 !important; overflow: hidden !important; }
+  body.present, body.present * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  body.present *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  body.present #controls { display: none !important; }
+  body.present #stage { padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+  body.present .present-frame {
+    position: fixed !important; inset: 0 !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; min-height: 0 !important;
+    max-width: none !important; max-height: none !important;
+    margin: 0 !important; border: none !important; border-radius: 0 !important;
+    transform: none !important; box-shadow: none !important;
+    overflow: hidden !important;
+  }
+  body.present .present-frame .phone-screen {
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; margin: 0 !important; border: none !important;
+  }
+  body.present .frame-handle,
+  body.present .frame-size-readout,
+  body.present #hint, body.present #focus-banner,
+  body.present #resize-handle, body.present #controls-toggle,
+  body.present #drop-hint, body.present #rec-indicator,
+  body.present #stage-meta, body.present #stage-scale-info,
+  body.present #tt-drag-bar, body.present #tt-resize-grip, body.present #tt-size-pill,
+  body.present .tt-grip, body.present #controls-toggle { display: none !important; }
+  #obs-link-btn {
+    position: fixed; left: 12px; bottom: 12px; z-index: 99999;
+    background: #c2410c; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 12px; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.92;
+  }
+  #obs-link-btn:hover { opacity: 1; }
+  body.present #obs-link-btn { display: none !important; }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'sim:script:' + (location.pathname.split('/').pop() || 'sim');
+  var scriptEl = $('script');
+  function buildLink() {
+    var base = location.href.replace(/[#?].*$/, '');
+    var s = scriptEl ? scriptEl.value : '';
+    return base + '#present' + (s && s.trim() ? '&s=' + encodeURIComponent(s) : '');
+  }
+  function copyText(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); } catch (e) {} }
+  }
+  if (scriptEl) {
+    scriptEl.addEventListener('input', function () { try { localStorage.setItem(KEY, scriptEl.value); } catch (e) {} });
+  }
+  var params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (params.has('present')) {
+    var s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem(KEY); } catch (e) {} }
+    if (s && scriptEl) scriptEl.value = s;
+    var stage = $('stage');
+    var frame = (stage && stage.querySelector('#gmail-frame, #tt-frame, #frame, .phone-wrap')) || stage;
+    if (frame) frame.classList.add('present-frame');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('present', 'hide-controls');
+    setTimeout(function () {
+      var b = $('start') || $('btn-play');
+      if (b) b.click();
+    }, 1200);
+  } else {
+    var btn = document.createElement('button');
+    btn.id = 'obs-link-btn'; btn.type = 'button'; btn.textContent = '📋 OBS link';
+    btn.title = 'Copy a present-mode link (with your current script) to paste into an OBS Browser Source';
+    btn.addEventListener('click', function () {
+      copyText(buildLink());
+      var t = btn.textContent; btn.textContent = '✓ Copied!';
+      setTimeout(function () { btn.textContent = t; }, 1600);
+    });
+    document.body.appendChild(btn);
+  }
+})();
+</script>
+</body>
+</html>

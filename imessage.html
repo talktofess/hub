@@ -1,0 +1,3626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iMessage Typer</title>
+<style>
+  :root {
+    /* Lens / zoom (camera push-in on the conversation + vignette) */
+    --lens-mag: 1.1;
+    --lens-vignette: 0.5;
+    /* Phone shell */
+    --screen-width: 390px;
+    --screen-height: 844px;
+    --screen-scale: 1.3;
+    --screen-radius: 38px;
+    --screen-shadow-y: 20px;
+    --screen-shadow-blur: 60px;
+    --screen-shadow-alpha: 0.45;
+    --bezel-padding: 14px;
+    --bezel-radius: 54px;
+    --bezel-bg: #0a0a0c;
+    --bezel-inner: #2a2a2e;
+    --bezel-shadow-y: 30px;
+    --bezel-shadow-blur: 80px;
+    --bezel-shadow-alpha: 0.6;
+    --stage-bg: #1a1a1d;
+
+    /* Skin / page transparency */
+    --page-bg-alpha: 1;
+    --skin-alpha:    1;
+
+    /* Surface */
+    --msg-bg: #ffffff;
+    --header-bg: rgba(248,248,248,0.92);
+    --header-border: #D6D6D8;
+    --header-border-w: 0.5px;
+    --input-bar-bg: rgba(248,248,248,0.92);
+    --input-field-bg: #ffffff;
+    --input-field-border: #D1D1D6;
+    --input-field-border-w: 0.5px;
+    --text-primary: #000000;
+    --text-secondary: #8E8E93;
+
+    /* Bubbles */
+    --bubble-sent: #007AFF;
+    --bubble-sent-text: #ffffff;
+    --bubble-received: #E9E9EB;
+    --bubble-received-text: #000000;
+    --bubble-radius: 18px;
+    --bubble-pad-y: 8px;
+    --bubble-pad-x: 14px;
+    --bubble-max-width: 75%;
+    --bubble-line-height: 1.3;
+    --bubble-font-weight: 400;
+    --bubble-letter-spacing: -0.01em;
+    --bubble-gap: 2px;
+    --bubble-gap-same: 1px;
+    --bubble-anim-ms: 260ms;
+    --bubble-anim-easing: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --bubble-anim-translate: 20px;
+    --bubble-anim-scale-from: 0.7;
+
+    /* Typing indicator */
+    --typing-dot-size: 7px;
+    --typing-dot-color: #8E8E93;
+    --typing-dot-bounce: 4px;
+    --typing-dot-duration: 1.3s;
+    --typing-pad-y: 11px;
+    --typing-pad-x: 14px;
+    --typing-radius: 18px;
+
+    /* Status bar */
+    --status-height: 44px;
+    --status-pad-l: 30px;
+    --status-pad-r: 26px;
+    --status-font-size: 14.5px;
+    --status-font-weight: 600;
+    --status-icon-color: var(--text-primary);
+
+    /* Conversation header */
+    --header-pad-top: 6px;
+    --header-pad-bottom: 8px;
+    --header-pad-x: 6px;
+    --header-avatar-size: 34px;
+    --header-avatar-radius: 50%;
+    --header-avatar-fz: 13px;
+    --header-avatar-fw: 500;
+    --header-name-fz: 11px;
+    --header-name-fw: 400;
+    --header-name-gap: 3px;
+    --header-back-fz: 30px;
+    --header-back-fw: 300;
+    --header-actions-gap: 18px;
+    --header-actions-pad-r: 14px;
+
+    /* Messages list */
+    --msg-pad-y: 14px;
+    --msg-pad-x: 12px;
+    --msg-pad-bottom: 6px;
+
+    /* Input bar */
+    --input-bar-pad-top: 8px;
+    --input-bar-pad-x: 8px;
+    --input-bar-pad-bottom: 28px;
+    --input-bar-gap: 6px;
+    --input-field-min-h: 34px;
+    --input-field-radius: 18px;
+    --input-field-pad-y: 7px;
+    --input-field-pad-x: 12px;
+    --input-field-line-height: 1.25;
+    --plus-size: 32px;
+    --plus-radius: 50%;
+    --plus-bg: rgba(120,120,128,0.18);
+    --plus-text: var(--text-secondary);
+    --plus-fz: 22px;
+    --send-size: 28px;
+    --send-radius: 50%;
+
+    /* Avatars + iOS blue */
+    --avatar-color: #4A6CF7;
+    --avatar-text: #ffffff;
+    --ios-blue: #007AFF;
+
+    /* Cursor */
+    --cursor-color: #000000;
+    --cursor-width: 2px;
+    --cursor-height: 1.05em;
+    --cursor-offset-y: 2px;
+    --cursor-block-w: 0.55em;
+    --cursor-underline-h: 2px;
+
+    /* Typography */
+    --bubble-font-size: 17px;
+    --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+    /* Image bubbles */
+    --img-bubble-max-w: 62%;
+    --img-bubble-radius: 18px;
+    --img-inner-radius: 16px;
+    --img-single-max-h: 320px;
+    --img-grid-gap: 3px;
+    --img-grid-cell-h: 110px;
+    --img-grid-odd-h: 150px;
+    --img-cap-fz: 14px;
+    --img-cap-pad-y: 5px;
+
+    /* Notification banner */
+    --notif-top: 8px;
+    --notif-side: 8px;
+    --notif-radius: 18px;
+    --notif-pad-y: 12px;
+    --notif-pad-x: 14px;
+    --notif-gap: 12px;
+    --notif-bg: rgba(245,245,247,0.95);
+    --notif-icon-size: 38px;
+    --notif-icon-color: #4A6CF7;
+    --notif-icon-text: #ffffff;
+    --notif-icon-fz: 14px;
+    --notif-name-fz: 13.5px;
+    --notif-name-fw: 600;
+    --notif-time-fz: 12px;
+    --notif-text-fz: 14px;
+    --notif-text-clamp: 2;
+    --notif-anim-ms: 420ms;
+    --notif-anim-easing: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --notif-translate: 220%;
+    --notif-shadow-y: 12px;
+    --notif-shadow-blur: 28px;
+    --notif-shadow-alpha: 0.2;
+    --notif-name-color: #000;
+    --notif-time-color: rgba(0,0,0,0.5);
+    --notif-text-color: rgba(0,0,0,0.85);
+  }
+
+  body.dark {
+    --msg-bg: #000000;
+    --header-bg: rgba(28,28,30,0.92);
+    --header-border: #38383A;
+    --input-bar-bg: rgba(28,28,30,0.92);
+    --input-field-bg: #1C1C1E;
+    --input-field-border: #3A3A3C;
+    --text-primary: #ffffff;
+    --bubble-received: #26252A;
+    --bubble-received-text: #ffffff;
+    --cursor-color: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--stage-bg);
+    color: #d6d7df;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    display: flex;
+  }
+
+  /* ---------- Controls panel ---------- */
+  #controls {
+    width: 380px;
+    flex: 0 0 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #15161a;
+    border-right: 1px solid #2a2c33;
+    padding: 18px 18px 28px;
+    font-size: 13px;
+    transition: margin-left 200ms ease;
+    z-index: 10;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+
+  #controls h1 {
+    font-size: 14px;
+    margin: 0 0 16px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #controls h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8a8d96;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #2a2c33;
+    padding-bottom: 4px;
+  }
+
+  /* Tabs */
+  #tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a2c33;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #8a8d96;
+    padding: 7px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab-btn:hover { color: #c4c6cd; background: transparent; }
+  .tab-btn.active { color: #fff; border-bottom-color: #4a6cf7; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tab-fade 160ms ease; }
+  @keyframes tab-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { flex: 1; color: #c4c6cd; }
+  .row input[type="number"], .row select, .row input[type="text"] {
+    width: 150px; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 6px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px;
+  }
+  .row input[type="text"].wide { width: 180px; }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="color"] {
+    width: 40px; height: 28px; padding: 0;
+    border: 1px solid #2a2c33; border-radius: 6px; background: #0e0f12;
+  }
+  .row .val { width: 56px; text-align: right; color: #8a8d96; font-variant-numeric: tabular-nums; }
+  .row input[type="checkbox"] { accent-color: #6b8fff; }
+
+  textarea#script {
+    width: 100%;
+    height: 220px;
+    background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    resize: vertical;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    background: #2b2f3a; color: #ececf1;
+    border: 1px solid #3a3f4c; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #353a47; }
+  button.primary { background: #4a6cf7; border-color: #4a6cf7; }
+  button.primary:hover { background: #5b7afa; }
+  button.danger { background: #5a2a2a; border-color: #6a3535; }
+
+  .help {
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+    color: #a8abb3; font-size: 12px; line-height: 1.6;
+  }
+  .help code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+  }
+
+  /* ---------- Stage ---------- */
+  #stage {
+    flex: 1;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--stage-bg);
+  }
+
+  .phone-wrap {
+    transform: scale(var(--screen-scale));
+    transform-origin: center center;
+  }
+
+  .phone-screen {
+    width: var(--screen-width);
+    height: var(--screen-height);
+    background: transparent;
+    color: var(--text-primary);
+    border-radius: var(--screen-radius);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-family);
+    box-shadow: 0 var(--screen-shadow-y) var(--screen-shadow-blur) rgba(0,0,0,var(--screen-shadow-alpha)), 0 0 0 1px rgba(255,255,255,0.04);
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* ---------- Lens / zoom: enlarge the message text (reflows within the bubble
+     width, no cropping) + vignette. ---------- */
+  .bubble { transition: font-size 500ms ease; }
+  body.lens-on .bubble { font-size: calc(var(--bubble-font-size) * var(--lens-mag, 1.1)); }
+  #lens-vignette-fx {
+    position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    z-index: 45; opacity: 0; transition: opacity 500ms ease;
+    background: radial-gradient(ellipse 82% 76% at 50% 48%,
+      rgba(0,0,0,0) 40%,
+      rgba(0,0,0,calc(var(--lens-vignette, 0.5) * 0.5)) 72%,
+      rgba(0,0,0,var(--lens-vignette, 0.5)) 100%);
+  }
+  body.lens-on #lens-vignette-fx { opacity: 1; }
+  .phone-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--msg-bg);
+    border-radius: inherit;
+    opacity: var(--skin-alpha);
+    z-index: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+  .phone-screen > * { position: relative; z-index: 1; }
+  body { background: transparent !important; }
+  #page-bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: var(--stage-bg, #0e0f12);
+    opacity: var(--page-bg-alpha);
+    pointer-events: none;
+  }
+  body.no-frame .phone-screen {
+    border-radius: 0;
+    box-shadow: none;
+  }
+  body.phone-bezel .phone-wrap {
+    padding: var(--bezel-padding);
+    background: var(--bezel-bg);
+    border-radius: var(--bezel-radius);
+    box-shadow: 0 var(--bezel-shadow-y) var(--bezel-shadow-blur) rgba(0,0,0,var(--bezel-shadow-alpha)), inset 0 0 0 2px var(--bezel-inner);
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: var(--status-height);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--status-pad-r) 0 var(--status-pad-l);
+    font-weight: var(--status-font-weight);
+    font-size: var(--status-font-size);
+    color: var(--text-primary);
+    background: var(--header-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .status-bar.hidden { display: none; }
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--status-icon-color);
+  }
+  .status-icons svg { display: block; }
+  .status-icons svg * { fill: currentColor; }
+
+  /* Dynamic Island + home indicator (current iPhone look) */
+  .phone-screen { position: relative; }
+  .dynamic-island {
+    position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 36px; background: #000; border-radius: 20px;
+    z-index: 60; pointer-events: none;
+    display: flex; align-items: center; justify-content: flex-end; padding-right: 13px;
+  }
+  .dynamic-island::after {
+    content: ''; width: 9px; height: 9px; border-radius: 50%;
+    background: #15151a; box-shadow: inset 0 0 0 1px rgba(120,140,180,0.18);
+  }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 140px; height: 5px; border-radius: 3px; background: #000; opacity: .82;
+    z-index: 60; pointer-events: none;
+  }
+  body.dark .home-indicator { background: #fff; opacity: .9; }
+
+  /* Conversation header */
+  .conv-header {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 64px 1fr 64px;
+    align-items: center;
+    background: var(--header-bg);
+    border-bottom: var(--header-border-w) solid var(--header-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: var(--header-pad-top) var(--header-pad-x) var(--header-pad-bottom);
+  }
+  .conv-header .back {
+    color: var(--ios-blue);
+    font-size: var(--header-back-fz);
+    line-height: 1;
+    padding-left: 12px;
+    font-weight: var(--header-back-fw);
+  }
+  .conv-header .contact {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--header-name-gap);
+  }
+  .conv-header .avatar {
+    width: var(--header-avatar-size); height: var(--header-avatar-size);
+    border-radius: var(--header-avatar-radius);
+    background: var(--avatar-color);
+    color: var(--avatar-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--header-avatar-fz);
+    font-weight: var(--header-avatar-fw);
+    letter-spacing: -0.02em;
+  }
+  .conv-header .name {
+    font-size: var(--header-name-fz);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    font-weight: var(--header-name-fw);
+  }
+  .conv-header .chev {
+    color: var(--text-secondary);
+    font-size: var(--header-name-fz);
+    margin-left: 2px;
+  }
+  .conv-header .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--header-actions-gap);
+    padding-right: var(--header-actions-pad-r);
+    color: var(--ios-blue);
+  }
+  .conv-header .actions svg { display: block; }
+  .conv-header .actions svg * { fill: currentColor; }
+
+  /* Messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--msg-pad-y) var(--msg-pad-x) var(--msg-pad-bottom);
+    display: flex;
+    flex-direction: column;
+    gap: var(--bubble-gap);
+    background: var(--msg-bg);
+  }
+  .messages::-webkit-scrollbar { width: 0; display: none; }
+
+  .bubble {
+    max-width: var(--bubble-max-width);
+    padding: var(--bubble-pad-y) var(--bubble-pad-x);
+    border-radius: var(--bubble-radius);
+    font-size: var(--bubble-font-size);
+    line-height: var(--bubble-line-height);
+    font-weight: var(--bubble-font-weight);
+    letter-spacing: var(--bubble-letter-spacing);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    opacity: 0;
+    transform: scale(var(--bubble-anim-scale-from)) translateY(var(--bubble-anim-translate));
+    transform-origin: bottom right;
+    transition: opacity var(--bubble-anim-ms) ease-out, transform var(--bubble-anim-ms) var(--bubble-anim-easing);
+  }
+  .bubble.appear {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  .bubble.sent {
+    background: var(--bubble-sent);
+    color: var(--bubble-sent-text);
+    align-self: flex-end;
+  }
+  .bubble.received {
+    background: var(--bubble-received);
+    color: var(--bubble-received-text);
+    align-self: flex-start;
+    transform-origin: bottom left;
+  }
+  .bubble.sent + .bubble.sent { margin-top: var(--bubble-gap-same); }
+  .bubble.received + .bubble.received { margin-top: var(--bubble-gap-same); }
+
+  /* ---------- Tapback reactions ---------- */
+  .bubble { position: relative; }
+  .tapback {
+    position: absolute; top: -16px;
+    display: flex; align-items: center; justify-content: center;
+    min-width: 28px; height: 28px; padding: 0 6px;
+    background: var(--bubble-received); border-radius: 16px;
+    font-size: 15px; line-height: 1;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.35);
+    opacity: 0; transform: scale(0.2); transform-origin: center bottom;
+    transition: opacity 200ms ease, transform 320ms cubic-bezier(0.34, 1.56, 0.5, 1);
+    z-index: 6; pointer-events: none;
+  }
+  .tapback.show { opacity: 1; transform: scale(1); }
+  .bubble.sent .tapback { left: -12px; }       /* outer (left) corner for sent */
+  .bubble.received .tapback { right: -12px; }  /* outer (right) corner for received */
+
+  /* ---------- Delivered / Read receipt ---------- */
+  .receipt {
+    align-self: flex-end;
+    color: var(--bubble-received-text);
+    opacity: 0.55;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+    margin: 3px 3px 1px 0;
+  }
+
+  /* Typing indicator (looks like a received bubble with bouncing dots) */
+  .typing-indicator {
+    align-self: flex-start;
+    background: var(--bubble-received);
+    color: transparent;
+    padding: var(--typing-pad-y) var(--typing-pad-x) !important;
+    display: flex !important;
+    gap: 4px;
+    border-radius: var(--typing-radius);
+    transform-origin: bottom left;
+    opacity: 0;
+    transform: scale(var(--bubble-anim-scale-from)) translateY(var(--bubble-anim-translate));
+    transition: opacity var(--bubble-anim-ms) ease-out, transform var(--bubble-anim-ms) var(--bubble-anim-easing);
+    width: fit-content;
+  }
+  .typing-indicator.appear {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  .typing-indicator span {
+    width: var(--typing-dot-size);
+    height: var(--typing-dot-size);
+    background: var(--typing-dot-color);
+    border-radius: 50%;
+    display: inline-block;
+    animation: dot-bounce var(--typing-dot-duration) infinite ease-in-out;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: calc(var(--typing-dot-duration) * 0.14); }
+  .typing-indicator span:nth-child(3) { animation-delay: calc(var(--typing-dot-duration) * 0.28); }
+  @keyframes dot-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+    30% { transform: translateY(calc(var(--typing-dot-bounce) * -1)); opacity: 1; }
+  }
+
+  /* Input bar */
+  .input-bar {
+    flex-shrink: 0;
+    background: var(--input-bar-bg);
+    border-top: var(--input-field-border-w) solid var(--header-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: var(--input-bar-pad-top) var(--input-bar-pad-x) var(--input-bar-pad-bottom);
+    display: flex;
+    align-items: flex-end;
+    gap: var(--input-bar-gap);
+  }
+  .input-bar .plus {
+    width: var(--plus-size); height: var(--plus-size); flex-shrink: 0;
+    border-radius: var(--plus-radius);
+    background: var(--plus-bg);
+    color: var(--plus-text);
+    border: none;
+    font-size: var(--plus-fz);
+    display: flex; align-items: center; justify-content: center;
+    cursor: default;
+    line-height: 1;
+    padding: 0 0 2px 0;
+    margin-bottom: 1px;
+  }
+  body.dark .input-bar .plus { background: #2C2C2E; color: #c7c7cc; }
+
+  .input-field {
+    flex: 1;
+    min-height: var(--input-field-min-h);
+    background: var(--input-field-bg);
+    border: var(--input-field-border-w) solid var(--input-field-border);
+    border-radius: var(--input-field-radius);
+    padding: var(--input-field-pad-y) var(--input-field-pad-x);
+    font-family: var(--font-family);
+    font-size: var(--bubble-font-size);
+    line-height: var(--input-field-line-height);
+    color: var(--text-primary);
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    display: flex;
+    align-items: center;
+  }
+  #input-text {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  #input-placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+  }
+  #cursor {
+    display: inline-block;
+    width: var(--cursor-width);
+    height: var(--cursor-height);
+    background: var(--cursor-color);
+    vertical-align: text-bottom;
+    margin-left: 1px;
+    transform: translateY(var(--cursor-offset-y));
+  }
+  #cursor.block { width: var(--cursor-block-w); opacity: 0.85; }
+  #cursor.underline { width: var(--cursor-block-w); height: var(--cursor-underline-h); transform: translateY(0); }
+
+  .input-bar .send-btn {
+    width: var(--send-size); height: var(--send-size);
+    border-radius: var(--send-radius);
+    background: var(--ios-blue);
+    color: white;
+    border: none;
+    margin-bottom: 3px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.25;
+    transition: opacity 150ms ease, transform 200ms ease;
+    padding: 0;
+    cursor: default;
+  }
+  .input-bar.has-text .send-btn { opacity: 1; }
+
+  /* ---------- Image bubbles ---------- */
+  .bubble.image-bubble {
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: hidden;
+    border-radius: var(--img-bubble-radius);
+    max-width: var(--img-bubble-max-w);
+  }
+  .bubble.image-bubble > img {
+    display: block;
+    width: 100%;
+    border-radius: var(--img-inner-radius);
+    max-height: var(--img-single-max-h);
+    object-fit: cover;
+  }
+  .bubble.image-grid {
+    padding: 0 !important;
+    background: transparent !important;
+    max-width: var(--img-bubble-max-w);
+  }
+  .bubble.image-grid .grid-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--img-grid-gap);
+  }
+  .bubble.image-grid .grid-inner img {
+    width: 100%;
+    height: var(--img-grid-cell-h);
+    object-fit: cover;
+    display: block;
+    border-radius: 8px;
+  }
+  .bubble.image-grid .grid-inner img:last-child:nth-child(odd) {
+    grid-column: span 2;
+    height: var(--img-grid-odd-h);
+  }
+
+  /* image bubble captions */
+  .bubble.image-bubble.has-caption,
+  .bubble.image-grid.has-caption {
+    padding: 4px 4px 6px !important;
+    background: var(--bubble-sent) !important;
+    overflow: visible;
+  }
+  .bubble.image-bubble.has-caption.received,
+  .bubble.image-grid.has-caption.received {
+    background: var(--bubble-received) !important;
+  }
+  .bubble.image-bubble.has-caption > img {
+    border-radius: 14px;
+  }
+  .img-caption {
+    font-size: var(--img-cap-fz);
+    font-style: italic;
+    color: var(--bubble-sent-text);
+    padding: var(--img-cap-pad-y) 10px 2px;
+    text-align: center;
+    margin-top: 2px;
+  }
+  .bubble.received .img-caption { color: var(--bubble-received-text); }
+
+  /* ---------- Avatar with image ---------- */
+  .avatar.has-image,
+  .notif-icon.has-image {
+    background-size: cover !important;
+    background-position: center !important;
+    color: transparent !important;
+  }
+
+  /* ---------- Notification banner ---------- */
+  .notif-banner {
+    position: absolute;
+    top: var(--notif-top);
+    left: var(--notif-side);
+    right: var(--notif-side);
+    z-index: 60;
+    background: var(--notif-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--notif-radius);
+    padding: var(--notif-pad-y) var(--notif-pad-x);
+    display: flex;
+    align-items: center;
+    gap: var(--notif-gap);
+    box-shadow: 0 var(--notif-shadow-y) var(--notif-shadow-blur) rgba(0,0,0,var(--notif-shadow-alpha)), 0 2px 6px rgba(0,0,0,0.08);
+    transform: translateY(calc(var(--notif-translate) * -1));
+    opacity: 0;
+    transition: transform var(--notif-anim-ms) var(--notif-anim-easing), opacity 280ms ease;
+    pointer-events: none;
+    font-family: var(--font-family);
+  }
+  .notif-banner.visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  body.dark .notif-banner { background: rgba(58,58,60,0.92); }
+  .notif-icon {
+    width: var(--notif-icon-size); height: var(--notif-icon-size);
+    border-radius: 50%;
+    background: var(--notif-icon-color);
+    color: var(--notif-icon-text);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: var(--notif-icon-fz);
+    flex-shrink: 0;
+  }
+  .notif-content { flex: 1; min-width: 0; }
+  .notif-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .notif-name {
+    font-size: var(--notif-name-fz);
+    font-weight: var(--notif-name-fw);
+    color: var(--notif-name-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .notif-time {
+    font-size: var(--notif-time-fz);
+    color: var(--notif-time-color);
+    flex-shrink: 0;
+  }
+  .notif-text {
+    font-size: var(--notif-text-fz);
+    line-height: 1.25;
+    color: var(--notif-text-color);
+    margin-top: 2px;
+    display: -webkit-box;
+    -webkit-line-clamp: var(--notif-text-clamp);
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  body.dark .notif-name { color: #fff; }
+  body.dark .notif-time { color: rgba(255,255,255,0.55); }
+  body.dark .notif-text { color: rgba(255,255,255,0.85); }
+
+  /* ---------- Keyboard theme ---------- */
+  :root {
+    --kb-bg: #D1D5DB;
+    --kb-key-bg: #FFFFFF;
+    --kb-key-text: #000000;
+    --kb-special-bg: #ACB1B9;
+    --kb-special-text: #000000;
+    --kb-pressed-bg: #B3B7BD;
+    --kb-pad-top: 8px;
+    --kb-pad-x: 3px;
+    --kb-pad-bottom: 24px;
+    --kb-row-gap: 8px;
+    --kb-row-height: 42px;
+    --kb-key-gap: 5px;
+    --kb-key-radius: 5px;
+    --kb-key-fz: 22px;
+    --kb-key-fw: 400;
+    --kb-special-fz: 16px;
+    --kb-mod-fz: 18px;
+    --kb-return-fz: 14px;
+    --kb-space-fz: 12px;
+    --kb-key-shadow: 0 1px 0 rgba(0,0,0,0.4);
+    --kb-popup-fz: 30px;
+    --kb-popup-pad: 6px 12px 8px;
+    --kb-popup-radius: 10px;
+    --kb-popup-min-w: 38px;
+    --kb-popup-shadow-y: 4px;
+    --kb-popup-shadow-blur: 12px;
+    --kb-popup-shadow-alpha: 0.3;
+    --kb-press-scale: 0.95;
+    --kb-press-ms: 60ms;
+  }
+  body.dark {
+    --kb-bg: #313234;
+    --kb-key-bg: #6E6E70;
+    --kb-key-text: #FFFFFF;
+    --kb-special-bg: #4D4D50;
+    --kb-special-text: #FFFFFF;
+    --kb-pressed-bg: #9B9B9D;
+  }
+
+  .keyboard {
+    flex-shrink: 0;
+    background: var(--kb-bg);
+    padding: var(--kb-pad-top) var(--kb-pad-x) var(--kb-pad-bottom);
+    display: flex;
+    flex-direction: column;
+    gap: var(--kb-row-gap);
+    overflow: visible;
+    transition: max-height 250ms ease, padding 250ms ease, opacity 200ms ease;
+    max-height: 320px;
+  }
+  .keyboard.hidden {
+    max-height: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
+    overflow: hidden;
+  }
+  .kb-row {
+    display: flex;
+    gap: var(--kb-key-gap);
+    height: var(--kb-row-height);
+    padding: 0 3px;
+  }
+  .kb-key {
+    flex: 1;
+    background: var(--kb-key-bg);
+    color: var(--kb-key-text);
+    border: none;
+    border-radius: var(--kb-key-radius);
+    font-size: var(--kb-key-fz);
+    font-family: var(--font-family);
+    font-weight: var(--kb-key-fw);
+    box-shadow: var(--kb-key-shadow);
+    cursor: default;
+    padding: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background var(--kb-press-ms) ease, transform var(--kb-press-ms) ease;
+    user-select: none;
+  }
+  .kb-key.kb-special {
+    background: var(--kb-special-bg);
+    color: var(--kb-special-text);
+    font-size: var(--kb-special-fz);
+  }
+  .kb-key.kb-mod { flex: 1.4; font-size: var(--kb-mod-fz); }
+  .kb-key.kb-return { flex: 1.7; font-size: var(--kb-return-fz); }
+  .kb-key.kb-space { flex: 5.5; font-size: var(--kb-space-fz); }
+  .kb-spacer { flex: 0.5; }
+
+  .kb-key.pressed {
+    background: var(--kb-pressed-bg);
+    transform: scale(var(--kb-press-scale));
+  }
+
+  .kb-key.letter.pressed::before {
+    content: attr(data-key);
+    position: absolute;
+    bottom: calc(100% + 4px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--kb-key-bg);
+    color: var(--kb-key-text);
+    padding: var(--kb-popup-pad);
+    border-radius: var(--kb-popup-radius);
+    font-size: var(--kb-popup-fz);
+    text-transform: uppercase;
+    box-shadow: 0 var(--kb-popup-shadow-y) var(--kb-popup-shadow-blur) rgba(0,0,0,var(--kb-popup-shadow-alpha));
+    pointer-events: none;
+    z-index: 100;
+    white-space: nowrap;
+    font-weight: 400;
+    min-width: var(--kb-popup-min-w);
+    text-align: center;
+  }
+  body.no-popups .kb-key.letter.pressed::before {
+    display: none;
+  }
+
+  /* ---------- Image list in controls ---------- */
+  #image-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .img-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0e0f12;
+    border: 1px solid #2a2c33;
+    border-radius: 6px;
+    padding: 4px 8px;
+  }
+  .img-item .idx {
+    width: 18px;
+    text-align: center;
+    font-weight: 600;
+    color: #f0c674;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+  }
+  .img-item img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+  .img-item .name {
+    flex: 1;
+    color: #c4c6cd;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .img-item .remove {
+    flex: 0 0 24px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+  }
+  .img-item .remove:hover { color: #fff; background: none; }
+
+  /* ---------- Phone resize handle (floats fixed in viewport) ---------- */
+  .resize-handle {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    width: 48px;
+    height: 48px;
+    background: rgba(74, 108, 247, 0.92);
+    border: 3px solid white;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    z-index: 200;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 22px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+    touch-action: none;
+    user-select: none;
+    transition: transform 120ms ease, background 120ms ease;
+  }
+  .resize-handle::before { content: '⇲'; line-height: 1; }
+  .resize-handle:hover {
+    background: rgba(74, 108, 247, 1);
+    transform: scale(1.08);
+  }
+  .resize-handle.dragging { transform: scale(0.92); }
+  body.hide-controls .resize-handle { display: none; }
+
+  /* ---------- Video bubbles ---------- */
+  .bubble.video-bubble {
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: hidden;
+    border-radius: 18px;
+    max-width: 62%;
+    position: relative;
+  }
+  .bubble.video-bubble > video {
+    display: block;
+    width: 100%;
+    border-radius: 16px;
+    max-height: 360px;
+    object-fit: cover;
+    cursor: pointer;
+    background: #000;
+  }
+  .bubble.video-bubble.has-caption {
+    padding: 4px 4px 6px !important;
+    background: var(--bubble-sent) !important;
+    overflow: visible;
+  }
+  .bubble.video-bubble.has-caption.received {
+    background: var(--bubble-received) !important;
+  }
+  .bubble.video-bubble.has-caption > video {
+    border-radius: 14px;
+  }
+  .mute-overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    cursor: pointer;
+    z-index: 10;
+    pointer-events: auto;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+  .bubble.video-bubble.unmuted .mute-overlay { display: none; }
+
+  /* Hint */
+  #hint {
+    position: fixed; bottom: 12px; right: 16px;
+    color: #4a4d55; font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace;
+    opacity: 0; transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  body.hide-controls #hint { opacity: 1; }
+
+  /* ============ MOBILE LAYOUT ============ */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: visible; }
+    body {
+      flex-direction: column-reverse !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 0;
+      gap: 0;
+    }
+    /* Stage / preview area on top */
+    #stage, .phone-wrap, main {
+      width: 100% !important;
+      height: 60vh !important;
+      min-height: 320px;
+      flex: 0 0 auto !important;
+      position: relative !important;
+    }
+    #stage { height: 60vh !important; }
+    .phone-wrap { transform: scale(calc(var(--screen-scale) * 0.7)); }
+    /* Controls panel below */
+    #controls, aside {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: 1px solid #25252a !important;
+      margin: 0 !important;
+      position: relative !important;
+      overflow-y: visible !important;
+    }
+    body.hide-controls #controls { margin-left: 0 !important; margin-top: -100vh !important; }
+    /* Tabs scrollable */
+    #tabs, .tabs {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap !important;
+      scroll-snap-type: x proximity;
+    }
+    .tab-btn, .tab {
+      flex: 0 0 auto !important;
+      min-height: 36px;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+      scroll-snap-align: start;
+    }
+    /* Touch-friendly inputs */
+    button, .btn {
+      min-height: 38px;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+    }
+    .tab-btn { min-height: 36px; padding: 8px 12px !important; }
+    .row { gap: 12px; margin: 4px 0; }
+    .row label { flex: 0 0 110px; font-size: 12px; }
+    .row input[type="text"], .row input[type="number"], .row input[type="url"], .row select, .row textarea {
+      min-height: 38px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+    .row input[type="range"] { min-height: 36px; }
+    .row input[type="color"] { width: 44px; height: 36px; }
+    .row input[type="checkbox"] { width: 22px; height: 22px; }
+    .resize-handle { width: 44px !important; height: 44px !important; }
+  }
+  @media (max-width: 600px) {
+    #stage, .phone-wrap { height: 55vh !important; }
+    #stage { height: 55vh !important; }
+    .row label { flex: 0 0 95px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="page-bg-tint"></div>
+<div id="bg-media-layer" style="position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;">
+  <video id="bg-video" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:1;" playsinline preload="auto"></video>
+  <video id="bg-video-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" playsinline preload="auto"></video>
+  <img id="bg-image" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;" alt="">
+  <audio id="bg-audio-only" style="display:none;"></audio>
+</div>
+
+<aside id="controls">
+  <h1>iMessage Typer</h1>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="tab-script">Script</button>
+    <button class="tab-btn" data-tab="tab-phone">Phone</button>
+    <button class="tab-btn" data-tab="tab-colors">Colors</button>
+    <button class="tab-btn" data-tab="tab-bubble">Bubbles</button>
+    <button class="tab-btn" data-tab="tab-input">Input</button>
+    <button class="tab-btn" data-tab="tab-kb">Keyboard</button>
+    <button class="tab-btn" data-tab="tab-notif">Notif</button>
+    <button class="tab-btn" data-tab="tab-type">Type</button>
+    <button class="tab-btn" data-tab="tab-timing">Timing</button>
+    <button class="tab-btn" data-tab="tab-media">Media</button>
+    <button class="tab-btn" data-tab="tab-sound">Sound</button>
+    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+    <button class="tab-btn" data-tab="tab-tts">Sync</button>
+    <button class="tab-btn" data-tab="tab-srt-script">Script SRT</button>
+  </div>
+
+  <!-- ============ SCRIPT TAB ============ -->
+  <div class="tab-content active" id="tab-script">
+    <textarea id="script" spellcheck="false">heyy[[send]][[delivered]][[pause:1200]][[typing:1600]][[recv:hey what's up]][[react:haha]][[pause:700]]nothing much, [[witing|writing]] some code rn[[send]][[delivered]][[pause:1400]][[recv:so cool]][[pause:600]]wbu?[[send]][[pause:1500]][[react:heart]]</textarea>
+
+    <div class="btn-row">
+      <button id="start" class="primary">Start ▶</button>
+      <button id="stop" class="danger">Stop</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="hide">Hide panel (H)</button>
+    </div>
+
+    <h2>Recipient</h2>
+    <div class="row"><label>Name</label><input type="text" id="r-name" class="wide" value="Alex Morgan"></div>
+    <div class="row"><label>Initials (auto-blank)</label><input type="text" id="r-initials" class="wide" placeholder="auto from name"></div>
+    <div class="row"><label>Avatar color</label><input type="color" id="r-avatar-color" value="#4A6CF7"></div>
+    <div class="row"><label>Avatar text color</label><input type="color" id="r-avatar-text" value="#ffffff"></div>
+    <input type="file" id="r-avatar-file" accept="image/*" style="display:none;">
+    <div class="btn-row">
+      <button id="r-avatar-pick">Set avatar image</button>
+      <button id="r-avatar-clear">Clear</button>
+    </div>
+
+    <h2>Audio sync</h2>
+    <input type="file" id="audio-input" accept="audio/*" style="display:none;">
+    <div class="btn-row">
+      <button id="audio-pick">Load audio</button>
+      <button id="audio-clear">Clear</button>
+    </div>
+    <div id="audio-info" style="font-size:11px;color:#8a8d96;margin-top:6px;">No audio loaded</div>
+    <div class="row" style="margin-top:10px;">
+      <label>Sync mode</label>
+      <select id="sync-mode">
+        <option value="off">Off</option>
+        <option value="rate">Rate-match</option>
+      </select>
+    </div>
+
+    <details class="help" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Markup cheatsheet</summary>
+      <div style="margin-top:8px">
+        <code>[[send]]</code> — send the current input as a blue bubble<br>
+        <code>[[recv:text]]</code> — incoming gray bubble<br>
+        <code>[[typing:1500]]</code> — show "…" indicator for 1500 ms<br>
+        <code>[[pause:1500]]</code> — pause for 1500 ms<br>
+        <code>[[wrong|right]]</code> — typo + backspace + correction<br>
+        <code>[[img:1]]</code> / <code>[[img:1,2,3]]</code> / <code>[[img:1|caption]]</code><br>
+        <code>[[recvimg:1]]</code> · <code>[[vid:1]]</code> · <code>[[recvvid:1]]</code><br>
+        <code>[[notif:Name|text]]</code> · <code>[[notif:Name|text|3]]</code><br>
+        <code>[[kb:hide]]</code> / <code>[[kb:show]]</code><br>
+        <code>[[react:heart]]</code> tapback on the last bubble — also <code>like</code>, <code>dislike</code>, <code>haha</code>, <code>!!</code>, <code>?</code> (or any emoji)<br>
+        <code>[[delivered]]</code> / <code>[[read]]</code> — receipt under the last sent bubble<br>
+        Use <code>\[[</code> to type a literal <code>[[</code>.
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ PHONE TAB ============ -->
+  <div class="tab-content" id="tab-phone">
+    <h2>Lens / zoom</h2>
+    <div class="row"><label>Zoom into screen</label><input type="checkbox" id="lens-on" checked></div>
+    <div class="row">
+      <label>Magnification (×)</label>
+      <input type="range" id="lens-mag" min="100" max="200" value="110">
+      <span class="val" id="lens-mag-val">1.1×</span>
+    </div>
+    <div class="row">
+      <label>Vignette strength</label>
+      <input type="range" id="lens-vignette" min="0" max="100" value="50">
+      <span class="val" id="lens-vignette-val">50%</span>
+    </div>
+
+    <h2>Screen</h2>
+    <div class="row"><label>Width (px)</label><input type="number" id="phone-w" value="390" min="200" max="1400"></div>
+    <div class="row"><label>Height (px)</label><input type="number" id="phone-h" value="844" min="300" max="2200"></div>
+    <div class="row">
+      <label>Scale</label>
+      <input type="range" id="phone-scale" min="20" max="250" value="130">
+      <span class="val" id="phone-scale-val">130%</span>
+    </div>
+    <div class="row"><label>Screen corner radius (px)</label><input type="number" data-css="--screen-radius" data-unit="px" value="38" min="0" max="120"></div>
+    <div class="row"><label>Show phone screen</label><input type="checkbox" id="show-frame" checked></div>
+    <div class="row"><label>Stage background</label><input type="color" id="stage-bg" value="#1a1a1d"></div>
+
+    <h2>Screen shadow</h2>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--screen-shadow-y" data-unit="px" value="20" min="-50" max="200"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--screen-shadow-blur" data-unit="px" value="60" min="0" max="400"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="screen-shadow-alpha" min="0" max="100" value="45">
+      <span class="val" id="screen-shadow-alpha-val">45%</span>
+    </div>
+
+    <h2>Bezel</h2>
+    <div class="row"><label>Show phone bezel</label><input type="checkbox" id="bezel"></div>
+    <div class="row"><label>Bezel padding (px)</label><input type="number" data-css="--bezel-padding" data-unit="px" value="14" min="0" max="60"></div>
+    <div class="row"><label>Bezel corner radius (px)</label><input type="number" data-css="--bezel-radius" data-unit="px" value="54" min="0" max="120"></div>
+    <div class="row"><label>Bezel color</label><input type="color" data-css="--bezel-bg" value="#0a0a0c"></div>
+    <div class="row"><label>Bezel inner border</label><input type="color" data-css="--bezel-inner" value="#2a2a2e"></div>
+    <div class="row"><label>Bezel shadow Y (px)</label><input type="number" data-css="--bezel-shadow-y" data-unit="px" value="30" min="-100" max="200"></div>
+    <div class="row"><label>Bezel shadow blur (px)</label><input type="number" data-css="--bezel-shadow-blur" data-unit="px" value="80" min="0" max="400"></div>
+    <div class="row">
+      <label>Bezel shadow opacity</label>
+      <input type="range" id="bezel-shadow-alpha" min="0" max="100" value="60">
+      <span class="val" id="bezel-shadow-alpha-val">60%</span>
+    </div>
+
+    <h2>Status bar</h2>
+    <div class="row"><label>Show</label><input type="checkbox" id="show-status" checked></div>
+    <div class="row"><label>Time</label><input type="text" id="status-time-input" value="9:41"></div>
+    <div class="row"><label>Height (px)</label><input type="number" data-css="--status-height" data-unit="px" value="44" min="20" max="100"></div>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--status-font-size" value="14.5" min="8" max="40" step="0.5"></div>
+    <div class="row"><label>Font weight</label>
+      <select data-css="--status-font-weight"><option>400</option><option>500</option><option selected>600</option><option>700</option></select>
+    </div>
+    <div class="row"><label>Padding left (px)</label><input type="number" data-css="--status-pad-l" data-unit="px" value="30" min="0" max="100"></div>
+    <div class="row"><label>Padding right (px)</label><input type="number" data-css="--status-pad-r" data-unit="px" value="26" min="0" max="100"></div>
+
+    <h2>Conversation header</h2>
+    <div class="row"><label>Avatar size (px)</label><input type="number" data-css="--header-avatar-size" data-unit="px" value="34" min="16" max="100"></div>
+    <div class="row"><label>Avatar radius (%)</label><input type="number" id="hdr-avatar-radius" value="50" min="0" max="50"></div>
+    <div class="row"><label>Avatar font size (px)</label><input type="number" data-css="--header-avatar-fz" data-unit="px" value="13" min="6" max="40"></div>
+    <div class="row"><label>Name font size (px)</label><input type="number" data-css="--header-name-fz" data-unit="px" value="11" min="6" max="40"></div>
+    <div class="row"><label>Name weight</label>
+      <select data-css="--header-name-fw">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option><option value="700">700</option>
+      </select>
+    </div>
+    <div class="row"><label>Back chevron size (px)</label><input type="number" data-css="--header-back-fz" data-unit="px" value="30" min="10" max="80"></div>
+    <div class="row"><label>Header padding top (px)</label><input type="number" data-css="--header-pad-top" data-unit="px" value="6" min="0" max="40"></div>
+    <div class="row"><label>Header padding bottom (px)</label><input type="number" data-css="--header-pad-bottom" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Actions gap (px)</label><input type="number" data-css="--header-actions-gap" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Header border (px)</label><input type="number" data-css="--header-border-w" value="0.5" min="0" max="4" step="0.5"></div>
+  </div>
+
+  <!-- ============ COLORS TAB ============ -->
+  <div class="tab-content" id="tab-colors">
+    <h2>Theme</h2>
+    <div class="row">
+      <label>Mode</label>
+      <select id="theme">
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </div>
+
+    <h2>Surfaces</h2>
+    <div class="row"><label>Phone background</label><input type="color" id="msg-bg" value="#ffffff"></div>
+    <div class="row"><label>Header background</label><input type="color" id="header-bg" value="#F8F8F8"></div>
+    <div class="row"><label>Input bar bg</label><input type="color" id="input-bar-bg-color" value="#F8F8F8"></div>
+    <div class="row"><label>Input field bg</label><input type="color" data-css="--input-field-bg" value="#ffffff"></div>
+    <div class="row"><label>Input field border</label><input type="color" data-css="--input-field-border" value="#D1D1D6"></div>
+    <div class="row"><label>Header divider</label><input type="color" data-css="--header-border" value="#D6D6D8"></div>
+
+    <h2>Text</h2>
+    <div class="row"><label>Primary text</label><input type="color" data-css="--text-primary" value="#000000"></div>
+    <div class="row"><label>Secondary text</label><input type="color" data-css="--text-secondary" value="#8E8E93"></div>
+    <div class="row"><label>iOS blue (accents)</label><input type="color" data-css="--ios-blue" value="#007AFF"></div>
+
+    <h2>Bubbles</h2>
+    <div class="row"><label>Sent bubble color</label><input type="color" id="bubble-sent" value="#007AFF"></div>
+    <div class="row"><label>Sent text color</label><input type="color" id="bubble-sent-text" value="#ffffff"></div>
+    <div class="btn-row">
+      <button data-bubble="#007AFF">iMessage Blue</button>
+      <button data-bubble="#34C759">SMS Green</button>
+      <button data-bubble="#5856D6">Purple</button>
+    </div>
+    <div class="row"><label>Received bubble</label><input type="color" id="bubble-recv" value="#E9E9EB"></div>
+    <div class="row"><label>Received text</label><input type="color" id="bubble-recv-text" value="#000000"></div>
+
+    <h2>Cursor</h2>
+    <div class="row"><label>Color</label><input type="color" data-css="--cursor-color" value="#000000"></div>
+    <div class="row">
+      <label>Style</label>
+      <select id="cursor-style">
+        <option value="bar">Bar (│)</option>
+        <option value="block">Block (█)</option>
+        <option value="underline">Underline (_)</option>
+      </select>
+    </div>
+    <div class="row"><label>Bar width (px)</label><input type="number" data-css="--cursor-width" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Height (em)</label><input type="number" data-css="--cursor-height" data-unit="em" value="1.05" min="0.4" max="3" step="0.05"></div>
+    <div class="row"><label>Block/underline width (em)</label><input type="number" data-css="--cursor-block-w" data-unit="em" value="0.55" min="0.1" max="3" step="0.05"></div>
+    <div class="row"><label>Underline thickness (px)</label><input type="number" data-css="--cursor-underline-h" data-unit="px" value="2" min="1" max="20"></div>
+    <div class="row"><label>Vertical offset (px)</label><input type="number" data-css="--cursor-offset-y" data-unit="px" value="2" min="-20" max="20"></div>
+  </div>
+
+  <!-- ============ BUBBLE TAB ============ -->
+  <div class="tab-content" id="tab-bubble">
+    <h2>Geometry</h2>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--bubble-radius" data-unit="px" value="18" min="0" max="60"></div>
+    <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--bubble-pad-y" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Padding X (px)</label><input type="number" data-css="--bubble-pad-x" data-unit="px" value="14" min="0" max="40"></div>
+    <div class="row"><label>Max width (%)</label><input type="number" id="bubble-max-w" value="75" min="20" max="100"></div>
+    <div class="row"><label>Gap between bubbles (px)</label><input type="number" data-css="--bubble-gap" data-unit="px" value="2" min="0" max="40"></div>
+    <div class="row"><label>Gap same sender (px)</label><input type="number" data-css="--bubble-gap-same" data-unit="px" value="1" min="0" max="40"></div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--bubble-line-height" value="1.3" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--bubble-letter-spacing" data-unit="em" value="-0.01" min="-0.1" max="0.3" step="0.005"></div>
+    <div class="row"><label>Font weight</label>
+      <select data-css="--bubble-font-weight">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option><option value="700">700</option>
+      </select>
+    </div>
+
+    <h2>Entrance animation</h2>
+    <div class="row"><label>Duration (ms)</label><input type="number" data-css="--bubble-anim-ms" data-unit="ms" value="260" min="0" max="2000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--bubble-anim-easing">
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)" selected>iOS pop (overshoot)</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="linear">Linear</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+        <option value="cubic-bezier(0.68, -0.55, 0.27, 1.55)">Bouncy</option>
+      </select>
+    </div>
+    <div class="row"><label>Slide-up distance (px)</label><input type="number" data-css="--bubble-anim-translate" data-unit="px" value="20" min="0" max="200"></div>
+    <div class="row"><label>Scale from</label><input type="number" data-css="--bubble-anim-scale-from" value="0.7" min="0" max="2" step="0.05"></div>
+
+    <h2>Typing indicator</h2>
+    <div class="row"><label>Dot size (px)</label><input type="number" data-css="--typing-dot-size" data-unit="px" value="7" min="2" max="40"></div>
+    <div class="row"><label>Dot color</label><input type="color" data-css="--typing-dot-color" value="#8E8E93"></div>
+    <div class="row"><label>Bounce height (px)</label><input type="number" data-css="--typing-dot-bounce" data-unit="px" value="4" min="0" max="30"></div>
+    <div class="row"><label>Bounce duration (s)</label><input type="number" data-css="--typing-dot-duration" data-unit="s" value="1.3" min="0.2" max="5" step="0.1"></div>
+    <div class="row"><label>Bubble pad Y (px)</label><input type="number" data-css="--typing-pad-y" data-unit="px" value="11" min="0" max="40"></div>
+    <div class="row"><label>Bubble pad X (px)</label><input type="number" data-css="--typing-pad-x" data-unit="px" value="14" min="0" max="40"></div>
+    <div class="row"><label>Bubble radius (px)</label><input type="number" data-css="--typing-radius" data-unit="px" value="18" min="0" max="60"></div>
+
+    <h2>Messages area</h2>
+    <div class="row"><label>Top padding (px)</label><input type="number" data-css="--msg-pad-y" data-unit="px" value="14" min="0" max="80"></div>
+    <div class="row"><label>Side padding (px)</label><input type="number" data-css="--msg-pad-x" data-unit="px" value="12" min="0" max="80"></div>
+    <div class="row"><label>Bottom padding (px)</label><input type="number" data-css="--msg-pad-bottom" data-unit="px" value="6" min="0" max="80"></div>
+
+    <h2>Image / video bubbles</h2>
+    <div class="row"><label>Max width (%)</label><input type="number" id="img-bubble-max-w" value="62" min="10" max="100"></div>
+    <div class="row"><label>Bubble radius (px)</label><input type="number" data-css="--img-bubble-radius" data-unit="px" value="18" min="0" max="60"></div>
+    <div class="row"><label>Inner image radius (px)</label><input type="number" data-css="--img-inner-radius" data-unit="px" value="16" min="0" max="60"></div>
+    <div class="row"><label>Single image max h (px)</label><input type="number" data-css="--img-single-max-h" data-unit="px" value="320" min="80" max="800"></div>
+    <div class="row"><label>Grid gap (px)</label><input type="number" data-css="--img-grid-gap" data-unit="px" value="3" min="0" max="20"></div>
+    <div class="row"><label>Grid cell h (px)</label><input type="number" data-css="--img-grid-cell-h" data-unit="px" value="110" min="40" max="400"></div>
+    <div class="row"><label>Grid odd-last h (px)</label><input type="number" data-css="--img-grid-odd-h" data-unit="px" value="150" min="40" max="500"></div>
+    <div class="row"><label>Caption font size (px)</label><input type="number" data-css="--img-cap-fz" data-unit="px" value="14" min="8" max="32"></div>
+  </div>
+
+  <!-- ============ INPUT BAR TAB ============ -->
+  <div class="tab-content" id="tab-input">
+    <h2>Input bar</h2>
+    <div class="row"><label>Pad top (px)</label><input type="number" data-css="--input-bar-pad-top" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Pad side (px)</label><input type="number" data-css="--input-bar-pad-x" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Pad bottom (px)</label><input type="number" data-css="--input-bar-pad-bottom" data-unit="px" value="28" min="0" max="80"></div>
+    <div class="row"><label>Element gap (px)</label><input type="number" data-css="--input-bar-gap" data-unit="px" value="6" min="0" max="40"></div>
+
+    <h2>Input field</h2>
+    <div class="row"><label>Min height (px)</label><input type="number" data-css="--input-field-min-h" data-unit="px" value="34" min="20" max="120"></div>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--input-field-radius" data-unit="px" value="18" min="0" max="60"></div>
+    <div class="row"><label>Pad Y (px)</label><input type="number" data-css="--input-field-pad-y" data-unit="px" value="7" min="0" max="40"></div>
+    <div class="row"><label>Pad X (px)</label><input type="number" data-css="--input-field-pad-x" data-unit="px" value="12" min="0" max="40"></div>
+    <div class="row"><label>Border width (px)</label><input type="number" data-css="--input-field-border-w" value="0.5" min="0" max="4" step="0.5"></div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--input-field-line-height" value="1.25" min="0.8" max="3" step="0.05"></div>
+
+    <h2>Plus button</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--plus-size" data-unit="px" value="32" min="16" max="80"></div>
+    <div class="row"><label>Radius (%)</label><input type="number" id="plus-radius" value="50" min="0" max="50"></div>
+    <div class="row"><label>Background</label><input type="color" id="plus-bg-color" value="#787880"></div>
+    <div class="row">
+      <label>Bg opacity</label>
+      <input type="range" id="plus-bg-alpha" min="0" max="100" value="18">
+      <span class="val" id="plus-bg-alpha-val">18%</span>
+    </div>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--plus-fz" data-unit="px" value="22" min="10" max="60"></div>
+
+    <h2>Send button</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--send-size" data-unit="px" value="28" min="16" max="80"></div>
+    <div class="row"><label>Radius (%)</label><input type="number" id="send-radius" value="50" min="0" max="50"></div>
+  </div>
+
+  <!-- ============ KEYBOARD TAB ============ -->
+  <div class="tab-content" id="tab-kb">
+    <h2>Visibility</h2>
+    <div class="row"><label>Show keyboard</label><input type="checkbox" id="show-keyboard" checked></div>
+    <div class="row"><label>Show key popups</label><input type="checkbox" id="key-popups" checked></div>
+    <div class="help" style="margin-top:6px">
+      Toggle live with <b>K</b>. Or script it: <code>[[kb:hide]]</code> / <code>[[kb:show]]</code> mid-playback.
+    </div>
+
+    <h2>Colors</h2>
+    <div class="row"><label>Keyboard bg</label><input type="color" data-css="--kb-bg" value="#D1D5DB"></div>
+    <div class="row"><label>Letter key bg</label><input type="color" data-css="--kb-key-bg" value="#FFFFFF"></div>
+    <div class="row"><label>Letter key text</label><input type="color" data-css="--kb-key-text" value="#000000"></div>
+    <div class="row"><label>Special key bg</label><input type="color" data-css="--kb-special-bg" value="#ACB1B9"></div>
+    <div class="row"><label>Special key text</label><input type="color" data-css="--kb-special-text" value="#000000"></div>
+    <div class="row"><label>Pressed key bg</label><input type="color" data-css="--kb-pressed-bg" value="#B3B7BD"></div>
+
+    <h2>Geometry</h2>
+    <div class="row"><label>Pad top (px)</label><input type="number" data-css="--kb-pad-top" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Pad side (px)</label><input type="number" data-css="--kb-pad-x" data-unit="px" value="3" min="0" max="40"></div>
+    <div class="row"><label>Pad bottom (px)</label><input type="number" data-css="--kb-pad-bottom" data-unit="px" value="24" min="0" max="80"></div>
+    <div class="row"><label>Row gap (px)</label><input type="number" data-css="--kb-row-gap" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Row height (px)</label><input type="number" data-css="--kb-row-height" data-unit="px" value="42" min="20" max="100"></div>
+    <div class="row"><label>Key gap (px)</label><input type="number" data-css="--kb-key-gap" data-unit="px" value="5" min="0" max="30"></div>
+    <div class="row"><label>Key radius (px)</label><input type="number" data-css="--kb-key-radius" data-unit="px" value="5" min="0" max="30"></div>
+
+    <h2>Typography</h2>
+    <div class="row"><label>Letter font size (px)</label><input type="number" data-css="--kb-key-fz" data-unit="px" value="22" min="8" max="60"></div>
+    <div class="row"><label>Letter weight</label>
+      <select data-css="--kb-key-fw">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option>
+      </select>
+    </div>
+    <div class="row"><label>Special font size (px)</label><input type="number" data-css="--kb-special-fz" data-unit="px" value="16" min="8" max="40"></div>
+    <div class="row"><label>Mod font size (px)</label><input type="number" data-css="--kb-mod-fz" data-unit="px" value="18" min="8" max="40"></div>
+    <div class="row"><label>Return font size (px)</label><input type="number" data-css="--kb-return-fz" data-unit="px" value="14" min="8" max="40"></div>
+    <div class="row"><label>Space font size (px)</label><input type="number" data-css="--kb-space-fz" data-unit="px" value="12" min="8" max="40"></div>
+
+    <h2>Popup</h2>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--kb-popup-fz" data-unit="px" value="30" min="10" max="80"></div>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--kb-popup-radius" data-unit="px" value="10" min="0" max="40"></div>
+    <div class="row"><label>Min width (px)</label><input type="number" data-css="--kb-popup-min-w" data-unit="px" value="38" min="10" max="120"></div>
+
+    <h2>Press feel</h2>
+    <div class="row"><label>Scale on press</label><input type="number" data-css="--kb-press-scale" value="0.95" min="0.5" max="1" step="0.01"></div>
+    <div class="row"><label>Press duration (ms)</label><input type="number" data-css="--kb-press-ms" data-unit="ms" value="60" min="10" max="500"></div>
+  </div>
+
+  <!-- ============ NOTIF TAB ============ -->
+  <div class="tab-content" id="tab-notif">
+    <div class="help">
+      <code>[[notif:Mom|hey are you up?]]</code> — slide-in banner.<br>
+      <code>[[notif:Mom|hey|3]]</code> — uses image #3 from Images pool as profile pic.<br>
+      Banner shows for ~3s and the "ding" plays.
+    </div>
+
+    <h2>Geometry</h2>
+    <div class="row"><label>Top offset (px)</label><input type="number" data-css="--notif-top" data-unit="px" value="8" min="0" max="100"></div>
+    <div class="row"><label>Side offset (px)</label><input type="number" data-css="--notif-side" data-unit="px" value="8" min="0" max="100"></div>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--notif-radius" data-unit="px" value="18" min="0" max="60"></div>
+    <div class="row"><label>Pad Y (px)</label><input type="number" data-css="--notif-pad-y" data-unit="px" value="12" min="0" max="40"></div>
+    <div class="row"><label>Pad X (px)</label><input type="number" data-css="--notif-pad-x" data-unit="px" value="14" min="0" max="40"></div>
+    <div class="row"><label>Element gap (px)</label><input type="number" data-css="--notif-gap" data-unit="px" value="12" min="0" max="40"></div>
+
+    <h2>Icon</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--notif-icon-size" data-unit="px" value="38" min="16" max="100"></div>
+    <div class="row"><label>Background color</label><input type="color" data-css="--notif-icon-color" value="#4A6CF7"></div>
+    <div class="row"><label>Text color</label><input type="color" data-css="--notif-icon-text" value="#ffffff"></div>
+    <div class="row"><label>Initials font size (px)</label><input type="number" data-css="--notif-icon-fz" data-unit="px" value="14" min="8" max="40"></div>
+
+    <h2>Text</h2>
+    <div class="row"><label>Name font size (px)</label><input type="number" data-css="--notif-name-fz" value="13.5" min="8" max="40" step="0.5"></div>
+    <div class="row"><label>Name weight</label>
+      <select data-css="--notif-name-fw"><option>400</option><option>500</option><option selected>600</option><option>700</option></select>
+    </div>
+    <div class="row"><label>Time font size (px)</label><input type="number" data-css="--notif-time-fz" data-unit="px" value="12" min="8" max="40"></div>
+    <div class="row"><label>Body font size (px)</label><input type="number" data-css="--notif-text-fz" data-unit="px" value="14" min="8" max="40"></div>
+    <div class="row"><label>Body line clamp</label><input type="number" data-css="--notif-text-clamp" value="2" min="1" max="10"></div>
+    <div class="row"><label>Name color</label><input type="color" data-css="--notif-name-color" value="#000000"></div>
+
+    <h2>Background + shadow</h2>
+    <div class="row"><label>Background color</label><input type="color" id="notif-bg-color" value="#F5F5F7"></div>
+    <div class="row">
+      <label>Bg opacity</label>
+      <input type="range" id="notif-bg-alpha" min="0" max="100" value="95">
+      <span class="val" id="notif-bg-alpha-val">95%</span>
+    </div>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--notif-shadow-y" data-unit="px" value="12" min="0" max="80"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--notif-shadow-blur" data-unit="px" value="28" min="0" max="200"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="notif-shadow-alpha" min="0" max="100" value="20">
+      <span class="val" id="notif-shadow-alpha-val">20%</span>
+    </div>
+
+    <h2>Animation</h2>
+    <div class="row"><label>Slide duration (ms)</label><input type="number" data-css="--notif-anim-ms" data-unit="ms" value="420" min="50" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--notif-anim-easing">
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)" selected>iOS pop</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+      </select>
+    </div>
+    <div class="row"><label>From offset (%)</label><input type="number" data-css="--notif-translate" data-unit="%" value="220" min="50" max="600"></div>
+    <div class="row"><label>Visible duration (ms)</label><input type="number" id="notif-hold-ms" value="2800" min="500" max="20000"></div>
+  </div>
+
+  <!-- ============ TYPE TAB ============ -->
+  <div class="tab-content" id="tab-type">
+    <h2>Font family</h2>
+    <div class="row">
+      <label>Family</label>
+      <select data-css="--font-family">
+        <option value='-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif'>SF / system (iOS feel)</option>
+        <option value='"Helvetica Neue", Helvetica, Arial, sans-serif'>Helvetica</option>
+        <option value='Inter, ui-sans-serif, sans-serif'>Inter</option>
+        <option value='"Segoe UI", Roboto, sans-serif'>Segoe UI</option>
+        <option value='Roboto, ui-sans-serif, sans-serif'>Roboto</option>
+        <option value='Georgia, "Times New Roman", serif'>Georgia / serif</option>
+        <option value='ui-monospace, Consolas, monospace'>Monospace</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="font-family-custom" placeholder='e.g. "Inter", sans-serif'></div>
+
+    <h2>Bubble text</h2>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--bubble-font-size" data-unit="px" value="17" min="6" max="80"></div>
+    <div class="row"><label>Weight</label>
+      <select data-css="--bubble-font-weight" id="bubble-fw-2">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option><option value="700">700</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--bubble-line-height" id="blh-2" value="1.3" min="0.8" max="3" step="0.05"></div>
+  </div>
+
+  <!-- ============ TIMING TAB ============ -->
+  <div class="tab-content" id="tab-timing">
+    <h2>Typing feel</h2>
+    <div class="row">
+      <label>Avg ms / char</label>
+      <input type="range" id="base-ms" min="5" max="400" value="80">
+      <span class="val" id="base-ms-val">80</span>
+    </div>
+    <div class="row">
+      <label>Variance ±</label>
+      <input type="range" id="variance-ms" min="0" max="300" value="50">
+      <span class="val" id="variance-ms-val">50</span>
+    </div>
+    <div class="row">
+      <label>Think pause chance</label>
+      <input type="range" id="think-chance" min="0" max="100" value="12">
+      <span class="val" id="think-chance-val">12%</span>
+    </div>
+    <div class="row">
+      <label>Max think (ms)</label>
+      <input type="number" id="think-max" value="2800" min="0" max="20000">
+    </div>
+    <div class="row">
+      <label>Start delay (s)</label>
+      <input type="number" id="start-delay" value="0" min="0" max="60" step="0.5">
+    </div>
+
+    <h2>Punctuation pauses</h2>
+    <div class="row"><label>Sentence base (ms)</label><input type="number" id="punct-sentence" value="220" min="0" max="5000"></div>
+    <div class="row"><label>Sentence jitter (ms)</label><input type="number" id="punct-sentence-j" value="380" min="0" max="5000"></div>
+    <div class="row"><label>Comma base (ms)</label><input type="number" id="punct-comma" value="70" min="0" max="2000"></div>
+    <div class="row"><label>Comma jitter (ms)</label><input type="number" id="punct-comma-j" value="160" min="0" max="2000"></div>
+
+    <h2>Bubble events</h2>
+    <div class="row"><label>Pause after send (ms)</label><input type="number" id="ev-send-pause" value="220" min="0" max="5000"></div>
+    <div class="row"><label>Pause after recv (ms)</label><input type="number" id="ev-recv-pause" value="280" min="0" max="5000"></div>
+    <div class="row"><label>Pause after image (ms)</label><input type="number" id="ev-img-pause" value="280" min="0" max="5000"></div>
+    <div class="row"><label>Pause after notif (ms)</label><input type="number" id="ev-notif-pause" value="220" min="0" max="5000"></div>
+    <div class="row"><label>Pause after kb toggle (ms)</label><input type="number" id="ev-kb-pause" value="280" min="0" max="5000"></div>
+    <div class="row"><label>Typing fade-out (ms)</label><input type="number" id="ev-typing-fade" value="180" min="0" max="2000"></div>
+    <div class="row"><label>Typo pause before bs (ms)</label><input type="number" id="ev-typo-pause" value="280" min="0" max="3000"></div>
+    <div class="row"><label>Backspace ms / char</label><input type="number" id="ev-bs-ms" value="45" min="5" max="500"></div>
+
+    <h2>Presets</h2>
+    <div class="btn-row">
+      <button data-preset="fast">Fast</button>
+      <button data-preset="natural">Natural</button>
+      <button data-preset="slow">Slow</button>
+    </div>
+
+  </div>
+
+  <!-- ============ MEDIA TAB ============ -->
+  <div class="tab-content" id="tab-media">
+    <h2>Images</h2>
+    <input type="file" id="image-input" accept="image/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-images">＋ Add image(s)</button>
+      <button id="clear-images">Clear all</button>
+    </div>
+    <div id="image-list"></div>
+    <div class="help" style="margin-top:8px">
+      <code>[[img:1]]</code> sends image #1.<br>
+      <code>[[img:1,2,3]]</code> grid bubble.<br>
+      <code>[[img:1|caption]]</code> with caption.<br>
+      <code>[[recvimg:1]]</code> for incoming.
+    </div>
+
+    <h2>Videos</h2>
+    <input type="file" id="video-input" accept="video/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-videos">＋ Add video(s)</button>
+      <button id="clear-videos">Clear all</button>
+    </div>
+    <div id="video-list"></div>
+    <div class="help" style="margin-top:8px">
+      <code>[[vid:1]]</code> sends video #1 (loops, muted by default).<br>
+      <code>[[recvvid:1]]</code> for incoming. Tap to unmute.
+    </div>
+  </div>
+
+  <!-- ============ SOUND TAB ============ -->
+  <div class="tab-content" id="tab-sound">
+    <h2>Typing sound</h2>
+    <div class="row"><label>Enable sound</label><input type="checkbox" id="sound-on" checked></div>
+    <div class="row">
+      <label>Style</label>
+      <select id="sound-style">
+        <option value="soft">Soft tock (iOS)</option>
+        <option value="mechanical">Mechanical click</option>
+        <option value="typewriter">Typewriter</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Volume</label>
+      <input type="range" id="sound-vol" min="0" max="100" value="40">
+      <span class="val" id="sound-vol-val">40%</span>
+    </div>
+
+    <h2>Event sound levels</h2>
+    <div class="row">
+      <label>Send swoosh</label>
+      <input type="range" id="snd-send" min="0" max="200" value="100">
+      <span class="val" id="snd-send-val">1.0×</span>
+    </div>
+    <div class="row">
+      <label>Receive ding</label>
+      <input type="range" id="snd-recv" min="0" max="200" value="100">
+      <span class="val" id="snd-recv-val">1.0×</span>
+    </div>
+    <div class="row">
+      <label>Notification ding</label>
+      <input type="range" id="snd-notif" min="0" max="200" value="100">
+      <span class="val" id="snd-notif-val">1.0×</span>
+    </div>
+  </div>
+
+  <!-- ===== AUDIO (BGM + TTS + Sync) ===== -->
+  <div class="tab-content" id="tab-audio">
+    <h2>Background music (BGM)</h2>
+    <div class="row">
+      <label>Upload audio</label>
+      <input type="file" id="bgm-file" accept="audio/*">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>File</label>
+      <span id="bgm-name" style="color:#888;flex:1;">none</span>
+      <button id="bgm-clear" style="padding:3px 8px;font-size:10px;flex:0;">clear</button>
+    </div>
+    <div class="row"><label>Auto-play with show</label><input type="checkbox" id="bgm-auto" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bgm-loop"></div>
+    <div class="row"><label>Volume</label><input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6"></div>
+    <div class="row"><label>Start offset (s)</label><input type="number" id="bgm-start" value="0" step="0.1" min="0"></div>
+    <div class="row"><label>Fade in (ms)</label><input type="number" id="bgm-fadein" value="0" min="0" step="50"></div>
+    <div class="row"><label>Fade out (ms)</label><input type="number" id="bgm-fadeout" value="0" min="0" step="50"></div>
+    <div class="row">
+      <label>Test</label>
+      <button id="bgm-test" style="padding:5px 12px;font-size:11px;">▶ Preview 4s</button>
+      <button id="bgm-stop-test" style="padding:5px 12px;font-size:11px;">⏹ Stop</button>
+    </div>
+
+    <h2>Background media (image / video / audio)</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Full-screen background layer. Image OR video (with or without sound), plus optional separate audio-only track. Ducks during TTS.
+    </div>
+    <div class="row"><label>Background video</label><input type="file" id="bg-video-file" accept="video/*"></div>
+    <div class="row"><label>Background image</label><input type="file" id="bg-image-file" accept="image/*"></div>
+    <div class="row"><label>Audio-only file</label><input type="file" id="bg-audio-file" accept="audio/*"></div>
+    <div class="row"><label>Video playlist (multiple)</label><input type="file" id="bg-playlist-files" accept="video/*" multiple></div>
+    <div class="row" style="align-items:flex-start;"><label>Queue</label>
+      <ol id="bg-playlist-list" style="flex:1;font-size:11px;color:#aaa;padding-left:20px;margin:0;list-style:decimal;max-height:120px;overflow-y:auto;"></ol>
+    </div>
+    <div class="row"><label>Playlist mode</label><input type="checkbox" id="bg-playlist-on" checked></div>
+    <div class="row"><label>Loop playlist</label><input type="checkbox" id="bg-playlist-loop" checked></div>
+    <div class="row"><label>Crossfade (ms)</label><input type="number" id="bg-crossfade-ms" value="250" min="0" max="3000" step="50"></div>
+    <div class="row">
+      <button id="bg-playlist-next" style="padding:4px 10px;font-size:11px;">⏭ next</button>
+      <button id="bg-playlist-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear queue</button>
+    </div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="bg-mute" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bg-loop" checked></div>
+    <div class="row"><label>Volume</label><input type="range" id="bg-volume" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="row"><label>Fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="fill">stretch (fill)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+    <div class="row"><label>Auto-start with show</label><input type="checkbox" id="bg-auto" checked></div>
+    <div class="row"><label>Duck during TTS</label><input type="checkbox" id="bg-duck-on" checked></div>
+    <div class="row"><label>Duck to (factor)</label><input type="range" id="bg-duck-to" min="0" max="1" step="0.05" value="0.3"></div>
+    <div class="row">
+      <button id="bg-play" style="padding:4px 10px;font-size:11px;">▶ play bg</button>
+      <button id="bg-stop" style="padding:4px 10px;font-size:11px;margin-left:4px;">⏹ stop</button>
+      <button id="bg-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear</button>
+    </div>
+
+    <h2>Skin transparency</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Drop these to let the bg video peep through the chrome. Bubble text stays opaque.
+    </div>
+    <div class="row">
+      <label>Page bg opacity</label>
+      <input type="range" id="page-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="page-bg-alpha-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Skin bg opacity</label>
+      <input type="range" id="skin-alpha" min="0" max="100" value="100">
+      <span class="val" id="skin-alpha-val">100%</span>
+    </div>
+  </div>
+
+  <!-- ============ SYNC TAB ============ -->
+  <div class="tab-content" id="tab-tts">
+    <h2>Audio-driven timing (sync)</h2>
+    <div class="row">
+      <label>Sync file</label>
+      <input type="file" id="sync-file" accept=".srt,.vtt,.json,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="sync-marker-count" style="color:#888;flex:1;">no markers</span>
+      <button id="sync-clear" style="padding:3px 8px;font-size:10px;flex:0;">clear</button>
+    </div>
+    <div class="row"><label>Use sync triggers</label><input type="checkbox" id="sync-enabled"></div>
+    <div class="row">
+      <label>Sync to</label>
+      <select id="sync-source">
+        <option value="bgm" selected>BGM playhead</option>
+        <option value="clock">Wall clock from play()</option>
+      </select>
+    </div>
+    <div class="help" style="font-size:11px;line-height:1.6;margin-top:4px;">
+      Accepts <b>.srt</b>, <b>.vtt</b>, or <b>.json</b> (array of <code>{start, end, text}</code> in ms). When enabled, message events advance at each marker's start time.
+    </div>
+
+  </div>
+
+  <!-- ============ SCRIPT SRT TAB ============ -->
+  <div class="tab-content" id="tab-srt-script">
+    <h2>Script from SRT / timestamped file</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Load an <b>.srt / .vtt / .json / .txt</b>. Each cue is sent so its body lands during its [start..end] window. Wall-clock from <i>Play</i>. Overrides natural pacing.
+    </div>
+    <div class="row">
+      <label>Timed script file</label>
+      <input type="file" id="srt-script-file" accept=".srt,.vtt,.json,.txt,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="srt-script-info" style="color:#888;flex:1;">no file</span>
+      <button id="srt-script-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use timed script</label><input type="checkbox" id="srt-script-on"></div>
+    <div class="row">
+      <label>Cue typing fill</label>
+      <input type="range" id="srt-script-fill" min="20" max="100" value="92">
+      <span class="val" id="srt-script-fill-val">92%</span>
+    </div>
+    <div class="row">
+      <label>Side</label>
+      <select id="srt-script-side">
+        <option value="received" selected>Received bubble per cue</option>
+        <option value="sent">Sent bubble per cue</option>
+        <option value="alternate">Alternate received/sent</option>
+      </select>
+    </div>
+  </div>
+</aside>
+
+<main id="stage">
+  <div class="phone-wrap">
+    <div class="phone-screen">
+      <div class="dynamic-island"></div>
+      <div class="notif-banner" id="notif-banner">
+        <div class="notif-icon" id="notif-icon">?</div>
+        <div class="notif-content">
+          <div class="notif-row">
+            <div class="notif-name" id="notif-name">Name</div>
+            <div class="notif-time">now</div>
+          </div>
+          <div class="notif-text" id="notif-text">Message preview</div>
+        </div>
+      </div>
+      <div class="status-bar" id="status-bar">
+        <span class="time" id="status-time">9:41</span>
+        <span class="status-icons">
+          <!-- signal -->
+          <svg width="17" height="11" viewBox="0 0 17 11"><rect x="0" y="7" width="3" height="4" rx="0.5"/><rect x="4" y="5" width="3" height="6" rx="0.5"/><rect x="8" y="3" width="3" height="8" rx="0.5"/><rect x="12" y="0" width="3" height="11" rx="0.5"/></svg>
+          <!-- wifi -->
+          <svg width="16" height="11" viewBox="0 0 16 11"><path d="M8 11 L9.6 9.4 L8 7.8 L6.4 9.4 Z"/><path d="M8 4 C5.4 4 3 5.4 1.8 6.6 L3.2 8 C4 7.2 6 6.2 8 6.2 C10 6.2 12 7.2 12.8 8 L14.2 6.6 C13 5.4 10.6 4 8 4 Z"/><path d="M8 0 C4.6 0 1.6 1.8 0 3.4 L1.4 4.8 C2.6 3.6 5 2.2 8 2.2 C11 2.2 13.4 3.6 14.6 4.8 L16 3.4 C14.4 1.8 11.4 0 8 0 Z"/></svg>
+          <!-- battery -->
+          <svg width="27" height="13" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.4"/><rect x="2" y="2" width="19" height="9" rx="1.8"/><rect x="23.5" y="4" width="2" height="5" rx="1"/></svg>
+        </span>
+      </div>
+      <div class="conv-header">
+        <div class="back">‹</div>
+        <div class="contact">
+          <div class="avatar" id="avatar">AM</div>
+          <div class="name"><span id="name-text">Alex Morgan</span><span class="chev">›</span></div>
+        </div>
+        <div class="actions">
+          <!-- video icon -->
+          <svg width="22" height="14" viewBox="0 0 22 14"><rect x="0" y="0" width="15" height="14" rx="3"/><path d="M16 4 L22 1 L22 13 L16 10 Z"/></svg>
+        </div>
+      </div>
+      <div class="messages" id="messages"></div>
+      <div class="input-bar" id="input-bar">
+        <button class="plus" tabindex="-1">+</button>
+        <div class="input-field">
+          <span id="input-placeholder">iMessage</span><span id="input-text"></span><span id="cursor"></span>
+        </div>
+        <button class="send-btn" tabindex="-1" id="send-btn">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 12 L7 2 M2 7 L7 2 L12 7"/></svg>
+        </button>
+      </div>
+      <div class="keyboard" id="keyboard"></div>
+      <div class="home-indicator"></div>
+      <div id="lens-vignette-fx"></div>
+    </div>
+  </div>
+</main>
+<div class="resize-handle" id="resize-handle" title="Drag to resize phone screen"></div>
+
+<div id="hint">press H to show controls · Space to play · Esc to stop</div>
+
+<script>
+(() => {
+  // ---------- Sound module ----------
+  const Sound = (() => {
+    let ctx;
+    const ensureCtx = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    let enabled = true, volume = 0.4, style = 'soft';
+    let duckFactor = 1, duckAnim = null;
+
+    function setDuckFactor(target, durMs) {
+      if (duckAnim) cancelAnimationFrame(duckAnim);
+      duckAnim = null;
+      target = Math.max(0, Math.min(1, target));
+      if (!durMs || durMs <= 0) { duckFactor = target; return; }
+      const start = duckFactor;
+      const t0 = performance.now();
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) { duckFactor = target; duckAnim = null; return; }
+        duckFactor = start + (target - start) * t;
+        duckAnim = requestAnimationFrame(step);
+      };
+      duckAnim = requestAnimationFrame(step);
+    }
+    function duck(amountPct, fadeMs) { setDuckFactor(Math.max(0, 1 - (amountPct || 0) / 100), fadeMs); }
+    function unduck(fadeMs) { setDuckFactor(1, fadeMs); }
+
+    function noiseBurst(c, durationS, decayPow = 4) {
+      const n = Math.floor(c.sampleRate * durationS);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decayPow);
+      }
+      return buf;
+    }
+
+    function key() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      if (style === 'typewriter') {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, 0.06, 5);
+        const bf = c.createBiquadFilter();
+        bf.type = 'bandpass'; bf.frequency.value = 2200 + Math.random() * 400; bf.Q.value = 1.2;
+        const bg = c.createGain();
+        bg.gain.setValueAtTime(volume * duckFactor * 0.5, now);
+        bg.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        burst.connect(bf).connect(bg).connect(c.destination);
+        burst.start(now);
+        const ping = c.createOscillator();
+        ping.type = 'triangle';
+        ping.frequency.value = 1600 + Math.random() * 600;
+        const pg = c.createGain();
+        pg.gain.setValueAtTime(volume * duckFactor * 0.15, now + 0.005);
+        pg.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        ping.connect(pg).connect(c.destination);
+        ping.start(now + 0.005); ping.stop(now + 0.05);
+      } else if (style === 'mechanical') {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, 0.05, 6);
+        const f = c.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 1500 + Math.random() * 500; f.Q.value = 3;
+        const g = c.createGain();
+        g.gain.setValueAtTime(volume * duckFactor * 0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        burst.connect(f).connect(g).connect(c.destination);
+        burst.start(now);
+      } else {
+        const burst = c.createBufferSource();
+        burst.buffer = noiseBurst(c, 0.04, 4);
+        const f = c.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = 900 + Math.random() * 200; f.Q.value = 1;
+        const g = c.createGain();
+        g.gain.setValueAtTime(volume * duckFactor * 0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        burst.connect(f).connect(g).connect(c.destination);
+        burst.start(now);
+      }
+    }
+
+    function backspace() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      const burst = c.createBufferSource();
+      burst.buffer = noiseBurst(c, 0.03, 5);
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.value = (style === 'mechanical' ? 1300 : style === 'typewriter' ? 2000 : 800) + Math.random() * 200;
+      f.Q.value = 1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume * duckFactor * 0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      burst.connect(f).connect(g).connect(c.destination);
+      burst.start(now);
+    }
+
+    function send() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      // upward swoosh — approximation of iMessage send sound
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(380, now);
+      osc.frequency.exponentialRampToValueAtTime(2400, now + 0.22);
+      const gain = c.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(volume * duckFactor * 0.4, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      osc.connect(gain).connect(c.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+
+      // overlay a brief noise burst for body
+      const burst = c.createBufferSource();
+      burst.buffer = noiseBurst(c, 0.18, 3);
+      const f = c.createBiquadFilter();
+      f.type = 'bandpass'; f.frequency.value = 1400; f.Q.value = 1.2;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume * duckFactor * 0.18, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      burst.connect(f).connect(g).connect(c.destination);
+      burst.start(now);
+    }
+
+    function receive() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      // little two-tone ding
+      const o1 = c.createOscillator();
+      const o2 = c.createOscillator();
+      o1.type = 'sine'; o2.type = 'sine';
+      o1.frequency.setValueAtTime(880, now);
+      o2.frequency.setValueAtTime(1320, now);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(volume * duckFactor * 0.28, now + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      o1.connect(g); o2.connect(g); g.connect(c.destination);
+      o1.start(now); o2.start(now);
+      o1.stop(now + 0.5); o2.stop(now + 0.5);
+    }
+
+    function notif() {
+      if (!enabled) return;
+      const c = ensureCtx();
+      const now = c.currentTime;
+      // sequenced two-tone with longer decay
+      const o1 = c.createOscillator();
+      o1.type = 'sine';
+      o1.frequency.setValueAtTime(900, now);
+      const g1 = c.createGain();
+      g1.gain.setValueAtTime(0, now);
+      g1.gain.linearRampToValueAtTime(volume * duckFactor * 0.32, now + 0.02);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      o1.connect(g1).connect(c.destination);
+      o1.start(now); o1.stop(now + 0.6);
+      const o2 = c.createOscillator();
+      o2.type = 'sine';
+      o2.frequency.setValueAtTime(1340, now + 0.09);
+      const g2 = c.createGain();
+      g2.gain.setValueAtTime(0, now + 0.09);
+      g2.gain.linearRampToValueAtTime(volume * duckFactor * 0.26, now + 0.11);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      o2.connect(g2).connect(c.destination);
+      o2.start(now + 0.09); o2.stop(now + 0.65);
+    }
+
+    let mulSend = 1, mulRecv = 1, mulNotif = 1;
+
+    return {
+      key, backspace,
+      send: () => { const ov = volume; volume = ov * mulSend; send(); volume = ov; },
+      receive: () => { const ov = volume; volume = ov * mulRecv; receive(); volume = ov; },
+      notif: () => { const ov = volume; volume = ov * mulNotif; notif(); volume = ov; },
+      setEnabled: v => enabled = v,
+      setVolume: v => volume = v,
+      setStyle: v => style = v,
+      setSendMul: v => mulSend = v,
+      setRecvMul: v => mulRecv = v,
+      setNotifMul: v => mulNotif = v,
+      duck, unduck,
+      get duckFactor() { return duckFactor; },
+      resume: ensureCtx,
+    };
+  })();
+
+  // ---------- DOM refs ----------
+  const $ = id => document.getElementById(id);
+  const inputText = $('input-text');
+  const inputPlaceholder = $('input-placeholder');
+  const inputBar = $('input-bar');
+  const messages = $('messages');
+  const nameText = $('name-text');
+  const avatar = $('avatar');
+  const statusBar = $('status-bar');
+  const statusTime = $('status-time');
+  const cursor = $('cursor');
+  const keyboardEl = $('keyboard');
+  const imageList = $('image-list');
+  const imageInput = $('image-input');
+  const videoList = $('video-list');
+  const videoInput = $('video-input');
+  const notifBanner = $('notif-banner');
+  const notifIcon = $('notif-icon');
+  const notifName = $('notif-name');
+  const notifText = $('notif-text');
+  const root = document.documentElement;
+  const body = document.body;
+
+  // ---------- Setting bindings ----------
+  const setVar = (k, v) => root.style.setProperty(k, v);
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Generic CSS-var binding (data-css="--var" data-unit="px"|"em"|"ms"|...)
+  document.querySelectorAll('[data-css]').forEach(el => {
+    const prop = el.dataset.css;
+    const unit = el.dataset.unit || '';
+    const apply = () => {
+      let v = el.value;
+      if (unit && v !== '' && !String(v).endsWith(unit)) v = v + unit;
+      setVar(prop, v);
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+    apply();
+  });
+
+  // ---------- Lens / zoom: camera push-in on the conversation + vignette ----------
+  (function () {
+    var on = document.getElementById('lens-on'); if (!on) return;
+    var apply = function () { document.body.classList.toggle('lens-on', on.checked); };
+    on.addEventListener('change', apply); apply();
+    var mag = document.getElementById('lens-mag'), mv = document.getElementById('lens-mag-val');
+    if (mag) { var am = function () { var m = +mag.value / 100; if (mv) mv.textContent = m.toFixed(2).replace(/0$/, '') + '×'; setVar('--lens-mag', m.toFixed(3)); }; mag.addEventListener('input', am); am(); }
+    var vg = document.getElementById('lens-vignette'), vv = document.getElementById('lens-vignette-val');
+    if (vg) { var av = function () { if (vv) vv.textContent = vg.value + '%'; setVar('--lens-vignette', (+vg.value / 100).toFixed(2)); }; vg.addEventListener('input', av); av(); }
+  })();
+
+  function initialsFrom(name) {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function refreshAvatar() {
+    const override = $('r-initials').value.trim();
+    avatar.textContent = override || initialsFrom($('r-name').value);
+  }
+
+  $('r-name').addEventListener('input', e => {
+    nameText.textContent = e.target.value || ' ';
+    refreshAvatar();
+  });
+  $('r-initials').addEventListener('input', refreshAvatar);
+  $('r-avatar-color').addEventListener('input', e => setVar('--avatar-color', e.target.value));
+  $('r-avatar-text').addEventListener('input', e => setVar('--avatar-text', e.target.value));
+
+  // Recipient avatar image
+  $('r-avatar-pick').addEventListener('click', () => $('r-avatar-file').click());
+  $('r-avatar-file').addEventListener('change', async (e) => {
+    if (e.target.files[0]) {
+      const url = await fileToDataUrl(e.target.files[0]);
+      avatar.style.backgroundImage = `url(${url})`;
+      avatar.classList.add('has-image');
+    }
+    e.target.value = '';
+  });
+  $('r-avatar-clear').addEventListener('click', () => {
+    avatar.style.backgroundImage = '';
+    avatar.classList.remove('has-image');
+  });
+
+  $('theme').addEventListener('change', e => body.classList.toggle('dark', e.target.value === 'dark'));
+  $('bubble-sent').addEventListener('input', e => setVar('--bubble-sent', e.target.value));
+  $('bubble-sent-text').addEventListener('input', e => setVar('--bubble-sent-text', e.target.value));
+  document.querySelectorAll('[data-bubble]').forEach(b => {
+    b.addEventListener('click', () => {
+      $('bubble-sent').value = b.dataset.bubble;
+      setVar('--bubble-sent', b.dataset.bubble);
+    });
+  });
+  $('header-bg').addEventListener('input', e => setVar('--header-bg', e.target.value));
+  $('input-bar-bg-color').addEventListener('input', e => setVar('--input-bar-bg', e.target.value));
+  $('msg-bg').addEventListener('input', e => setVar('--msg-bg', e.target.value));
+  $('bubble-recv').addEventListener('input', e => setVar('--bubble-received', e.target.value));
+  $('bubble-recv-text').addEventListener('input', e => setVar('--bubble-received-text', e.target.value));
+
+  // Composite controls
+  $('bubble-max-w').addEventListener('input', e => setVar('--bubble-max-width', e.target.value + '%'));
+  $('img-bubble-max-w').addEventListener('input', e => setVar('--img-bubble-max-w', e.target.value + '%'));
+  $('hdr-avatar-radius').addEventListener('input', e => setVar('--header-avatar-radius', e.target.value + '%'));
+  $('plus-radius').addEventListener('input', e => setVar('--plus-radius', e.target.value + '%'));
+  $('send-radius').addEventListener('input', e => setVar('--send-radius', e.target.value + '%'));
+  $('font-family-custom').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v) setVar('--font-family', v);
+  });
+
+  function hexToRgb(hex) {
+    return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+  }
+  function updatePlusBg() {
+    const [r,g,b] = hexToRgb($('plus-bg-color').value);
+    const a = (+$('plus-bg-alpha').value / 100).toFixed(2);
+    setVar('--plus-bg', `rgba(${r},${g},${b},${a})`);
+    $('plus-bg-alpha-val').textContent = $('plus-bg-alpha').value + '%';
+  }
+  $('plus-bg-color').addEventListener('input', updatePlusBg);
+  $('plus-bg-alpha').addEventListener('input', updatePlusBg);
+  updatePlusBg();
+
+  function updateNotifBg() {
+    const [r,g,b] = hexToRgb($('notif-bg-color').value);
+    const a = (+$('notif-bg-alpha').value / 100).toFixed(2);
+    setVar('--notif-bg', `rgba(${r},${g},${b},${a})`);
+    $('notif-bg-alpha-val').textContent = $('notif-bg-alpha').value + '%';
+  }
+  $('notif-bg-color').addEventListener('input', updateNotifBg);
+  $('notif-bg-alpha').addEventListener('input', updateNotifBg);
+  updateNotifBg();
+
+  function bindAlpha(sliderId, varName) {
+    const sl = $(sliderId), out = $(sliderId + '-val');
+    const apply = () => {
+      out.textContent = sl.value + '%';
+      setVar(varName, (+sl.value / 100).toFixed(2));
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindAlpha('screen-shadow-alpha', '--screen-shadow-alpha');
+  bindAlpha('bezel-shadow-alpha', '--bezel-shadow-alpha');
+  bindAlpha('notif-shadow-alpha', '--notif-shadow-alpha');
+
+  $('show-keyboard').addEventListener('change', e => keyboardEl.classList.toggle('hidden', !e.target.checked));
+  $('key-popups').addEventListener('change', e => body.classList.toggle('no-popups', !e.target.checked));
+
+  $('show-status').addEventListener('change', e => statusBar.classList.toggle('hidden', !e.target.checked));
+  $('status-time-input').addEventListener('input', e => statusTime.textContent = e.target.value);
+
+  $('phone-w').addEventListener('input', e => setVar('--screen-width', e.target.value + 'px'));
+  $('phone-h').addEventListener('input', e => setVar('--screen-height', e.target.value + 'px'));
+  const phoneScale = $('phone-scale'), phoneScaleVal = $('phone-scale-val');
+  const updateScale = () => {
+    phoneScaleVal.textContent = phoneScale.value + '%';
+    setVar('--screen-scale', (+phoneScale.value / 100).toString());
+  };
+  phoneScale.addEventListener('input', updateScale);
+  $('bezel').addEventListener('change', e => body.classList.toggle('phone-bezel', e.target.checked));
+  $('show-frame').addEventListener('change', e => body.classList.toggle('no-frame', !e.target.checked));
+  $('stage-bg').addEventListener('input', e => setVar('--stage-bg', e.target.value));
+
+  $('cursor-style').addEventListener('change', e => {
+    cursor.classList.remove('block', 'underline');
+    if (e.target.value === 'block') cursor.classList.add('block');
+    if (e.target.value === 'underline') cursor.classList.add('underline');
+  });
+
+  const bindRange = (id, suffix = '') => {
+    const el = $(id), out = $(id + '-val');
+    const update = () => out.textContent = el.value + suffix;
+    el.addEventListener('input', update); update();
+  };
+  bindRange('base-ms');
+  bindRange('variance-ms');
+  bindRange('think-chance', '%');
+
+  $('sound-on').addEventListener('change', e => Sound.setEnabled(e.target.checked));
+  $('sound-style').addEventListener('change', e => Sound.setStyle(e.target.value));
+  const soundVol = $('sound-vol'), soundVolVal = $('sound-vol-val');
+  const updateVol = () => {
+    soundVolVal.textContent = soundVol.value + '%';
+    Sound.setVolume(+soundVol.value / 100);
+  };
+  soundVol.addEventListener('input', updateVol);
+  updateVol();
+  updateScale();
+
+  function bindEventMul(id, setter) {
+    const sl = $(id), out = $(id + '-val');
+    const apply = () => {
+      out.textContent = (sl.value / 100).toFixed(1) + '×';
+      setter(+sl.value / 100);
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindEventMul('snd-send', Sound.setSendMul);
+  bindEventMul('snd-recv', Sound.setRecvMul);
+  bindEventMul('snd-notif', Sound.setNotifMul);
+
+  const presets = {
+    fast:    { base: 35, variance: 20, think: 4,  thinkMax: 800 },
+    natural: { base: 80, variance: 50, think: 12, thinkMax: 2800 },
+    slow:    { base: 140, variance: 70, think: 25, thinkMax: 4500 },
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      $('base-ms').value = p.base; $('base-ms').dispatchEvent(new Event('input'));
+      $('variance-ms').value = p.variance; $('variance-ms').dispatchEvent(new Event('input'));
+      $('think-chance').value = p.think; $('think-chance').dispatchEvent(new Event('input'));
+      $('think-max').value = p.thinkMax;
+    });
+  });
+
+  // ---------- Image management ----------
+  const images = [];
+
+  $('add-images').addEventListener('click', () => imageInput.click());
+  $('clear-images').addEventListener('click', () => { images.length = 0; renderImageList(); });
+
+  imageInput.addEventListener('change', async (e) => {
+    for (const file of e.target.files) {
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        images.push({ dataUrl, name: file.name });
+      } catch (err) { console.error('image read failed', err); }
+    }
+    renderImageList();
+    e.target.value = '';
+  });
+
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  function renderImageList() {
+    imageList.innerHTML = '';
+    images.forEach((img, i) => {
+      const item = document.createElement('div');
+      item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement('img'); thumb.src = img.dataUrl;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = img.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => { images.splice(i, 1); renderImageList(); });
+      item.append(idx, thumb, name, rm);
+      imageList.appendChild(item);
+    });
+  }
+
+  // ---------- Video management ----------
+  const videos = [];
+  $('add-videos').addEventListener('click', () => videoInput.click());
+  $('clear-videos').addEventListener('click', () => {
+    for (const v of videos) URL.revokeObjectURL(v.url);
+    videos.length = 0;
+    renderVideoList();
+  });
+  videoInput.addEventListener('change', (e) => {
+    for (const file of e.target.files) {
+      const url = URL.createObjectURL(file);
+      videos.push({ url, name: file.name });
+    }
+    renderVideoList();
+    e.target.value = '';
+  });
+  function renderVideoList() {
+    videoList.innerHTML = '';
+    videos.forEach((v, i) => {
+      const item = document.createElement('div');
+      item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement('video');
+      thumb.src = v.url;
+      thumb.muted = true;
+      thumb.style.cssText = 'width:36px;height:36px;object-fit:cover;border-radius:4px;background:#000;';
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = v.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => {
+        URL.revokeObjectURL(videos[i].url);
+        videos.splice(i, 1);
+        renderVideoList();
+      });
+      item.append(idx, thumb, name, rm);
+      videoList.appendChild(item);
+    });
+  }
+
+  // ---------- Keyboard ----------
+  const KB_R1 = ['q','w','e','r','t','y','u','i','o','p'];
+  const KB_R2 = ['a','s','d','f','g','h','j','k','l'];
+  const KB_R3 = ['z','x','c','v','b','n','m'];
+
+  function makeKey(id, label, classes) {
+    const b = document.createElement('button');
+    b.className = classes;
+    b.dataset.key = id;
+    b.textContent = label;
+    b.tabIndex = -1;
+    return b;
+  }
+
+  function buildKeyboard() {
+    keyboardEl.innerHTML = '';
+    const r1 = document.createElement('div'); r1.className = 'kb-row';
+    KB_R1.forEach(k => r1.appendChild(makeKey(k, k, 'kb-key letter')));
+    keyboardEl.appendChild(r1);
+
+    const r2 = document.createElement('div'); r2.className = 'kb-row';
+    const sp1 = document.createElement('div'); sp1.className = 'kb-spacer'; r2.appendChild(sp1);
+    KB_R2.forEach(k => r2.appendChild(makeKey(k, k, 'kb-key letter')));
+    const sp2 = document.createElement('div'); sp2.className = 'kb-spacer'; r2.appendChild(sp2);
+    keyboardEl.appendChild(r2);
+
+    const r3 = document.createElement('div'); r3.className = 'kb-row';
+    r3.appendChild(makeKey('shift', '⇧', 'kb-key kb-special kb-mod'));
+    KB_R3.forEach(k => r3.appendChild(makeKey(k, k, 'kb-key letter')));
+    r3.appendChild(makeKey('backspace', '⌫', 'kb-key kb-special kb-mod'));
+    keyboardEl.appendChild(r3);
+
+    const r4 = document.createElement('div'); r4.className = 'kb-row';
+    r4.appendChild(makeKey('123', '123', 'kb-key kb-special kb-mod'));
+    r4.appendChild(makeKey('emoji', '☺', 'kb-key kb-special'));
+    r4.appendChild(makeKey('space', 'space', 'kb-key kb-space'));
+    r4.appendChild(makeKey('return', 'return', 'kb-key kb-special kb-return'));
+    keyboardEl.appendChild(r4);
+  }
+
+  function flashKey(id) {
+    const el = keyboardEl.querySelector(`.kb-key[data-key="${id}"]`);
+    if (!el) return;
+    el.classList.remove('pressed');
+    void el.offsetWidth;
+    el.classList.add('pressed');
+    setTimeout(() => el.classList.remove('pressed'), 110);
+  }
+
+  function flashTypeKey(char) {
+    if (keyboardEl.classList.contains('hidden')) return;
+    if (char === ' ') return flashKey('space');
+    if (char === '\n') return flashKey('return');
+    const lower = char.toLowerCase();
+    if (/[a-z]/.test(lower)) {
+      if (char !== lower) flashKey('shift');
+      flashKey(lower);
+      return;
+    }
+    if (/[\d!@#$%^&*()\-_=+\[\]{};:'",.<>?/\\|`~]/.test(char)) {
+      flashKey('123');
+    }
+  }
+
+  function flashBackspace() {
+    if (keyboardEl.classList.contains('hidden')) return;
+    flashKey('backspace');
+  }
+
+  // ---------- Audio sync ----------
+  const audioEl = new Audio();
+  audioEl.preload = 'auto';
+  let audioUrl = null;
+
+  function setAudioInfo() {
+    const info = $('audio-info');
+    if (audioUrl && audioEl.duration && !isNaN(audioEl.duration)) {
+      info.textContent = `Loaded · ${audioEl.duration.toFixed(1)}s`;
+    } else if (audioUrl) {
+      info.textContent = 'Loaded · reading metadata…';
+    } else {
+      info.textContent = 'No audio loaded';
+    }
+  }
+
+  $('audio-pick').addEventListener('click', () => $('audio-input').click());
+  $('audio-clear').addEventListener('click', () => {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = null;
+    audioEl.src = '';
+    setAudioInfo();
+  });
+  $('audio-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    audioUrl = URL.createObjectURL(file);
+    audioEl.src = audioUrl;
+    audioEl.addEventListener('loadedmetadata', setAudioInfo, { once: true });
+    setAudioInfo();
+    e.target.value = '';
+  });
+
+  function applyRateMatch() {
+    if (!audioEl.src || !audioEl.duration || isNaN(audioEl.duration)) return;
+    const tokens = parseScript($('script').value);
+    const sendPause = +$('ev-send-pause').value;
+    const recvPause = +$('ev-recv-pause').value;
+    const imgPause = +$('ev-img-pause').value;
+    const notifPause = +$('ev-notif-pause').value;
+    const typingFade = +$('ev-typing-fade').value;
+    const typoPause = +$('ev-typo-pause').value;
+    const bsMs = +$('ev-bs-ms').value;
+    let totalChars = 0;
+    let overheadMs = 0;
+    for (const t of tokens) {
+      if (t.type === 'text') totalChars++;
+      else if (t.type === 'typo') {
+        totalChars += t.wrong.length + t.right.length;
+        overheadMs += typoPause + t.wrong.length * bsMs + bsMs * 4;
+      }
+      else if (t.type === 'pause') overheadMs += t.ms;
+      else if (t.type === 'send') overheadMs += sendPause;
+      else if (t.type === 'recv') overheadMs += recvPause;
+      else if (t.type === 'typing') overheadMs += t.ms + typingFade;
+      else if (t.type === 'img') overheadMs += imgPause;
+      else if (t.type === 'vid') overheadMs += imgPause;
+      else if (t.type === 'notif') overheadMs += notifPause;
+    }
+    if (totalChars === 0) return;
+    const totalMs = audioEl.duration * 1000;
+    const typingMs = Math.max(1000, totalMs - overheadMs);
+    const msPerChar = typingMs / totalChars;
+    const baseSlider = $('base-ms');
+    baseSlider.value = Math.max(+baseSlider.min, Math.min(+baseSlider.max, Math.round(msPerChar)));
+    baseSlider.dispatchEvent(new Event('input'));
+    const varSlider = $('variance-ms');
+    varSlider.value = Math.max(0, Math.min(+varSlider.max, Math.round(msPerChar * 0.25)));
+    varSlider.dispatchEvent(new Event('input'));
+  }
+
+  // ---------- Script parsing ----------
+  function parseScript(input) {
+    const tokens = [];
+    let i = 0;
+    while (i < input.length) {
+      if (input[i] === '\\' && input.startsWith('[[', i + 1)) {
+        tokens.push({ type: 'text', char: '[' });
+        tokens.push({ type: 'text', char: '[' });
+        i += 3; continue;
+      }
+      if (input.startsWith('[[', i)) {
+        const end = input.indexOf(']]', i + 2);
+        if (end !== -1) {
+          const inner = input.slice(i + 2, end);
+          if (inner === 'send') {
+            tokens.push({ type: 'send' });
+          } else if (inner.startsWith('pause:') || inner.startsWith('wait:')) {
+            const ms = parseInt(inner.split(':')[1], 10);
+            if (!isNaN(ms)) tokens.push({ type: 'pause', ms });
+          } else if (inner.startsWith('recv:') || inner.startsWith('in:')) {
+            const text = inner.slice(inner.indexOf(':') + 1);
+            tokens.push({ type: 'recv', text });
+          } else if (inner.startsWith('typing')) {
+            const parts = inner.split(':');
+            const ms = parts[1] ? parseInt(parts[1], 10) : 1800;
+            tokens.push({ type: 'typing', ms });
+          } else if (inner.startsWith('img:')) {
+            const rest = inner.slice(4);
+            const pipe = rest.indexOf('|');
+            const idxStr = pipe >= 0 ? rest.slice(0, pipe) : rest;
+            const caption = pipe >= 0 ? rest.slice(pipe + 1) : '';
+            const indices = idxStr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1);
+            if (indices.length > 0) tokens.push({ type: 'img', kind: 'sent', indices, caption });
+          } else if (inner.startsWith('recvimg:')) {
+            const rest = inner.slice(8);
+            const pipe = rest.indexOf('|');
+            const idxStr = pipe >= 0 ? rest.slice(0, pipe) : rest;
+            const caption = pipe >= 0 ? rest.slice(pipe + 1) : '';
+            const indices = idxStr.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 1);
+            if (indices.length > 0) tokens.push({ type: 'img', kind: 'received', indices, caption });
+          } else if (inner === 'kb:hide' || inner === 'keyboard:hide') {
+            tokens.push({ type: 'kb', action: 'hide' });
+          } else if (inner === 'kb:show' || inner === 'keyboard:show') {
+            tokens.push({ type: 'kb', action: 'show' });
+          } else if (inner.startsWith('vid:')) {
+            const rest = inner.slice(4);
+            const pipe = rest.indexOf('|');
+            const idxStr = pipe >= 0 ? rest.slice(0, pipe) : rest;
+            const caption = pipe >= 0 ? rest.slice(pipe + 1) : '';
+            const idx = parseInt(idxStr.trim(), 10);
+            if (!isNaN(idx) && idx >= 1) tokens.push({ type: 'vid', kind: 'sent', index: idx, caption });
+          } else if (inner.startsWith('recvvid:')) {
+            const rest = inner.slice(8);
+            const pipe = rest.indexOf('|');
+            const idxStr = pipe >= 0 ? rest.slice(0, pipe) : rest;
+            const caption = pipe >= 0 ? rest.slice(pipe + 1) : '';
+            const idx = parseInt(idxStr.trim(), 10);
+            if (!isNaN(idx) && idx >= 1) tokens.push({ type: 'vid', kind: 'received', index: idx, caption });
+          } else if (inner.startsWith('notif:')) {
+            const parts = inner.slice(6).split('|');
+            if (parts.length >= 2) {
+              const name = parts[0];
+              const message = parts[1];
+              const imgIndex = parts[2] ? parseInt(parts[2].trim(), 10) : null;
+              tokens.push({ type: 'notif', name, message, imgIndex });
+            }
+          } else if (inner.startsWith('react:')) {
+            tokens.push({ type: 'react', kind: inner.slice(6).trim().toLowerCase() });
+          } else if (inner === 'delivered' || inner === 'read') {
+            tokens.push({ type: 'receipt', kind: inner === 'read' ? 'Read' : 'Delivered' });
+          } else if (inner.includes('|')) {
+            const idx = inner.indexOf('|');
+            tokens.push({ type: 'typo', wrong: inner.slice(0, idx), right: inner.slice(idx + 1) });
+          } else {
+            for (const c of '[[' + inner + ']]') tokens.push({ type: 'text', char: c });
+          }
+          i = end + 2;
+          continue;
+        }
+      }
+      tokens.push({ type: 'text', char: input[i] });
+      i++;
+    }
+    return tokens;
+  }
+
+  // ---------- Timing ----------
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function settings() {
+    return {
+      base: +$('base-ms').value,
+      variance: +$('variance-ms').value,
+      thinkChance: (+$('think-chance').value) / 100,
+      thinkMax: +$('think-max').value,
+      sentence: +$('punct-sentence').value,
+      sentenceJ: +$('punct-sentence-j').value,
+      comma: +$('punct-comma').value,
+      commaJ: +$('punct-comma-j').value,
+    };
+  }
+  function jitter() {
+    return (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
+  }
+  function charDelay(ch, prevCh, s) {
+    let d = s.base + jitter() * 2 * s.variance;
+    if (/[.!?]/.test(ch)) d += s.sentence + Math.random() * s.sentenceJ;
+    else if (/[,;:]/.test(ch)) d += s.comma + Math.random() * s.commaJ;
+    if (ch === '\n') d += 150 + Math.random() * 250;
+    if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) {
+      if (Math.random() < s.thinkChance) {
+        d += 400 + Math.random() * Math.max(0, s.thinkMax - 400);
+      }
+    }
+    return Math.max(5, d);
+  }
+  function estimatePauseMs(tokens) {
+    let ms = 0;
+    for (const t of tokens) if (t.type === 'pause') ms += t.ms;
+    return ms;
+  }
+  // Estimate total natural typing time for a token list (mean — variance/jitter zero out).
+  function estimateTypingMs(tokens, s) {
+    const typoPause = +($('ev-typo-pause')?.value) || 0;
+    const bsMs = +($('ev-bs-ms')?.value) || 50;
+    const sentenceMean = (s.sentence || 0) + (s.sentenceJ || 0) / 2;
+    const commaMean = (s.comma || 0) + (s.commaJ || 0) / 2;
+    const thinkMean = (s.thinkChance || 0) * (400 + Math.max(0, (s.thinkMax || 0) - 400) / 2);
+    const nlMean = 275;
+    let total = 0, prevCh;
+    const contrib = (ch) => {
+      let d = s.base;
+      if (/[.!?]/.test(ch)) d += sentenceMean;
+      else if (/[,;:]/.test(ch)) d += commaMean;
+      if (ch === '\n') d += nlMean;
+      if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) d += thinkMean;
+      return Math.max(5, d);
+    };
+    for (const tok of tokens) {
+      if (tok.type === 'pause') { total += tok.ms; continue; }
+      if (tok.type === 'typo') {
+        for (const c of tok.wrong) { total += contrib(c); prevCh = c; }
+        total += typoPause * 1.75;
+        total += tok.wrong.length * bsMs * 1.3;
+        total += bsMs * 2;
+        for (const c of tok.right) { total += contrib(c); prevCh = c; }
+        continue;
+      }
+      total += contrib(tok.char);
+      prevCh = tok.char;
+    }
+    return total;
+  }
+  // Set audio.playbackRate so audio finishes in targetMs. Preserves pitch. Clamped 0.5–2.0.
+  function fitAudioToWindow(audio, targetMs, opts) {
+    opts = opts || {};
+    const minR = opts.minRate || 0.5;
+    const maxR = opts.maxRate || 2.0;
+    if (!audio || !isFinite(audio.duration) || audio.duration <= 0 || targetMs <= 0) return 1;
+    const desiredSec = targetMs / 1000;
+    let rate = audio.duration / desiredSec;
+    rate = Math.min(maxR, Math.max(minR, rate));
+    audio.playbackRate = rate;
+    try { audio.preservesPitch = true; } catch {}
+    try { audio.mozPreservesPitch = true; } catch {}
+    try { audio.webkitPreservesPitch = true; } catch {}
+    return rate;
+  }
+
+  // ---------- Bubbles ----------
+  function addBubble(text, kind) {
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + kind;
+    bubble.textContent = text;
+    messages.appendChild(bubble);
+    requestAnimationFrame(() => {
+      bubble.classList.add('appear');
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    });
+    return bubble;
+  }
+
+  // Tapback reactions (iMessage-style): a small badge on the bubble's outer-top corner.
+  const TAPBACKS = {
+    heart: '❤️', love: '❤️', like: '👍', up: '👍', thumbsup: '👍',
+    dislike: '👎', down: '👎', thumbsdown: '👎', haha: '😆', laugh: '😆', lol: '😆',
+    '!!': '‼️', '!': '‼️', exclaim: '‼️', emphasize: '‼️', '?': '❓', question: '❓',
+  };
+  function addTapback(bubble, kind) {
+    if (!bubble || !bubble.appendChild) return;
+    const glyph = TAPBACKS[kind] || ((kind || '').trim()) || '❤️';
+    const tb = document.createElement('div');
+    tb.className = 'tapback';
+    tb.textContent = glyph;
+    bubble.appendChild(tb);
+    requestAnimationFrame(() => tb.classList.add('show'));
+    try { Sound.receive(); } catch (e) {}
+  }
+  // "Delivered" / "Read" receipt, shown under the most recent sent bubble.
+  function addReceipt(bubble, label) {
+    if (!bubble || !bubble.insertAdjacentElement) return;
+    messages.querySelectorAll('.receipt').forEach(r => r.remove());
+    const r = document.createElement('div');
+    r.className = 'receipt';
+    r.textContent = label;
+    bubble.insertAdjacentElement('afterend', r);
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  }
+
+  function addTypingIndicator() {
+    const ind = document.createElement('div');
+    ind.className = 'typing-indicator';
+    ind.innerHTML = '<span></span><span></span><span></span>';
+    messages.appendChild(ind);
+    requestAnimationFrame(() => {
+      ind.classList.add('appear');
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    });
+    return ind;
+  }
+
+  function updatePlaceholder() {
+    inputPlaceholder.style.display = inputText.textContent.length > 0 ? 'none' : '';
+    inputBar.classList.toggle('has-text', inputText.textContent.length > 0);
+  }
+
+  function appendChar(c) {
+    inputText.textContent += c;
+    updatePlaceholder();
+    Sound.key();
+    flashTypeKey(c);
+  }
+  function backspaceChar() {
+    inputText.textContent = inputText.textContent.slice(0, -1);
+    updatePlaceholder();
+    Sound.backspace();
+    flashBackspace();
+  }
+
+  function addImageBubble(indices, kind, caption) {
+    const valid = indices.map(i => images[i - 1]).filter(Boolean);
+    if (valid.length === 0) return null;
+
+    const isMulti = valid.length > 1;
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + kind + ' ' + (isMulti ? 'image-grid' : 'image-bubble');
+    if (caption) bubble.classList.add('has-caption');
+
+    if (isMulti) {
+      const inner = document.createElement('div');
+      inner.className = 'grid-inner';
+      valid.forEach(im => {
+        const img = document.createElement('img');
+        img.src = im.dataUrl;
+        inner.appendChild(img);
+      });
+      bubble.appendChild(inner);
+    } else {
+      const img = document.createElement('img');
+      img.src = valid[0].dataUrl;
+      bubble.appendChild(img);
+    }
+
+    if (caption) {
+      const cap = document.createElement('div');
+      cap.className = 'img-caption';
+      cap.textContent = caption;
+      bubble.appendChild(cap);
+    }
+
+    messages.appendChild(bubble);
+    requestAnimationFrame(() => {
+      bubble.classList.add('appear');
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    });
+    return bubble;
+  }
+
+  function addVideoBubble(idx, kind, caption) {
+    const v = videos[idx - 1];
+    if (!v) return null;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + kind + ' video-bubble';
+    if (caption) bubble.classList.add('has-caption');
+
+    const video = document.createElement('video');
+    video.src = v.url;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    bubble.appendChild(video);
+
+    const muteIcon = document.createElement('div');
+    muteIcon.className = 'mute-overlay';
+    muteIcon.textContent = '🔇';
+    bubble.appendChild(muteIcon);
+
+    function toggleMute() {
+      if (video.muted) {
+        video.muted = false;
+        video.controls = true;
+        bubble.classList.add('unmuted');
+      } else {
+        video.muted = true;
+        video.controls = false;
+        bubble.classList.remove('unmuted');
+      }
+    }
+    video.addEventListener('click', toggleMute);
+    muteIcon.addEventListener('click', (e) => { e.stopPropagation(); toggleMute(); });
+
+    if (caption) {
+      const cap = document.createElement('div');
+      cap.className = 'img-caption';
+      cap.textContent = caption;
+      bubble.appendChild(cap);
+    }
+
+    messages.appendChild(bubble);
+    requestAnimationFrame(() => {
+      bubble.classList.add('appear');
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    });
+    return bubble;
+  }
+
+  function showNotification(name, message, imgIndex) {
+    notifName.textContent = name;
+    notifText.textContent = message;
+    const img = imgIndex ? images[imgIndex - 1] : null;
+    if (img) {
+      notifIcon.style.backgroundImage = `url(${img.dataUrl})`;
+      notifIcon.classList.add('has-image');
+    } else {
+      notifIcon.style.backgroundImage = '';
+      notifIcon.classList.remove('has-image');
+      notifIcon.textContent = initialsFrom(name);
+    }
+    notifBanner.classList.add('visible');
+  }
+  function hideNotification() {
+    notifBanner.classList.remove('visible');
+  }
+
+  /* ============ BGM / TTS / SYNC ============ */
+  const audioState = {
+    bgm: null,
+    bgmUrl: null,
+    bgmName: '',
+    markers: [],
+    playStartWall: 0,
+    fadeTimer: null,
+  };
+
+  function setBgmFile(file) {
+    clearBgm();
+    audioState.bgmUrl = URL.createObjectURL(file);
+    audioState.bgmName = file.name;
+    audioState.bgm = new Audio(audioState.bgmUrl);
+    audioState.bgm.preload = 'auto';
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.volume = parseFloat($('bgm-volume').value) || 0;
+    $('bgm-name').textContent = file.name;
+  }
+
+  function clearBgm() {
+    if (audioState.bgm) {
+      audioState.bgm.pause();
+      audioState.bgm.src = '';
+    }
+    if (audioState.bgmUrl) URL.revokeObjectURL(audioState.bgmUrl);
+    audioState.bgm = null;
+    audioState.bgmUrl = null;
+    audioState.bgmName = '';
+    $('bgm-name').textContent = 'none';
+  }
+
+  function startBgm(opts) {
+    if (!audioState.bgm) return;
+    if (!$('bgm-auto').checked && !opts?.force) return;
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.currentTime = parseFloat($('bgm-start').value) || 0;
+    const targetVol = parseFloat($('bgm-volume').value) || 0;
+    const fadeIn = parseFloat($('bgm-fadein').value) || 0;
+    if (fadeIn > 0) {
+      audioState.bgm.volume = 0;
+      audioState.bgm.play().catch(() => {});
+      const steps = 20;
+      const stepMs = fadeIn / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.min(targetVol, (i / steps) * targetVol);
+        if (i >= steps) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+      }, stepMs);
+    } else {
+      audioState.bgm.volume = targetVol;
+      audioState.bgm.play().catch(() => {});
+    }
+  }
+
+  function stopBgm() {
+    if (!audioState.bgm) return;
+    if (audioState.fadeTimer) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+    const fadeOut = parseFloat($('bgm-fadeout').value) || 0;
+    if (fadeOut > 0) {
+      const startVol = audioState.bgm.volume;
+      const steps = 20;
+      const stepMs = fadeOut / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.max(0, startVol * (1 - i / steps));
+        if (i >= steps) {
+          clearInterval(audioState.fadeTimer); audioState.fadeTimer = null;
+          audioState.bgm.pause();
+        }
+      }, stepMs);
+    } else {
+      audioState.bgm.pause();
+    }
+  }
+
+  $('bgm-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) setBgmFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('bgm-clear')?.addEventListener('click', clearBgm);
+  $('bgm-volume')?.addEventListener('input', e => {
+    if (audioState.bgm) audioState.bgm.volume = parseFloat(e.target.value);
+  });
+  $('bgm-loop')?.addEventListener('change', e => {
+    if (audioState.bgm) audioState.bgm.loop = e.target.checked;
+  });
+  $('bgm-test')?.addEventListener('click', () => {
+    if (!audioState.bgm) return;
+    startBgm({ force: true });
+    setTimeout(() => stopBgm(), 4000);
+  });
+  $('bgm-stop-test')?.addEventListener('click', () => stopBgm());
+
+  const BgMedia = {
+    bgVideo: null, bgImage: null, bgAudio: null, videoUrl: null, imageUrl: null, audioUrl: null, duckedOriginal: null,
+    init() {
+      this.bgVideo = document.getElementById('bg-video'); this.bgImage = document.getElementById('bg-image'); this.bgAudio = document.getElementById('bg-audio-only');
+      $('bg-video-file')?.addEventListener('change', e => { if (e.target.files[0]) this.loadVideo(e.target.files[0]); e.target.value = ''; });
+      $('bg-image-file')?.addEventListener('change', e => { if (e.target.files[0]) this.loadImage(e.target.files[0]); e.target.value = ''; });
+      $('bg-audio-file')?.addEventListener('change', e => { if (e.target.files[0]) this.loadAudio(e.target.files[0]); e.target.value = ''; });
+      $('bg-volume')?.addEventListener('input', () => this.applyVolume());
+      $('bg-mute')?.addEventListener('change', () => this.applyMute());
+      $('bg-loop')?.addEventListener('change', () => this.applyLoop());
+      $('bg-fit')?.addEventListener('change', () => this.applyFit());
+      $('bg-play')?.addEventListener('click', () => this.play());
+      $('bg-stop')?.addEventListener('click', () => this.stop());
+      $('bg-clear')?.addEventListener('click', () => this.clear());
+      this.applyMute(); this.applyLoop(); this.applyFit(); this.applyVolume();
+    },
+    loadVideo(file) { this.clearVideo(); this.videoUrl = URL.createObjectURL(file); this.bgVideo.src = this.videoUrl; this.bgVideo.style.display = ''; this.bgImage.style.display = 'none'; document.body.style.background = 'transparent'; this.applyMute(); this.applyLoop(); this.applyFit(); this.applyVolume(); },
+    loadImage(file) { this.clearImage(); this.imageUrl = URL.createObjectURL(file); this.bgImage.src = this.imageUrl; this.bgImage.style.display = ''; this.bgVideo.style.display = 'none'; document.body.style.background = 'transparent'; this.applyFit(); },
+    loadAudio(file) { this.clearAudio(); this.audioUrl = URL.createObjectURL(file); this.bgAudio.src = this.audioUrl; this.applyLoop(); this.applyVolume(); },
+    applyVolume() { const v = parseFloat($('bg-volume')?.value); if (!isFinite(v)) return; if (this.bgVideo) this.bgVideo.volume = v; if (this.bgAudio) this.bgAudio.volume = v; },
+    applyMute() { if (this.bgVideo) this.bgVideo.muted = !!$('bg-mute')?.checked; },
+    applyLoop() { const l = !!$('bg-loop')?.checked; if (this.bgVideo) this.bgVideo.loop = l; if (this.bgAudio) this.bgAudio.loop = l; },
+    applyFit() { const f = $('bg-fit')?.value || 'cover'; if (this.bgVideo) this.bgVideo.style.objectFit = f; if (this.bgImage) this.bgImage.style.objectFit = f; },
+    play() { if (this.bgVideo && this.bgVideo.src) { try { this.bgVideo.currentTime = 0; } catch {} this.bgVideo.play().catch(() => {}); } if (this.bgAudio && this.bgAudio.src) { try { this.bgAudio.currentTime = 0; } catch {} this.bgAudio.play().catch(() => {}); } },
+    stop() { if (this.bgVideo) { try { this.bgVideo.pause(); this.bgVideo.currentTime = 0; } catch {} } if (this.bgAudio) { try { this.bgAudio.pause(); this.bgAudio.currentTime = 0; } catch {} } },
+    clearVideo() { if (this.videoUrl) { try { URL.revokeObjectURL(this.videoUrl); } catch {} this.videoUrl = null; } if (this.bgVideo) { this.bgVideo.pause(); this.bgVideo.removeAttribute('src'); this.bgVideo.load(); this.bgVideo.style.display = 'none'; } },
+    clearImage() { if (this.imageUrl) { try { URL.revokeObjectURL(this.imageUrl); } catch {} this.imageUrl = null; } if (this.bgImage) { this.bgImage.removeAttribute('src'); this.bgImage.style.display = 'none'; } },
+    clearAudio() { if (this.audioUrl) { try { URL.revokeObjectURL(this.audioUrl); } catch {} this.audioUrl = null; } if (this.bgAudio) { this.bgAudio.pause(); this.bgAudio.removeAttribute('src'); this.bgAudio.load(); } },
+    clear() { this.stop(); this.clearVideo(); this.clearImage(); this.clearAudio(); document.body.style.background = ''; },
+    duck() { if (!$('bg-duck-on')?.checked) return; const factor = parseFloat($('bg-duck-to')?.value); if (!isFinite(factor)) return; const base = parseFloat($('bg-volume')?.value) || 0.5; this.duckedOriginal = base; if (this.bgVideo && !this.bgVideo.muted) this.bgVideo.volume = factor * base; if (this.bgAudio) this.bgAudio.volume = factor * base; },
+    unduck() { if (this.duckedOriginal === null) return; const base = this.duckedOriginal; this.duckedOriginal = null; if (this.bgVideo) this.bgVideo.volume = base; if (this.bgAudio) this.bgAudio.volume = base; },
+    registerTtsAudio(audio) { if (!audio) return; audio.addEventListener('play', () => this.duck()); audio.addEventListener('ended', () => this.unduck(), { once: true }); audio.addEventListener('error', () => this.unduck(), { once: true }); audio.addEventListener('pause', () => this.unduck()); },
+    autoStart() { if ($('bg-auto')?.checked) this.play(); }
+  };
+  BgMedia.init();
+  window.BgMedia = BgMedia;
+
+  const BgPlaylist = {
+    list: [], urls: [], idx: -1, videoA: null, videoB: null, activeKey: 'A', _crossfading: false,
+    init() {
+      this.videoA = document.getElementById('bg-video');
+      this.videoB = document.getElementById('bg-video-next');
+      if (!this.videoA || !this.videoB) return;
+      $('bg-playlist-files')?.addEventListener('change', e => { for (const f of e.target.files) this.list.push(f); this.refreshUI(); e.target.value = ''; if (this.list.length && this.idx < 0 && $('bg-playlist-on')?.checked) this.start(); });
+      $('bg-playlist-clear')?.addEventListener('click', () => { this.stop(); this.urls.forEach(u => { try { URL.revokeObjectURL(u); } catch{} }); this.list = []; this.urls = []; this.idx = -1; if (this.videoA) { this.videoA.removeAttribute('src'); this.videoA.style.display = 'none'; } if (this.videoB) { this.videoB.removeAttribute('src'); this.videoB.style.display = 'none'; } this.refreshUI(); });
+      $('bg-playlist-next')?.addEventListener('click', () => this.advance());
+      [this.videoA, this.videoB].forEach((v, k) => {
+        v.addEventListener('ended', () => { if (!$('bg-playlist-on')?.checked) return; const isActive = (this.activeKey === 'A' && k === 0) || (this.activeKey === 'B' && k === 1); if (isActive) this.advance(); });
+        v.addEventListener('timeupdate', () => { if (!$('bg-playlist-on')?.checked) return; const fadeMs = +$('bg-crossfade-ms')?.value || 0; if (fadeMs <= 0) return; const isActive = (this.activeKey === 'A' && k === 0) || (this.activeKey === 'B' && k === 1); if (!isActive || this._crossfading) return; if (!v.duration || isNaN(v.duration)) return; if ((v.duration - v.currentTime) * 1000 <= fadeMs + 50) { this._crossfading = true; this.advance(); setTimeout(() => { this._crossfading = false; }, fadeMs + 200); } });
+      });
+    },
+    _getActive() { return this.activeKey === 'A' ? this.videoA : this.videoB; },
+    _getInactive() { return this.activeKey === 'A' ? this.videoB : this.videoA; },
+    start() {
+      if (!this.list.length) return;
+      this.idx = 0; this.activeKey = 'A';
+      document.body.style.background = 'transparent';
+      this.videoA.style.display = ''; this.videoB.style.display = '';
+      this.videoA.style.opacity = '1'; this.videoB.style.opacity = '0';
+      this._loadInto(this.videoA, this.list[0], 0);
+      this.videoA.muted = !!$('bg-mute')?.checked; this.videoA.loop = false;
+      this.videoA.play().catch(()=>{});
+      if (this.list[1]) this._loadInto(this.videoB, this.list[1], 1);
+      this.refreshUI();
+    },
+    stop() { [this.videoA, this.videoB].forEach(v => { if (v) try { v.pause(); } catch{} }); },
+    async advance() {
+      if (!this.list.length) return;
+      let nextIdx = this.idx + 1;
+      if (nextIdx >= this.list.length) { if ($('bg-playlist-loop')?.checked) nextIdx = 0; else { this.stop(); return; } }
+      let fadeMs = +$('bg-crossfade-ms')?.value || 0;
+      if (fadeMs <= 0) fadeMs = 80;
+      const current = this._getActive(); const next = this._getInactive();
+      if (this.urls[nextIdx] === undefined || next.src !== this.urls[nextIdx]) this._loadInto(next, this.list[nextIdx], nextIdx);
+      next.muted = !!$('bg-mute')?.checked;
+      try { next.currentTime = 0; } catch{}
+      next.play().catch(()=>{});
+      await this._waitReady(next);
+      current.style.transition = `opacity ${fadeMs}ms linear`;
+      next.style.transition    = `opacity ${fadeMs}ms linear`;
+      requestAnimationFrame(() => { current.style.opacity = '0'; next.style.opacity = '1'; });
+      this.activeKey = (this.activeKey === 'A') ? 'B' : 'A'; this.idx = nextIdx;
+      setTimeout(() => { try { current.pause(); current.currentTime = 0; } catch{} }, fadeMs + 50);
+      const after = (nextIdx + 1) % this.list.length;
+      if (after !== nextIdx && this.list[after]) this._loadInto(this._getInactive(), this.list[after], after);
+      this.refreshUI();
+    },
+    _waitReady(v) {
+      return new Promise(res => {
+        if (v.readyState >= 2 && !v.paused) return res();
+        const ok = () => { cleanup(); res(); };
+        const cleanup = () => {
+          v.removeEventListener('playing', ok);
+          v.removeEventListener('loadeddata', ok);
+          v.removeEventListener('canplay', ok);
+        };
+        v.addEventListener('playing', ok, { once: true });
+        v.addEventListener('loadeddata', ok, { once: true });
+        v.addEventListener('canplay', ok, { once: true });
+        setTimeout(() => { cleanup(); res(); }, 800);
+      });
+    },
+    _loadInto(vidEl, file, idx) { if (this.urls[idx]) { try { URL.revokeObjectURL(this.urls[idx]); } catch{} } const url = URL.createObjectURL(file); this.urls[idx] = url; vidEl.src = url; vidEl.load(); },
+    refreshUI() { const ul = $('bg-playlist-list'); if (!ul) return; ul.innerHTML = ''; this.list.forEach((f, i) => { const li = document.createElement('li'); li.textContent = `${f.name}${i === this.idx ? '   ▶' : ''}`; li.style.color = (i === this.idx) ? '#ffe066' : ''; ul.appendChild(li); }); }
+  };
+  BgPlaylist.init();
+  window.BgPlaylist = BgPlaylist;
+
+  // ---------- Skin / page transparency sliders ----------
+  function bindAlphaSlider(sliderId, cssVar, valId) {
+    const s = document.getElementById(sliderId), v = document.getElementById(valId);
+    if (!s) return;
+    const apply = () => {
+      const pct = +s.value;
+      document.documentElement.style.setProperty(cssVar, (pct / 100).toFixed(3));
+      if (v) v.textContent = pct + '%';
+    };
+    s.addEventListener('input', apply); apply();
+  }
+  bindAlphaSlider('page-bg-alpha', '--page-bg-alpha', 'page-bg-alpha-val');
+  bindAlphaSlider('skin-alpha', '--skin-alpha', 'skin-alpha-val');
+
+  // ---------- SRT / timestamped script ----------
+  const SrtScript = {
+    cues: null,
+    parseTimestamp(s) {
+      const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+      if (m) return (+m[1])*3600 + (+m[2])*60 + (+m[3]) + (+m[4])/1000;
+      const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+      if (m2) return (+m2[1])*60 + (+m2[2]) + (+m2[3])/1000;
+      return parseFloat(s) || 0;
+    },
+    parseAny(text, name) {
+      const lower = (name || '').toLowerCase();
+      try {
+        if (lower.endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+          const j = JSON.parse(text);
+          if (Array.isArray(j)) return j.map(x => ({ start: +x.start, end: +x.end, text: x.text || x.word || '' }));
+          if (Array.isArray(j.cues)) return j.cues.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+          if (Array.isArray(j.segments)) return j.segments.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+        }
+      } catch {}
+      const cleaned = text.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+      const out = [];
+      const blocks = cleaned.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const lines = block.trim().split(/\r?\n/);
+        if (!lines.length) continue;
+        const ti = lines.findIndex(l => l.includes('-->'));
+        if (ti < 0) continue;
+        const [sStr, eStr] = lines[ti].split('-->').map(x => x.trim());
+        const start = this.parseTimestamp(sStr);
+        const end   = this.parseTimestamp(eStr);
+        const txt   = lines.slice(ti + 1).join('\n').trim();
+        if (txt) out.push({ start, end, text: txt });
+      }
+      return out;
+    },
+    load(file) {
+      const r = new FileReader();
+      r.onload = e => {
+        try { this.cues = this.parseAny(e.target.result, file.name); } catch { this.cues = null; }
+        const info = document.getElementById('srt-script-info');
+        if (info) info.textContent = (this.cues && this.cues.length) ? `${this.cues.length} cues · ${file.name}` : 'parse failed';
+      };
+      r.readAsText(file);
+    },
+    clear() {
+      this.cues = null;
+      const info = document.getElementById('srt-script-info'); if (info) info.textContent = 'no file';
+    },
+    enabled() { return !!document.getElementById('srt-script-on')?.checked && this.cues && this.cues.length > 0; }
+  };
+  document.getElementById('srt-script-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) SrtScript.load(e.target.files[0]);
+    e.target.value = '';
+  });
+  document.getElementById('srt-script-clear')?.addEventListener('click', () => SrtScript.clear());
+  document.getElementById('srt-script-fill')?.addEventListener('input', e => {
+    const v = document.getElementById('srt-script-fill-val'); if (v) v.textContent = e.target.value + '%';
+  });
+  window.SrtScript = SrtScript;
+
+  // Look ahead in the token stream from index `from` to find the text that
+  // will be typed into the input before the next 'send' token. Returns
+  // { text, endIdx } where endIdx is the index of the 'send' (or tokens.length).
+  function lookaheadMessageText(tokens, from) {
+    let text = '';
+    let i = from;
+    for (; i < tokens.length; i++) {
+      const t = tokens[i];
+      if (t.type === 'send') break;
+      if (t.type === 'recv') break;          // a recv breaks the typing run
+      if (t.type === 'text') text += t.char;
+      else if (t.type === 'typo') text += t.right;
+    }
+    return { text, endIdx: i };
+  }
+
+  /* ===== SYNC FILE ===== */
+  function parseTimestamp(s) {
+    const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+    if (m) return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
+    const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+    if (m2) return (+m2[1]) * 60000 + (+m2[2]) * 1000 + (+m2[3]);
+    return parseFloat(s) || 0;
+  }
+
+  function parseSrt(text) {
+    const out = [];
+    text = text.replace(/^WEBVTT.*?\n\n/s, '');
+    const blocks = text.split(/\n\s*\n/);
+    for (const block of blocks) {
+      const lines = block.trim().split(/\r?\n/);
+      if (!lines.length) continue;
+      const tIdx = lines.findIndex(l => l.includes('-->'));
+      if (tIdx < 0) continue;
+      const [s, e] = lines[tIdx].split('-->').map(x => parseTimestamp(x.trim()));
+      const txt = lines.slice(tIdx + 1).join(' ').trim();
+      out.push({ start: s, end: e, text: txt });
+    }
+    return out;
+  }
+
+  function loadSyncFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      let markers = [];
+      try {
+        if (/\.json$/i.test(file.name) || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+          const parsed = JSON.parse(text);
+          markers = Array.isArray(parsed) ? parsed : parsed.markers || [];
+        } else {
+          markers = parseSrt(text);
+        }
+      } catch (err) {
+        markers = parseSrt(text);
+      }
+      audioState.markers = markers;
+      $('sync-marker-count').textContent = `${markers.length} markers loaded from ${file.name}`;
+    };
+    reader.readAsText(file);
+  }
+
+  $('sync-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) loadSyncFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('sync-clear')?.addEventListener('click', () => {
+    audioState.markers = [];
+    $('sync-marker-count').textContent = 'no markers';
+  });
+
+  function getPlayElapsed() {
+    if ($('sync-source').value === 'bgm' && audioState.bgm && !audioState.bgm.paused) {
+      return audioState.bgm.currentTime * 1000;
+    }
+    return performance.now() - audioState.playStartWall;
+  }
+
+  // ---------- Playback ----------
+  let abortFlag = false;
+  let playing = false;
+  let prevCh;
+
+  function reset() {
+    abortFlag = true;
+    messages.innerHTML = '';
+    inputText.textContent = '';
+    prevCh = undefined;
+    updatePlaceholder();
+    if (audioEl.src) { audioEl.pause(); audioEl.currentTime = 0; }
+    stopBgm();
+  }
+
+  async function play() {
+    if (playing) return;
+    if (SrtScript && SrtScript.enabled && SrtScript.enabled()) {
+      playing = true;
+      abortFlag = false;
+      try { await playSrtScript(); } finally { playing = false; }
+      return;
+    }
+    playing = true;
+    abortFlag = false;
+    Sound.resume();
+
+    audioState.playStartWall = performance.now();
+    startBgm();
+
+    const startDelay = (+$('start-delay').value) * 1000;
+    if (startDelay > 0) await sleep(startDelay);   // silent pre-roll (no countdown overlay)
+
+    messages.innerHTML = '';
+    inputText.textContent = '';
+    prevCh = undefined;
+    updatePlaceholder();
+
+    const syncMode = $('sync-mode').value;
+    const audioReady = !!audioEl.src && audioEl.duration && !isNaN(audioEl.duration);
+    if (syncMode === 'rate' && audioReady) {
+      applyRateMatch();
+      try {
+        audioEl.currentTime = 0;
+        await audioEl.play();
+      } catch (e) { console.warn('audio play blocked:', e); }
+    }
+
+    const tokens = parseScript($('script').value);
+    const baseS = settings();
+
+    // Build list of all message-like tokens for tts-random pool.
+    const contactName = ($('r-name')?.value || '').trim();
+    const allMessages = [];
+    for (const tt of tokens) {
+      if (tt.type === 'recv') allMessages.push({ from: contactName, text: tt.text });
+      else if (tt.type === 'send') allMessages.push({ from: 'Me', text: '' /* filled at send time */ });
+    }
+
+    let scaledS = baseS;          // currently-active typing settings
+    let lastBubble = null;        // most recent bubble (for tapbacks)
+    let lastSent = null;          // most recent sent bubble (for receipts)
+
+    for (let tIdx = 0; tIdx < tokens.length; tIdx++) {
+      if (abortFlag) break;
+      const t = tokens[tIdx];
+      const s = scaledS;
+
+      if (t.type === 'text') {
+        await sleep(charDelay(t.char, prevCh, scaledS));
+        if (abortFlag) break;
+        appendChar(t.char);
+        prevCh = t.char;
+      }
+      else if (t.type === 'pause') {
+        await sleep(t.ms);
+      }
+      else if (t.type === 'typo') {
+        const typoPause = +$('ev-typo-pause').value;
+        const bsMs = +$('ev-bs-ms').value;
+        for (const c of t.wrong) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+          prevCh = c;
+        }
+        await sleep(typoPause + Math.random() * typoPause * 1.5);
+        for (let k = 0; k < t.wrong.length; k++) {
+          if (abortFlag) break;
+          await sleep(bsMs + Math.random() * bsMs * 0.6);
+          backspaceChar();
+          prevCh = inputText.textContent.slice(-1) || undefined;
+        }
+        await sleep(bsMs * 3 + Math.random() * bsMs * 5);
+        for (const c of t.right) {
+          if (abortFlag) break;
+          await sleep(charDelay(c, prevCh, s));
+          appendChar(c);
+          prevCh = c;
+        }
+      }
+      else if (t.type === 'send') {
+        const text = inputText.textContent;
+        if (text.length > 0) {
+          inputText.textContent = '';
+          updatePlaceholder();
+          lastBubble = lastSent = addBubble(text, 'sent');
+          Sound.send();
+          scaledS = baseS;
+          prevCh = undefined;
+          await sleep(+$('ev-send-pause').value);
+        }
+      }
+      else if (t.type === 'recv') {
+        lastBubble = addBubble(t.text, 'received');
+        Sound.receive();
+        await sleep(+$('ev-recv-pause').value);
+      }
+      else if (t.type === 'react') {
+        if (lastBubble) addTapback(lastBubble, t.kind);
+        await sleep(+($('ev-recv-pause')?.value) || 600);
+      }
+      else if (t.type === 'receipt') {
+        addReceipt(lastSent, t.kind);
+        await sleep(220);
+      }
+      else if (t.type === 'typing') {
+        const ind = addTypingIndicator();
+        await sleep(t.ms);
+        ind.classList.remove('appear');
+        await sleep(+$('ev-typing-fade').value);
+        ind.remove();
+      }
+      else if (t.type === 'img') {
+        const result = addImageBubble(t.indices, t.kind, t.caption);
+        if (result) {
+          lastBubble = result; if (t.kind === 'sent') lastSent = result;
+          if (t.kind === 'sent') Sound.send(); else Sound.receive();
+          await sleep(+$('ev-img-pause').value);
+        }
+      }
+      else if (t.type === 'vid') {
+        const result = addVideoBubble(t.index, t.kind, t.caption);
+        if (result) {
+          lastBubble = result; if (t.kind === 'sent') lastSent = result;
+          if (t.kind === 'sent') Sound.send(); else Sound.receive();
+          await sleep(+$('ev-img-pause').value);
+        }
+      }
+      else if (t.type === 'notif') {
+        showNotification(t.name, t.message, t.imgIndex);
+        Sound.notif();
+        setTimeout(() => hideNotification(), +$('notif-hold-ms').value);
+        await sleep(+$('ev-notif-pause').value);
+      }
+      else if (t.type === 'kb') {
+        if (t.action === 'hide') keyboardEl.classList.add('hidden');
+        else keyboardEl.classList.remove('hidden');
+        $('show-keyboard').checked = !keyboardEl.classList.contains('hidden');
+        await sleep(+$('ev-kb-pause').value);
+      }
+    }
+
+    if (audioEl.src) audioEl.pause();
+    stopBgm();
+    const naturalEnd = !abortFlag;
+    playing = false;
+    // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+    // (present/render/audiocap) does one take — refresh the source for a fresh take.
+    if (naturalEnd && !(window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash))) setTimeout(() => { if (!abortFlag) play(); }, 800);
+  }
+
+  async function playSrtScript() {
+    if (!SrtScript.cues || !SrtScript.cues.length) return;
+    const fill = (+(document.getElementById('srt-script-fill')?.value) || 92) / 100;
+    const side = document.getElementById('srt-script-side')?.value || 'received';
+    const messagesEl = document.getElementById('messages');
+    if (messagesEl) messagesEl.innerHTML = '';
+    if (typeof inputText !== 'undefined' && inputText) { inputText.textContent = ''; updatePlaceholder(); }
+    Sound.resume && Sound.resume();
+    audioState.playStartWall = performance.now();
+    startBgm && startBgm();
+
+    const t0 = performance.now();
+    for (let i = 0; i < SrtScript.cues.length; i++) {
+      if (abortFlag) break;
+      const cue = SrtScript.cues[i];
+      const waitMs = cue.start * 1000 - (window.__srtElapsed ? window.__srtElapsed(t0) : (performance.now() - t0));
+      if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+      if (abortFlag) break;
+      const sideClass = (side === 'alternate') ? (i % 2 === 0 ? 'received' : 'sent') : side;
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble ' + sideClass;
+      if (messagesEl) messagesEl.appendChild(bubble);
+      requestAnimationFrame(() => {
+        bubble.classList.add('appear');
+        if (messagesEl) messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+      });
+      const winMs = Math.max(80, (cue.end - cue.start) * 1000 * fill);
+      const perChar = cue.text.length ? winMs / cue.text.length : 0;
+      const cueStartAt = performance.now();
+      for (let k = 0; k < cue.text.length; k++) {
+        if (abortFlag) break;
+        const elapsed = performance.now() - cueStartAt;
+        const drift = ((k + 1) * perChar) - elapsed;
+        if (drift > 0) await new Promise(r => setTimeout(r, drift));
+        bubble.textContent += cue.text[k];
+        if (messagesEl) messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+      }
+    }
+    if (audioEl && audioEl.src) audioEl.pause();
+    stopBgm && stopBgm();
+  }
+
+  function stop() {
+    abortFlag = true;
+    if (audioEl.src) audioEl.pause();
+    stopBgm();
+  }
+
+  $('start').addEventListener('click', play);
+  $('stop').addEventListener('click', stop);
+  $('reset').addEventListener('click', () => { stop(); reset(); });
+  $('hide').addEventListener('click', () => body.classList.toggle('hide-controls'));
+
+  document.addEventListener('keydown', e => {
+    const target = e.target;
+    const inField = target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT' || target.tagName === 'SELECT');
+    if (inField) return;
+
+    if (e.key === 'h' || e.key === 'H') {
+      body.classList.toggle('hide-controls');
+      e.preventDefault();
+    } else if (e.key === 'k' || e.key === 'K') {
+      keyboardEl.classList.toggle('hidden');
+      $('show-keyboard').checked = !keyboardEl.classList.contains('hidden');
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      if (playing) stop(); else play();
+      e.preventDefault();
+    } else if (e.key === 'Escape') {
+      stop();
+    }
+  });
+
+  // initial state
+  buildKeyboard();
+  refreshAvatar();
+  updatePlaceholder();
+
+  // ---------- Phone drag-resize (scale uniformly so phone shrinks/grows, not stretches) ----------
+  (() => {
+    const handle = $('resize-handle');
+    if (!handle) return;
+    let resizing = false, startX, startY, startScale;
+
+    handle.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      resizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startScale = (+$('phone-scale').value) / 100 || 1;
+      handle.classList.add('dragging');
+      try { handle.setPointerCapture(e.pointerId); } catch {}
+    });
+    document.addEventListener('pointermove', (e) => {
+      if (!resizing) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      // Average the two axes — drag toward bottom-right grows, top-left shrinks.
+      const delta = (dx + dy) / 2;
+      // 200px of drag ≈ 100% scale change
+      const newScale = Math.max(0.30, Math.min(2.50, startScale + delta / 200));
+      const pct = Math.round(newScale * 100);
+      $('phone-scale').value = pct;
+      $('phone-scale-val').textContent = pct + '%';
+      setVar('--screen-scale', newScale.toString());
+    });
+    document.addEventListener('pointerup', (e) => {
+      if (!resizing) return;
+      resizing = false;
+      handle.classList.remove('dragging');
+      try { handle.releasePointerCapture(e.pointerId); } catch {}
+    });
+  })();
+})();
+</script>
+<!-- ===== Universal OBS present mode (#present) — shared across sims ===== -->
+<style>
+  body.present { background: #000 !important; overflow: hidden !important; }
+  body.present, body.present * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  body.present *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  body.present #controls { display: none !important; }
+  body.present #stage { padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+  body.present .present-frame {
+    position: fixed !important; inset: 0 !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; min-height: 0 !important;
+    max-width: none !important; max-height: none !important;
+    margin: 0 !important; border: none !important; border-radius: 0 !important;
+    transform: none !important; box-shadow: none !important;
+    overflow: hidden !important;
+  }
+  body.present .present-frame .phone-screen {
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; margin: 0 !important; border: none !important;
+  }
+  body.present .frame-handle,
+  body.present .frame-size-readout,
+  body.present #hint, body.present #focus-banner,
+  body.present #resize-handle, body.present #controls-toggle,
+  body.present #drop-hint, body.present #rec-indicator,
+  body.present #stage-meta, body.present #stage-scale-info,
+  body.present #tt-drag-bar, body.present #tt-resize-grip, body.present #tt-size-pill,
+  body.present .tt-grip, body.present #controls-toggle { display: none !important; }
+  #obs-link-btn {
+    position: fixed; left: 12px; bottom: 12px; z-index: 99999;
+    background: #c2410c; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 12px; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.92;
+  }
+  #obs-link-btn:hover { opacity: 1; }
+  body.present #obs-link-btn { display: none !important; }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'sim:script:' + (location.pathname.split('/').pop() || 'sim');
+  var scriptEl = $('script');
+  function buildLink() {
+    var base = location.href.replace(/[#?].*$/, '');
+    var s = scriptEl ? scriptEl.value : '';
+    return base + '#present' + (s && s.trim() ? '&s=' + encodeURIComponent(s) : '');
+  }
+  function copyText(t) {
+    var ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); } catch (e) {} }
+  }
+  if (scriptEl) {
+    scriptEl.addEventListener('input', function () { try { localStorage.setItem(KEY, scriptEl.value); } catch (e) {} });
+  }
+  var params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (params.has('present')) {
+    var s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem(KEY); } catch (e) {} }
+    if (s && scriptEl) scriptEl.value = s;
+    var stage = $('stage');
+    var frame = (stage && stage.querySelector('#gmail-frame, #tt-frame, #frame, .phone-wrap')) || stage;
+    if (frame) frame.classList.add('present-frame');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('present', 'hide-controls');
+    setTimeout(function () {
+      var b = $('start') || $('btn-play');
+      if (b) b.click();
+    }, 1200);
+  } else {
+    var btn = document.createElement('button');
+    btn.id = 'obs-link-btn'; btn.type = 'button'; btn.textContent = '📋 OBS link';
+    btn.title = 'Copy a present-mode link (with your current script) to paste into an OBS Browser Source';
+    btn.addEventListener('click', function () {
+      copyText(buildLink());
+      var t = btn.textContent; btn.textContent = '✓ Copied!';
+      setTimeout(function () { btn.textContent = t; }, 1600);
+    });
+    document.body.appendChild(btn);
+  }
+})();
+</script>
+</body>
+</html>

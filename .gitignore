@@ -1,0 +1,30 @@
+# Build artifacts (rebuilt by `node vercel-build.js` / `npm run build`)
+dist/
+hub.html
+
+# Heavy local media / recording inputs & outputs — not part of the app
+raw/
+srt/
+*.mp4
+*.mp3
+*.webm
+*.mkv
+*.mov
+*.m4a
+*.wav
+
+# Screenshots & stray images (a journal doodle.png is allowed below)
+*.png
+*.jpg
+*.jpeg
+!doodle.png
+!doodle.jpg
+!doodle.jpeg
+
+# The Remotion render project is a separate tool with its own deps
+template/
+
+# Tooling / local-only
+node_modules/
+.claude/
+.vercel/

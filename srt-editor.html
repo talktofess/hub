@@ -1,0 +1,1203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SRT Editor</title>
+<style>
+  :root {
+    --bg-page:        #0e0f12;
+    --bg-panel:       #15161a;
+    --bg-row:         #1a1b1f;
+    --bg-row-sel:     #1a1e2e;
+    --bg-input:       #0e0f12;
+    --border:         #2a2c33;
+    --border-strong:  #3a3f4c;
+    --text:           #ececf1;
+    --text-dim:       #c4c6cd;
+    --text-mute:      #8a8d96;
+    --accent:         #4a6cf7;
+    --accent-hi:      #5b7afa;
+    --danger:         #5a2a2a;
+    --danger-hi:      #6a3535;
+    --good:           #6fcf2c;
+    --mono:           "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg-page);
+    color: var(--text-dim);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ---------- Top toolbar ---------- */
+  #toolbar {
+    flex: 0 0 auto;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  #toolbar h1 {
+    font-size: 13px;
+    margin: 0 12px 0 0;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  #toolbar .group {
+    display: flex; gap: 4px; align-items: center;
+    padding: 0 6px; border-right: 1px solid var(--border);
+  }
+  #toolbar .group:last-child { border-right: none; }
+  #toolbar button, #toolbar label.fakebtn {
+    background: #2b2f3a; color: var(--text);
+    border: 1px solid var(--border-strong); border-radius: 6px;
+    padding: 6px 10px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  #toolbar button:hover, #toolbar label.fakebtn:hover { background: #353a47; }
+  #toolbar button.primary { background: var(--accent); border-color: var(--accent); }
+  #toolbar button.primary:hover { background: var(--accent-hi); }
+  #toolbar button.danger { background: var(--danger); border-color: var(--danger-hi); }
+  #toolbar button.ghost { background: transparent; border-color: var(--border); color: var(--text-mute); }
+  #toolbar input[type="number"], #toolbar input[type="text"] {
+    background: var(--bg-input); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 7px; font-size: 12px; font-family: inherit;
+    width: 86px;
+  }
+  #toolbar input[type="file"] { display: none; }
+  #toolbar .stat {
+    font-size: 11px; color: var(--text-mute);
+    font-family: var(--mono);
+  }
+  #toolbar .stat b { color: var(--text); font-weight: 600; }
+
+  /* ---------- Main split ---------- */
+  #split {
+    flex: 1 1 auto;
+    display: flex;
+    min-height: 0;
+  }
+  #left {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: auto;
+    padding: 12px 14px;
+  }
+  #right {
+    flex: 0 0 360px;
+    background: var(--bg-panel);
+    border-left: 1px solid var(--border);
+    padding: 12px 14px;
+    overflow: auto;
+  }
+  #right h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+    margin: 14px 0 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 3px;
+  }
+  #right h2:first-child { margin-top: 0; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+  .row label { flex: 1; color: var(--text-dim); font-size: 12px; }
+  .row input[type="number"], .row input[type="text"], .row select {
+    width: 130px; background: var(--bg-input); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 7px; font-size: 12px; font-family: inherit;
+  }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="checkbox"] { accent-color: #6b8fff; }
+  .row .val { width: 56px; text-align: right; color: var(--text-mute); font-variant-numeric: tabular-nums; font-size: 11px; }
+  .row button {
+    background: #2b2f3a; color: var(--text);
+    border: 1px solid var(--border-strong); border-radius: 6px;
+    padding: 5px 9px; font-size: 11px; cursor: pointer;
+    font-family: inherit;
+  }
+  .row button:hover { background: #353a47; }
+
+  /* ---------- Cue rows ---------- */
+  .cue {
+    background: var(--bg-row);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 9px;
+    margin-bottom: 8px;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: border-color 120ms ease, background 120ms ease;
+  }
+  .cue.selected { border-color: var(--accent); background: var(--bg-row-sel); }
+  .cue.playing { border-color: var(--good); box-shadow: 0 0 0 1px var(--good); }
+  .cue .head {
+    display: flex; gap: 6px; align-items: center; font-size: 11px;
+  }
+  .cue .head .idx {
+    flex: 0 0 32px; color: var(--accent); font-weight: 700;
+    font-family: var(--mono); cursor: grab; text-align: center;
+    background: transparent; border: none; padding: 3px 0;
+  }
+  .cue .head .idx:active { cursor: grabbing; }
+  .cue .head input[type="text"].t {
+    flex: 0 0 100px; background: var(--bg-input); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 6px; font: 11px var(--mono);
+  }
+  .cue .head input[type="text"].t.invalid { border-color: #c44; }
+  .cue .head .arrow { color: var(--text-mute); font-size: 11px; }
+  .cue .head input.dur {
+    flex: 0 0 70px; background: var(--bg-input); color: var(--text-mute);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 6px; font: 11px var(--mono); text-align: right;
+  }
+  .cue .head .gap { flex: 1; }
+  .cue .head button {
+    flex: 0 0 auto; padding: 3px 8px; font-size: 11px;
+    background: #2b2f3a; color: var(--text-dim);
+    border: 1px solid var(--border-strong); border-radius: 4px; cursor: pointer;
+  }
+  .cue .head button.del { background: var(--danger); border-color: var(--danger-hi); color: #f5cfcf; }
+  .cue .head button:hover { background: #353a47; }
+  .cue .head button.del:hover { background: #6e3737; }
+  .cue textarea {
+    background: var(--bg-input); color: var(--text);
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 8px; font: 13px var(--mono);
+    resize: vertical; min-height: 36px; max-height: 240px;
+    line-height: 1.45;
+  }
+  .cue .meta {
+    display: flex; gap: 10px; align-items: center; font-size: 11px;
+    color: var(--text-mute); font-family: var(--mono);
+  }
+  .cue .meta .chip { background: #0e0f12; padding: 2px 7px; border-radius: 10px; border: 1px solid var(--border); }
+  .cue .meta .chip.warn { color: #ffc857; border-color: #5a4a20; }
+
+  /* ---------- Empty state ---------- */
+  #empty {
+    color: var(--text-mute); font-size: 13px;
+    text-align: center; padding: 60px 20px; line-height: 1.7;
+  }
+  #empty code { background: #1a1b1f; padding: 1px 6px; border-radius: 4px; color: #f0c674; font-family: var(--mono); font-size: 12px; }
+
+  /* ---------- Playback / audio ---------- */
+  #audio-controls {
+    display: flex; gap: 8px; align-items: center;
+    margin: 6px 0;
+  }
+  #audio-controls audio { flex: 1; max-width: 100%; }
+  #playhead {
+    height: 16px; background: var(--bg-input);
+    border-radius: 4px; position: relative;
+    border: 1px solid var(--border); cursor: pointer;
+    margin: 4px 0;
+  }
+  #playhead .cursor {
+    position: absolute; top: -2px; bottom: -2px; width: 2px;
+    background: #ff7a8a; pointer-events: none;
+  }
+  #playhead .cue-mark {
+    position: absolute; top: 0; bottom: 0;
+    background: rgba(74, 108, 247, 0.25);
+    border-left: 1px solid var(--accent); border-right: 1px solid var(--accent);
+  }
+  #playhead .cue-mark.active { background: rgba(111, 207, 44, 0.3); }
+
+  /* ---------- Modal preview ---------- */
+  #preview-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  #preview-modal.active { display: flex; }
+  #preview-box {
+    width: min(800px, 96vw);
+    height: min(500px, 80vh);
+    background: #000;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 30px;
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 22px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    position: relative;
+    overflow: auto;
+  }
+  #preview-close {
+    position: absolute; top: 8px; right: 12px;
+    background: transparent; border: none; color: #fff;
+    font-size: 22px; cursor: pointer;
+  }
+  #preview-time {
+    position: absolute; bottom: 8px; right: 12px;
+    color: var(--text-mute); font-size: 11px;
+  }
+
+  /* ---------- Drag visual ---------- */
+  .cue.drag-over { border-top: 2px solid var(--accent); }
+
+  /* ---------- Mobile ---------- */
+  @media (max-width: 900px) {
+    #split { flex-direction: column; }
+    #right { flex: 0 0 auto; border-left: none; border-top: 1px solid var(--border); }
+    #toolbar { padding: 8px 10px; gap: 6px; }
+    #toolbar h1 { width: 100%; margin: 0 0 4px; }
+    #toolbar .group { padding: 0 4px; }
+    #toolbar button { padding: 6px 8px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<header id="toolbar">
+  <h1>SRT Editor</h1>
+
+  <div class="group">
+    <label class="fakebtn" for="file-load">📂 Load…</label>
+    <input type="file" id="file-load" accept=".srt,.vtt,.json,.txt,text/plain">
+    <button id="file-new" class="ghost" title="New empty document">＋ new</button>
+  </div>
+
+  <div class="group">
+    <button id="btn-add">＋ cue</button>
+    <button id="btn-insert" title="Insert below selected">↳ insert</button>
+    <button id="btn-from-text" title="Convert raw text below into cues">from text…</button>
+    <button id="btn-sort" title="Sort by start time + renumber">↕ sort</button>
+  </div>
+
+  <div class="group">
+    <span class="stat">shift</span>
+    <input type="number" id="op-shift" value="0" step="0.1">
+    <button id="op-shift-go">apply</button>
+    <span class="stat">×</span>
+    <input type="number" id="op-scale" value="1" step="0.05" min="0.05">
+    <button id="op-scale-go">apply</button>
+  </div>
+
+  <div class="group">
+    <button id="btn-preview" title="Live preview of typing">▶ preview</button>
+    <button id="btn-audio-load-trigger" title="Load audio for tap-to-mark + sync">🎵 audio</button>
+    <input type="file" id="audio-file" accept="audio/*">
+  </div>
+
+  <div class="group">
+    <input type="text" id="file-name" value="script" placeholder="filename" style="width:140px;">
+    <button id="btn-export-srt" class="primary">↓ .srt</button>
+    <button id="btn-export-vtt">↓ .vtt</button>
+    <button id="btn-export-json">↓ .json</button>
+  </div>
+
+  <div class="group">
+    <span class="stat"><b id="stat-count">0</b> cues</span>
+    <span class="stat"><b id="stat-total">0:00.000</b> total</span>
+    <span class="stat" id="stat-warn"></span>
+  </div>
+</header>
+
+<div id="split">
+  <main id="left">
+    <div id="audio-controls" style="display:none;">
+      <audio id="audio-el" controls preload="auto"></audio>
+      <button id="audio-clear" class="ghost" title="clear audio">×</button>
+    </div>
+    <div id="playhead" style="display:none;"><div class="cursor"></div></div>
+
+    <div id="empty">
+      <div style="font-size:18px;color:var(--text);margin-bottom:10px;">Nothing loaded yet.</div>
+      Load a <code>.srt</code> / <code>.vtt</code> / <code>.json</code> / <code>.txt</code>, or hit <b>＋ cue</b> to start blank,<br>
+      or use <b>from text…</b> to paste lyrics and auto-split them into timed cues.
+    </div>
+
+    <div id="cue-list"></div>
+  </main>
+
+  <aside id="right">
+    <h2>Add / generation</h2>
+    <div class="row">
+      <label>Default cue length (s)</label>
+      <input type="number" id="def-len" value="3" min="0.1" max="60" step="0.1">
+    </div>
+    <div class="row">
+      <label>Gap between new cues (s)</label>
+      <input type="number" id="def-gap" value="0" min="0" max="60" step="0.05">
+    </div>
+
+    <h2>From-text splitter</h2>
+    <div style="font-size:11px;color:var(--text-mute);line-height:1.5;margin-bottom:6px;">
+      Paste lyrics / script, choose how to split, then click <b>build cues</b>.
+    </div>
+    <div class="row">
+      <label>Split by</label>
+      <select id="split-mode">
+        <option value="line" selected>line</option>
+        <option value="sentence">sentence (. ! ?)</option>
+        <option value="words">N words per cue</option>
+        <option value="chars">N chars per cue</option>
+      </select>
+    </div>
+    <div class="row" id="row-split-n" style="display:none;">
+      <label>N</label>
+      <input type="number" id="split-n" value="8" min="1" max="200" step="1">
+    </div>
+    <div class="row">
+      <label>Start at (s)</label>
+      <input type="number" id="split-start" value="0" min="0" step="0.1">
+    </div>
+    <div class="row">
+      <label>Pace</label>
+      <select id="split-pace">
+        <option value="fixed" selected>fixed length per cue</option>
+        <option value="audio">fit to audio duration</option>
+        <option value="chars">scale by char count</option>
+      </select>
+    </div>
+    <textarea id="split-src" placeholder="Paste lyrics here…
+One line per cue (default).
+You can also paste a whole paragraph and pick 'sentence' or N words/chars."
+      style="width:100%;height:160px;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:7px 9px;font:12px var(--mono);resize:vertical;"></textarea>
+    <div class="row" style="margin-top:6px;">
+      <label>Replace existing</label>
+      <input type="checkbox" id="split-replace">
+      <button id="split-go" class="primary" style="background:var(--accent);border-color:var(--accent);color:#fff;padding:6px 12px;font-size:12px;">build cues</button>
+    </div>
+
+    <h2>Audio sync</h2>
+    <div style="font-size:11px;color:var(--text-mute);line-height:1.5;margin-bottom:6px;">
+      Load an audio file. While it plays, <b>Tap</b> sets the next cue's start at the current playhead.
+    </div>
+    <div class="row">
+      <label>Hotkey: <b>T</b> = tap start, <b>E</b> = tap end</label>
+    </div>
+    <div class="row">
+      <label>Snap to (s)</label>
+      <input type="number" id="snap" value="0" min="0" step="0.01">
+    </div>
+    <div class="row">
+      <label>Selected cue (start at playhead)</label>
+      <button id="set-start">set ◁</button>
+      <button id="set-end">set ▷</button>
+    </div>
+
+    <h2>Validation</h2>
+    <div style="font-size:11px;color:var(--text-mute);line-height:1.5;">
+      Live checks: <span style="color:#ffc857;">overlaps</span>, <span style="color:#ff7a8a;">end &lt; start</span>, <span style="color:#888;">gaps</span>. Hit <b>↕ sort</b> to reorder.
+    </div>
+    <div class="row">
+      <label>Auto-fix overlaps on export</label>
+      <input type="checkbox" id="autofix" checked>
+    </div>
+
+    <h2>Save / load</h2>
+    <div class="row">
+      <label>Auto-save to browser</label>
+      <input type="checkbox" id="autosave" checked>
+    </div>
+    <div class="row">
+      <button id="ls-save">save snapshot</button>
+      <button id="ls-load">restore</button>
+      <button id="ls-clear">clear ls</button>
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Snapshot info</label>
+      <span id="ls-info" style="color:var(--text-mute);flex:1;text-align:right;font-family:var(--mono);">—</span>
+    </div>
+
+    <h2>Help</h2>
+    <div style="font-size:11px;color:var(--text-mute);line-height:1.6;">
+      Times accept <code>seconds</code>, <code>mm:ss.mmm</code>, or <code>HH:MM:SS,mmm</code>.<br>
+      Drag the <b>#</b> handle to reorder.<br>
+      Use <b>Tab</b> in a cue's text to type a literal tab (no focus change).<br>
+      The SRT export auto-renumbers cues 1..N.
+    </div>
+  </aside>
+</div>
+
+<div id="preview-modal">
+  <div id="preview-box">
+    <button id="preview-close">×</button>
+    <div id="preview-text"></div>
+    <div id="preview-time">0:00 / 0:00</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+
+  /* ============ STATE ============ */
+  const state = {
+    cues: [],          // [{ id, start, end, text }]
+    selectedId: null,
+    nextId: 1,
+    audioUrl: null,
+    audioDuration: 0,
+    lastDirty: 0,
+  };
+  const LS_KEY = 'srt-editor-snapshot';
+
+  /* ============ TIME UTIL ============ */
+  function parseTime(s) {
+    if (typeof s === 'number') return s;
+    if (!s) return 0;
+    s = String(s).trim();
+    // HH:MM:SS,mmm  or  HH:MM:SS.mmm
+    let m = s.match(/^(\d+):(\d+):(\d+)[,.](\d+)$/);
+    if (m) return +m[1]*3600 + +m[2]*60 + +m[3] + (+m[4]) / Math.pow(10, m[4].length);
+    // MM:SS.mmm  or  MM:SS,mmm  or  MM:SS
+    m = s.match(/^(\d+):(\d+)(?:[,.](\d+))?$/);
+    if (m) return +m[1]*60 + +m[2] + (m[3] ? (+m[3]) / Math.pow(10, m[3].length) : 0);
+    // bare seconds
+    const f = parseFloat(s);
+    return isFinite(f) ? f : 0;
+  }
+  function fmtSrt(t) {
+    if (!isFinite(t) || t < 0) t = 0;
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = Math.floor(t % 60);
+    const ms = Math.round((t - Math.floor(t)) * 1000);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+  }
+  function fmtVtt(t) { return fmtSrt(t).replace(',', '.'); }
+  function fmtShort(t) {
+    if (!isFinite(t) || t < 0) t = 0;
+    const m = Math.floor(t / 60);
+    const s = (t - m * 60);
+    return `${m}:${s.toFixed(3).padStart(6, '0')}`;
+  }
+
+  /* ============ PARSERS ============ */
+  function parseSrt(text) {
+    text = text.replace(/^﻿/, '').replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+    const out = [];
+    const blocks = text.replace(/\r/g, '').split(/\n\s*\n/);
+    for (const block of blocks) {
+      const lines = block.trim().split('\n');
+      if (!lines.length) continue;
+      const ti = lines.findIndex(l => l.includes('-->'));
+      if (ti < 0) continue;
+      const m = lines[ti].split('-->').map(x => x.trim());
+      if (m.length < 2) continue;
+      const start = parseTime(m[0]);
+      const end   = parseTime(m[1]);
+      const txt   = lines.slice(ti + 1).join('\n').trim();
+      out.push({ id: state.nextId++, start, end, text: txt });
+    }
+    return out;
+  }
+  function parseJson(text) {
+    const j = JSON.parse(text);
+    const arr = Array.isArray(j) ? j : (j.cues || j.segments || j.words || []);
+    return arr.map(x => ({
+      id: state.nextId++,
+      start: +(x.start ?? x.startTime ?? 0),
+      end:   +(x.end   ?? x.endTime   ?? (+(x.start || 0) + 1)),
+      text:  String(x.text ?? x.word ?? x.body ?? ''),
+    }));
+  }
+  function parseAny(text, filename) {
+    const lower = (filename || '').toLowerCase();
+    if (lower.endsWith('.json') || /^\s*[\[{]/.test(text)) {
+      try { return parseJson(text); } catch {}
+    }
+    return parseSrt(text);
+  }
+
+  /* ============ EXPORTERS ============ */
+  function exportSrt(cues, autofix) {
+    const list = autofix ? fixOverlaps(cues.slice()) : cues.slice();
+    list.sort((a, b) => a.start - b.start);
+    let out = '';
+    list.forEach((c, i) => {
+      out += `${i + 1}\n${fmtSrt(c.start)} --> ${fmtSrt(c.end)}\n${c.text || ''}\n\n`;
+    });
+    return out.trimEnd() + '\n';
+  }
+  function exportVtt(cues, autofix) {
+    const list = autofix ? fixOverlaps(cues.slice()) : cues.slice();
+    list.sort((a, b) => a.start - b.start);
+    let out = 'WEBVTT\n\n';
+    list.forEach((c, i) => {
+      out += `${i + 1}\n${fmtVtt(c.start)} --> ${fmtVtt(c.end)}\n${c.text || ''}\n\n`;
+    });
+    return out.trimEnd() + '\n';
+  }
+  function exportJson(cues, autofix) {
+    const list = (autofix ? fixOverlaps(cues.slice()) : cues.slice())
+      .slice()
+      .sort((a, b) => a.start - b.start)
+      .map(c => ({ start: +c.start.toFixed(3), end: +c.end.toFixed(3), text: c.text || '' }));
+    return JSON.stringify({ cues: list }, null, 2);
+  }
+  function fixOverlaps(list) {
+    list.sort((a, b) => a.start - b.start);
+    for (let i = 0; i < list.length; i++) {
+      const c = list[i];
+      if (c.end <= c.start) c.end = c.start + 0.1;
+      if (i > 0) {
+        const prev = list[i - 1];
+        if (c.start < prev.end) c.start = prev.end + 0.001;
+        if (c.end <= c.start) c.end = c.start + 0.1;
+      }
+    }
+    return list;
+  }
+
+  /* ============ DOM RENDER ============ */
+  function render() {
+    const list = $('cue-list');
+    const empty = $('empty');
+    list.innerHTML = '';
+    if (state.cues.length === 0) {
+      empty.style.display = '';
+    } else {
+      empty.style.display = 'none';
+      const frag = document.createDocumentFragment();
+      state.cues.forEach((c, i) => frag.appendChild(renderCue(c, i)));
+      list.appendChild(frag);
+    }
+    $('stat-count').textContent = state.cues.length;
+    let total = 0;
+    for (const c of state.cues) total = Math.max(total, c.end);
+    $('stat-total').textContent = fmtShort(total);
+    updateValidationStatus();
+    drawPlayheadMarks();
+    scheduleAutosave();
+  }
+
+  function renderCue(c, idx) {
+    const el = document.createElement('div');
+    el.className = 'cue' + (c.id === state.selectedId ? ' selected' : '');
+    el.dataset.id = c.id;
+    el.draggable = false; // only the # handle drags
+
+    const head = document.createElement('div');
+    head.className = 'head';
+
+    const idx_btn = document.createElement('div');
+    idx_btn.className = 'idx';
+    idx_btn.textContent = String(idx + 1).padStart(3, '0');
+    idx_btn.draggable = true;
+    idx_btn.title = 'drag to reorder';
+    bindDrag(idx_btn, el, c.id);
+    head.appendChild(idx_btn);
+
+    const ts = document.createElement('input');
+    ts.type = 'text'; ts.className = 't'; ts.value = fmtSrt(c.start);
+    ts.addEventListener('change', () => {
+      const v = parseTime(ts.value);
+      if (!isFinite(v)) { ts.classList.add('invalid'); return; }
+      ts.classList.remove('invalid');
+      c.start = v;
+      ts.value = fmtSrt(v);
+      updateMeta(el, c);
+      render();
+    });
+    head.appendChild(ts);
+
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow'; arrow.textContent = '→';
+    head.appendChild(arrow);
+
+    const te = document.createElement('input');
+    te.type = 'text'; te.className = 't'; te.value = fmtSrt(c.end);
+    te.addEventListener('change', () => {
+      const v = parseTime(te.value);
+      if (!isFinite(v)) { te.classList.add('invalid'); return; }
+      te.classList.remove('invalid');
+      c.end = v;
+      te.value = fmtSrt(v);
+      updateMeta(el, c);
+      render();
+    });
+    head.appendChild(te);
+
+    const dur = document.createElement('input');
+    dur.type = 'text'; dur.className = 'dur';
+    dur.value = (c.end - c.start).toFixed(3) + 's';
+    dur.title = 'duration (editing changes end)';
+    dur.addEventListener('change', () => {
+      const s = parseFloat(dur.value);
+      if (!isFinite(s) || s <= 0) { dur.value = (c.end - c.start).toFixed(3) + 's'; return; }
+      c.end = c.start + s;
+      te.value = fmtSrt(c.end);
+      dur.value = s.toFixed(3) + 's';
+      updateMeta(el, c);
+      render();
+    });
+    head.appendChild(dur);
+
+    const gap = document.createElement('div'); gap.className = 'gap'; head.appendChild(gap);
+
+    const playBtn = document.createElement('button');
+    playBtn.textContent = '▶';
+    playBtn.title = 'jump audio here';
+    playBtn.addEventListener('click', () => { if ($('audio-el').src) { $('audio-el').currentTime = c.start; $('audio-el').play(); } });
+    head.appendChild(playBtn);
+
+    const upBtn = document.createElement('button'); upBtn.textContent = '↑'; upBtn.title = 'move up';
+    upBtn.addEventListener('click', () => moveCue(c.id, -1));
+    head.appendChild(upBtn);
+
+    const dnBtn = document.createElement('button'); dnBtn.textContent = '↓'; dnBtn.title = 'move down';
+    dnBtn.addEventListener('click', () => moveCue(c.id, +1));
+    head.appendChild(dnBtn);
+
+    const dupBtn = document.createElement('button'); dupBtn.textContent = '⎘'; dupBtn.title = 'duplicate';
+    dupBtn.addEventListener('click', () => duplicateCue(c.id));
+    head.appendChild(dupBtn);
+
+    const delBtn = document.createElement('button'); delBtn.className = 'del'; delBtn.textContent = '×'; delBtn.title = 'delete';
+    delBtn.addEventListener('click', () => deleteCue(c.id));
+    head.appendChild(delBtn);
+
+    el.appendChild(head);
+
+    const ta = document.createElement('textarea');
+    ta.value = c.text || '';
+    ta.spellcheck = true;
+    ta.rows = Math.min(4, Math.max(1, (ta.value.match(/\n/g) || []).length + 1));
+    ta.addEventListener('input', () => {
+      c.text = ta.value;
+      updateMeta(el, c);
+      scheduleAutosave();
+    });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Tab') { e.preventDefault(); insertAtCursor(ta, '\t'); c.text = ta.value; }
+    });
+    ta.addEventListener('focus', () => selectCue(c.id));
+    el.appendChild(ta);
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    el.appendChild(meta);
+    updateMeta(el, c);
+
+    el.addEventListener('click', e => {
+      if (e.target.closest('button, input, textarea')) return;
+      selectCue(c.id);
+    });
+
+    return el;
+  }
+
+  function updateMeta(el, c) {
+    const meta = el.querySelector('.meta');
+    if (!meta) return;
+    meta.innerHTML = '';
+    const chip = (txt, warn) => {
+      const s = document.createElement('span');
+      s.className = 'chip' + (warn ? ' warn' : '');
+      s.textContent = txt;
+      meta.appendChild(s);
+    };
+    const dur = c.end - c.start;
+    const chars = (c.text || '').length;
+    chip(`${chars} ch`);
+    chip(`${dur.toFixed(3)}s`);
+    chip(`${(chars > 0 ? (dur * 1000 / chars).toFixed(0) : '∞')} ms/ch`);
+    if (dur <= 0) chip('end ≤ start', true);
+    // duration of textarea node
+    const dur_after = el.querySelector('input.dur');
+    if (dur_after) dur_after.value = dur.toFixed(3) + 's';
+  }
+
+  function insertAtCursor(ta, str) {
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    ta.value = ta.value.slice(0, s) + str + ta.value.slice(e);
+    ta.selectionStart = ta.selectionEnd = s + str.length;
+  }
+
+  /* ============ CRUD ============ */
+  function newCue(opts) {
+    const last = state.cues[state.cues.length - 1];
+    const defLen = parseFloat($('def-len').value) || 3;
+    const defGap = parseFloat($('def-gap').value) || 0;
+    const start = (opts && isFinite(opts.start)) ? opts.start : (last ? last.end + defGap : 0);
+    const end   = (opts && isFinite(opts.end))   ? opts.end   : start + defLen;
+    const c = { id: state.nextId++, start, end, text: (opts && opts.text) || '' };
+    return c;
+  }
+  function addCue(opts) {
+    const c = newCue(opts);
+    state.cues.push(c);
+    selectCue(c.id);
+    render();
+    return c;
+  }
+  function insertCueBelowSelected() {
+    const i = state.cues.findIndex(c => c.id === state.selectedId);
+    if (i < 0) return addCue();
+    const prev = state.cues[i];
+    const next = state.cues[i + 1];
+    const defLen = parseFloat($('def-len').value) || 3;
+    const start = prev.end;
+    const end = next ? Math.min(next.start, start + defLen) : start + defLen;
+    const c = newCue({ start, end });
+    state.cues.splice(i + 1, 0, c);
+    selectCue(c.id);
+    render();
+  }
+  function duplicateCue(id) {
+    const i = state.cues.findIndex(c => c.id === id);
+    if (i < 0) return;
+    const src = state.cues[i];
+    const dur = src.end - src.start;
+    const c = { id: state.nextId++, start: src.end, end: src.end + dur, text: src.text };
+    state.cues.splice(i + 1, 0, c);
+    selectCue(c.id);
+    render();
+  }
+  function deleteCue(id) {
+    state.cues = state.cues.filter(c => c.id !== id);
+    render();
+  }
+  function moveCue(id, dir) {
+    const i = state.cues.findIndex(c => c.id === id);
+    if (i < 0) return;
+    const j = i + dir;
+    if (j < 0 || j >= state.cues.length) return;
+    const tmp = state.cues[i]; state.cues[i] = state.cues[j]; state.cues[j] = tmp;
+    render();
+  }
+  function selectCue(id) {
+    state.selectedId = id;
+    for (const el of document.querySelectorAll('.cue')) {
+      el.classList.toggle('selected', +el.dataset.id === id);
+    }
+  }
+  function clearAll() {
+    state.cues = [];
+    state.selectedId = null;
+    render();
+  }
+
+  /* ============ OPS ============ */
+  function shiftAll(seconds) {
+    for (const c of state.cues) { c.start += seconds; c.end += seconds; }
+    render();
+  }
+  function scaleAll(factor) {
+    for (const c of state.cues) { c.start *= factor; c.end *= factor; }
+    render();
+  }
+  function sortByStart() {
+    state.cues.sort((a, b) => a.start - b.start);
+    render();
+  }
+  function fromTextBuild() {
+    const src = $('split-src').value;
+    const mode = $('split-mode').value;
+    const n = parseInt($('split-n').value, 10) || 8;
+    const startAt = parseFloat($('split-start').value) || 0;
+    const pace = $('split-pace').value;
+    const defLen = parseFloat($('def-len').value) || 3;
+    const defGap = parseFloat($('def-gap').value) || 0;
+    const replace = $('split-replace').checked;
+
+    if (!src.trim()) return alert('paste some text first');
+
+    let chunks = [];
+    if (mode === 'line') {
+      chunks = src.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    } else if (mode === 'sentence') {
+      chunks = src.split(/(?<=[.!?])\s+/).map(s => s.trim()).filter(Boolean);
+    } else if (mode === 'words') {
+      const words = src.split(/\s+/).filter(Boolean);
+      for (let i = 0; i < words.length; i += n) chunks.push(words.slice(i, i + n).join(' '));
+    } else if (mode === 'chars') {
+      for (let i = 0; i < src.length; i += n) chunks.push(src.slice(i, i + n));
+      chunks = chunks.map(s => s.trim()).filter(Boolean);
+    }
+
+    if (!chunks.length) return alert('text split produced no cues');
+
+    let endOfRange;
+    if (pace === 'audio' && state.audioDuration > 0) {
+      endOfRange = state.audioDuration;
+    } else {
+      endOfRange = startAt + chunks.length * (defLen + defGap);
+    }
+    const span = endOfRange - startAt;
+    let pos = startAt;
+    const newCues = [];
+    if (pace === 'chars') {
+      const total = chunks.reduce((s, c) => s + c.length, 0) || 1;
+      const perChar = span / total;
+      for (const text of chunks) {
+        const dur = Math.max(0.3, text.length * perChar);
+        newCues.push({ id: state.nextId++, start: pos, end: pos + dur - defGap, text });
+        pos += dur;
+      }
+    } else if (pace === 'audio') {
+      const each = span / chunks.length;
+      for (const text of chunks) {
+        newCues.push({ id: state.nextId++, start: pos, end: pos + each - defGap, text });
+        pos += each;
+      }
+    } else {
+      for (const text of chunks) {
+        newCues.push({ id: state.nextId++, start: pos, end: pos + defLen, text });
+        pos += defLen + defGap;
+      }
+    }
+    if (replace) state.cues = newCues;
+    else state.cues = state.cues.concat(newCues);
+    render();
+  }
+
+  function updateValidationStatus() {
+    let warn = '';
+    const sorted = state.cues.slice().sort((a, b) => a.start - b.start);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].start < sorted[i - 1].end - 1e-3) { warn = 'overlap'; break; }
+    }
+    for (const c of state.cues) {
+      if (c.end <= c.start) { warn = 'end ≤ start'; break; }
+    }
+    const el = $('stat-warn');
+    if (warn) { el.textContent = '⚠ ' + warn; el.style.color = '#ffc857'; }
+    else { el.textContent = '✓'; el.style.color = 'var(--good)'; }
+  }
+
+  /* ============ DRAG-AND-DROP ============ */
+  function bindDrag(handle, rowEl, id) {
+    handle.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', String(id));
+      e.dataTransfer.effectAllowed = 'move';
+      rowEl.style.opacity = '0.5';
+    });
+    handle.addEventListener('dragend', () => { rowEl.style.opacity = ''; });
+    rowEl.addEventListener('dragover', e => {
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      rowEl.classList.add('drag-over');
+    });
+    rowEl.addEventListener('dragleave', () => rowEl.classList.remove('drag-over'));
+    rowEl.addEventListener('drop', e => {
+      e.preventDefault(); rowEl.classList.remove('drag-over');
+      const src = +e.dataTransfer.getData('text/plain');
+      if (!src || src === id) return;
+      const fromIdx = state.cues.findIndex(c => c.id === src);
+      const toIdx = state.cues.findIndex(c => c.id === id);
+      if (fromIdx < 0 || toIdx < 0) return;
+      const [moved] = state.cues.splice(fromIdx, 1);
+      state.cues.splice(toIdx, 0, moved);
+      render();
+    });
+  }
+
+  /* ============ FILE I/O ============ */
+  function download(name, mime, content) {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
+  function safeName(base, ext) {
+    const n = (base || 'script').replace(/[^\w\-\.]+/g, '_');
+    return n + '.' + ext;
+  }
+  function loadFile(file) {
+    const r = new FileReader();
+    r.onload = e => {
+      try {
+        const cues = parseAny(e.target.result, file.name);
+        state.cues = cues;
+        state.selectedId = cues[0]?.id ?? null;
+        if (!$('file-name').value || $('file-name').value === 'script') {
+          $('file-name').value = file.name.replace(/\.(srt|vtt|json|txt)$/i, '');
+        }
+        render();
+      } catch (err) {
+        alert('parse failed: ' + err.message);
+      }
+    };
+    r.readAsText(file);
+  }
+
+  /* ============ AUDIO + PLAYHEAD ============ */
+  function loadAudio(file) {
+    if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
+    state.audioUrl = URL.createObjectURL(file);
+    const ae = $('audio-el');
+    ae.src = state.audioUrl;
+    $('audio-controls').style.display = '';
+    $('playhead').style.display = '';
+    ae.addEventListener('loadedmetadata', () => {
+      state.audioDuration = ae.duration || 0;
+      drawPlayheadMarks();
+    }, { once: true });
+    ae.addEventListener('timeupdate', () => {
+      const t = ae.currentTime;
+      const pct = state.audioDuration > 0 ? (t / state.audioDuration) : 0;
+      const ph = $('playhead');
+      ph.querySelector('.cursor').style.left = (pct * 100) + '%';
+      highlightActiveCue(t);
+      updatePreviewIfActive(t);
+    });
+  }
+  function clearAudio() {
+    if (state.audioUrl) URL.revokeObjectURL(state.audioUrl);
+    state.audioUrl = null;
+    state.audioDuration = 0;
+    $('audio-el').removeAttribute('src');
+    $('audio-controls').style.display = 'none';
+    $('playhead').style.display = 'none';
+  }
+  function drawPlayheadMarks() {
+    const ph = $('playhead');
+    if (!ph || state.audioDuration <= 0) return;
+    // wipe existing marks
+    for (const m of Array.from(ph.querySelectorAll('.cue-mark'))) m.remove();
+    for (const c of state.cues) {
+      const mark = document.createElement('div');
+      mark.className = 'cue-mark';
+      mark.style.left  = (Math.max(0, c.start) / state.audioDuration * 100) + '%';
+      mark.style.width = (Math.max(0, c.end - c.start) / state.audioDuration * 100) + '%';
+      mark.title = c.text;
+      mark.addEventListener('click', () => { $('audio-el').currentTime = c.start; selectCue(c.id); scrollToCue(c.id); });
+      ph.appendChild(mark);
+    }
+  }
+  function highlightActiveCue(t) {
+    let activeId = null;
+    for (const c of state.cues) if (t >= c.start && t < c.end) { activeId = c.id; break; }
+    for (const el of document.querySelectorAll('.cue')) {
+      el.classList.toggle('playing', +el.dataset.id === activeId);
+    }
+    const marks = document.querySelectorAll('#playhead .cue-mark');
+    for (const m of marks) m.classList.remove('active');
+  }
+  function scrollToCue(id) {
+    const el = document.querySelector('.cue[data-id="' + id + '"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  $('playhead').addEventListener('click', e => {
+    if (state.audioDuration <= 0) return;
+    const ph = $('playhead');
+    const r = ph.getBoundingClientRect();
+    const pct = (e.clientX - r.left) / r.width;
+    $('audio-el').currentTime = Math.max(0, Math.min(state.audioDuration, pct * state.audioDuration));
+  });
+
+  /* ============ TAP / HOTKEYS ============ */
+  function tapStartAtPlayhead() {
+    const ae = $('audio-el');
+    if (!ae.src) { alert('load an audio file first'); return; }
+    let t = ae.currentTime;
+    const snap = parseFloat($('snap').value) || 0;
+    if (snap > 0) t = Math.round(t / snap) * snap;
+    // create a new cue starting at t; if a cue exists ending at ~t, leave it
+    const defLen = parseFloat($('def-len').value) || 3;
+    const c = newCue({ start: t, end: t + defLen, text: '' });
+    state.cues.push(c);
+    selectCue(c.id);
+    render();
+    scrollToCue(c.id);
+  }
+  function tapEndAtPlayhead() {
+    const ae = $('audio-el');
+    if (!ae.src) { alert('load an audio file first'); return; }
+    let t = ae.currentTime;
+    const snap = parseFloat($('snap').value) || 0;
+    if (snap > 0) t = Math.round(t / snap) * snap;
+    const last = state.cues[state.cues.length - 1];
+    if (!last) return;
+    last.end = t;
+    render();
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === 't' || e.key === 'T') { tapStartAtPlayhead(); e.preventDefault(); }
+    else if (e.key === 'e' || e.key === 'E') { tapEndAtPlayhead(); e.preventDefault(); }
+    else if (e.key === 'Delete' && state.selectedId != null) { deleteCue(state.selectedId); }
+    else if (e.key === ' ' && $('audio-el').src) {
+      const ae = $('audio-el');
+      if (ae.paused) ae.play(); else ae.pause();
+      e.preventDefault();
+    }
+  });
+
+  /* ============ PREVIEW (typing) ============ */
+  let previewTimer = null;
+  function startPreview() {
+    if (!state.cues.length) return alert('nothing to preview');
+    $('preview-modal').classList.add('active');
+    const box = $('preview-text');
+    box.textContent = '';
+    const t0 = performance.now();
+    let i = 0;
+    const ae = $('audio-el');
+    if (ae.src) { ae.currentTime = state.cues[0].start; ae.play().catch(()=>{}); }
+    stopPreview();
+    function loop() {
+      const t = (ae.src) ? ae.currentTime : ((performance.now() - t0) / 1000);
+      $('preview-time').textContent = fmtShort(t) + (state.audioDuration ? ' / ' + fmtShort(state.audioDuration) : '');
+      // rebuild box content for cues up to t
+      let rebuilt = '';
+      for (const c of state.cues) {
+        if (t >= c.start) {
+          const span = c.end - c.start;
+          const within = Math.min(span, t - c.start);
+          const frac = span > 0 ? within / span : 1;
+          const chars = Math.max(0, Math.floor(c.text.length * frac));
+          rebuilt += c.text.slice(0, chars);
+          if (chars >= c.text.length) rebuilt += '\n';
+        }
+      }
+      box.textContent = rebuilt;
+      previewTimer = requestAnimationFrame(loop);
+    }
+    previewTimer = requestAnimationFrame(loop);
+  }
+  function stopPreview() {
+    if (previewTimer) { cancelAnimationFrame(previewTimer); previewTimer = null; }
+  }
+  function closePreview() {
+    stopPreview();
+    $('preview-modal').classList.remove('active');
+    const ae = $('audio-el'); try { ae.pause(); } catch {}
+  }
+  function updatePreviewIfActive(t) {
+    if (!$('preview-modal').classList.contains('active')) return;
+    // handled by raf loop using ae.currentTime
+  }
+
+  /* ============ LOCAL STORAGE ============ */
+  function lsSave() {
+    const snap = {
+      ts: Date.now(),
+      name: $('file-name').value || 'script',
+      cues: state.cues.map(c => ({ start: c.start, end: c.end, text: c.text })),
+    };
+    try { localStorage.setItem(LS_KEY, JSON.stringify(snap)); } catch {}
+    refreshLsInfo();
+  }
+  function lsLoad() {
+    try {
+      const snap = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      if (!snap || !Array.isArray(snap.cues)) return alert('no snapshot');
+      state.cues = snap.cues.map(c => ({ id: state.nextId++, start: c.start, end: c.end, text: c.text }));
+      $('file-name').value = snap.name || 'script';
+      render();
+    } catch { alert('snapshot corrupted'); }
+  }
+  function lsClear() {
+    try { localStorage.removeItem(LS_KEY); } catch {}
+    refreshLsInfo();
+  }
+  function refreshLsInfo() {
+    try {
+      const snap = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+      if (snap) {
+        const d = new Date(snap.ts);
+        $('ls-info').textContent = `${snap.cues.length} · ${d.toLocaleTimeString()}`;
+      } else $('ls-info').textContent = '—';
+    } catch { $('ls-info').textContent = '—'; }
+  }
+  function scheduleAutosave() {
+    if (!$('autosave')?.checked) return;
+    state.lastDirty = Date.now();
+    if (scheduleAutosave._t) clearTimeout(scheduleAutosave._t);
+    scheduleAutosave._t = setTimeout(lsSave, 800);
+  }
+
+  /* ============ WIRING ============ */
+  $('file-load').addEventListener('change', e => {
+    if (e.target.files[0]) loadFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('file-new').addEventListener('click', () => {
+    if (state.cues.length && !confirm('Discard current cues?')) return;
+    clearAll();
+    $('file-name').value = 'script';
+  });
+
+  $('btn-add').addEventListener('click', () => addCue());
+  $('btn-insert').addEventListener('click', insertCueBelowSelected);
+  $('btn-sort').addEventListener('click', sortByStart);
+  $('btn-from-text').addEventListener('click', () => { $('split-src').focus(); $('right').scrollTop = 200; });
+
+  $('op-shift-go').addEventListener('click', () => {
+    const v = parseFloat($('op-shift').value) || 0; if (v) shiftAll(v);
+  });
+  $('op-scale-go').addEventListener('click', () => {
+    const v = parseFloat($('op-scale').value); if (!isFinite(v) || v <= 0) return;
+    scaleAll(v);
+  });
+
+  $('btn-export-srt').addEventListener('click', () => {
+    download(safeName($('file-name').value, 'srt'), 'application/x-subrip', exportSrt(state.cues, $('autofix').checked));
+  });
+  $('btn-export-vtt').addEventListener('click', () => {
+    download(safeName($('file-name').value, 'vtt'), 'text/vtt', exportVtt(state.cues, $('autofix').checked));
+  });
+  $('btn-export-json').addEventListener('click', () => {
+    download(safeName($('file-name').value, 'json'), 'application/json', exportJson(state.cues, $('autofix').checked));
+  });
+
+  $('btn-audio-load-trigger').addEventListener('click', () => $('audio-file').click());
+  $('audio-file').addEventListener('change', e => {
+    if (e.target.files[0]) loadAudio(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('audio-clear').addEventListener('click', clearAudio);
+
+  $('set-start').addEventListener('click', () => {
+    const c = state.cues.find(x => x.id === state.selectedId); if (!c) return;
+    const ae = $('audio-el'); if (!ae.src) return;
+    c.start = ae.currentTime; render();
+  });
+  $('set-end').addEventListener('click', () => {
+    const c = state.cues.find(x => x.id === state.selectedId); if (!c) return;
+    const ae = $('audio-el'); if (!ae.src) return;
+    c.end = ae.currentTime; render();
+  });
+
+  $('btn-preview').addEventListener('click', startPreview);
+  $('preview-close').addEventListener('click', closePreview);
+  $('preview-modal').addEventListener('click', e => { if (e.target.id === 'preview-modal') closePreview(); });
+
+  $('split-mode').addEventListener('change', e => {
+    $('row-split-n').style.display = (e.target.value === 'words' || e.target.value === 'chars') ? '' : 'none';
+  });
+  $('split-go').addEventListener('click', fromTextBuild);
+
+  $('ls-save').addEventListener('click', lsSave);
+  $('ls-load').addEventListener('click', lsLoad);
+  $('ls-clear').addEventListener('click', lsClear);
+
+  // drag-drop file
+  document.addEventListener('dragover', e => { e.preventDefault(); });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    if (/^audio\//.test(f.type) || /\.(mp3|wav|m4a|ogg|flac)$/i.test(f.name)) loadAudio(f);
+    else loadFile(f);
+  });
+
+  // init
+  refreshLsInfo();
+  render();
+})();
+</script>
+</body>
+</html>

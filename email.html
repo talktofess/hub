@@ -1,0 +1,4294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Email Typer · Notes-as-Mail</title>
+<style>
+  :root {
+    /* Stage / Gmail surface */
+    --stage-bg: #f6f8fc;
+    --gmail-chrome: #ffffff;
+    --gmail-border: #e1e4ea;
+    --gmail-accent: #c2410c;
+    --gmail-text: #202124;
+    --gmail-muted: #5f6368;
+    --sidebar-bg: #f6f8fc;
+    --sidebar-active: #fce8e6;
+    --sidebar-width: 256px;
+    --gmail-header-h: 64px;
+    --gmail-header-pad-x: 16px;
+    --gmail-header-gap: 16px;
+    --gh-search-h: 48px;
+    --gh-search-bg: #eaf1fb;
+    --gh-search-radius: 8px;
+    --gh-icon-size: 40px;
+    --gh-avatar-size: 32px;
+    --inbox-toolbar-h: 48px;
+    --inbox-tabs-h: 48px;
+    --ib-tab-pad-x: 24px;
+    --ib-tab-fz: 14px;
+    --inbox-radius: 12px;
+    --compose-btn-radius: 16px;
+    --sb-item-h: 32px;
+    --sb-item-pad-l: 26px;
+    --sb-item-fz: 14px;
+    --email-row-h: 44px;
+    --email-row-pad-x: 16px;
+    --email-row-gap: 12px;
+    --email-row-fz: 14px;
+    --frame-w-default: 1100px;
+    --frame-h-default: 620px;
+    --frame-shadow-y: 18px;
+    --frame-shadow-blur: 50px;
+    --frame-shadow-alpha: 0.18;
+    --frame-radius: 6px;
+
+    /* Compose popup */
+    --compose-bg: #ffffff;
+    --compose-header: #404040;
+    --compose-text: #202124;
+    --compose-radius: 8px;
+    --compose-header-h: 40px;
+    --compose-header-fz: 13px;
+    --compose-field-fz: 13px;
+    --compose-field-pad-y: 8px;
+    --compose-field-pad-x: 16px;
+    --compose-body-pad: 16px;
+    --compose-line-h: 1.55;
+    --compose-footer-h: 56px;
+    --compose-send-bg: #0b57d0;
+    --compose-send-radius: 18px;
+    --prompt-font: "Google Sans", "Segoe UI", system-ui, sans-serif;
+    --prompt-size: 14px;
+    --prompt-weight: 400;
+
+    /* Lens — magnify the email body + vignette the edges ("looking down a lens") */
+    --lens-mag: 1.9;
+    --lens-vignette: 0.55;
+    --lens-pop: 1.06;
+
+    /* Notes */
+    --note-font: "Patrick Hand", "Caveat", "Comic Sans MS", "Marker Felt", cursive;
+    --note-size: 17px;
+    --note-text: #2a2a2a;
+    --note-weight: 400;
+    --note-line-h: 1.5;
+    --note-pad-y: 18px;
+    --note-pad-x: 22px;
+    --note-radius: 8px;
+    --note-shadow-y: 8px;
+    --note-shadow-blur: 24px;
+    --note-shadow-alpha: 0.12;
+    --note-anim-fade: 400ms;
+    --note-anim-scale: 560ms;
+    --note-anim-easing: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --note-anim-scale-from: 0.5;
+    --note-max-h: calc(100% - 24px);
+    --note-max-w: calc(100% - 24px);
+
+    /* Note header / dedication / footer */
+    --note-header-fz: 11px;
+    --note-header-fw: 600;
+    --note-header-color: rgba(0,0,0,0.45);
+    --note-header-spacing: 0.08em;
+    --note-header-mb: 8px;
+    --note-ded-fz: 13px;
+    --note-ded-color: rgba(0,0,0,0.55);
+    --note-footer-fz: 12px;
+    --note-footer-color: rgba(0,0,0,0.5);
+
+    /* Per-shape — Sticky */
+    --sk-bg: #ffec7a; --sk-w: 280px;
+    --sk-pad-t: 18px; --sk-pad-x: 20px; --sk-pad-b: 26px;
+    --sk-radius: 2px; --sk-shadow-y: 10px; --sk-shadow-blur: 22px; --sk-shadow-alpha: 0.18;
+
+    /* Per-shape — Notebook */
+    --nb-bg: #fdfcf6; --nb-w: 340px;
+    --nb-pad-t: 22px; --nb-pad-x: 22px; --nb-pad-l: 56px;
+    --nb-radius: 2px;
+    --nb-line-color: #b8c5d4; --nb-margin-color: #ff8888;
+    --nb-line-h: 28px;
+
+    /* Per-shape — Polaroid */
+    --pl-bg: #ffffff; --pl-w: 260px;
+    --pl-pad-t: 22px; --pl-pad-x: 22px; --pl-pad-b: 56px;
+    --pl-radius: 2px; --pl-shadow-y: 14px; --pl-shadow-blur: 28px; --pl-shadow-alpha: 0.18;
+    --pl-footer-fz: 16px; --pl-footer-color: #555555;
+
+    /* Per-shape — Index */
+    --ix-bg: #fafafa; --ix-w: 360px;
+    --ix-pad-t: 18px; --ix-pad-x: 22px; --ix-pad-b: 22px;
+    --ix-radius: 2px; --ix-top-border: 4px; --ix-top-color: #f25555;
+    --ix-line-color: #b8c5d4; --ix-line-h: 24px; --ix-header-color: #cc4444;
+
+    /* Per-shape — Postcard */
+    --pc-bg: #f3e9d2; --pc-w: 400px;
+    --pc-pad-y: 20px; --pc-pad-x: 24px; --pc-radius: 4px;
+    --pc-divider: #b9a273; --pc-header-color: #6f5a35;
+
+    /* Per-shape — Plain */
+    --pn-bg: #ffffff; --pn-w: 320px;
+    --pn-pad-y: 20px; --pn-pad-x: 22px; --pn-radius: 14px;
+
+    /* Per-shape — Envelope */
+    --en-bg: #fffdf5; --en-w: 360px;
+    --en-pad-y: 24px; --en-pad-x: 28px;
+    --en-radius: 4px; --en-border-color: #d8c98f;
+    --en-header-color: #806c30;
+
+    /* Per-shape — Stamp */
+    --st-bg: #fef7e0; --st-w: 220px;
+    --st-pad-y: 16px; --st-pad-x: 18px;
+    --st-radius: 2px; --st-border-color: #806c30;
+
+    /* Strings */
+    --string-color: #b9a86c;
+    --string-width: 1.2;
+
+    /* Notifications */
+    --notif-bg: #323639;
+    --notif-text: #ffffff;
+    --notif-radius: 8px;
+    --notif-pad-y: 12px;
+    --notif-pad-x: 16px;
+    --notif-gap: 12px;
+    --notif-fz: 13px;
+    --notif-title-fz: 13px;
+    --notif-preview-fz: 12px;
+    --notif-avatar-size: 32px;
+    --notif-top: 76px;
+    --notif-right: 16px;
+    --notif-max-w: 320px;
+    --notif-anim-ms: 260ms;
+    --notif-anim-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --notif-shadow-y: 4px;
+    --notif-shadow-blur: 12px;
+    --notif-shadow-alpha: 0.3;
+
+    /* Note controls (lock, dismiss) */
+    --noteCtl-size: 22px;
+    --noteCtl-fz: 11px;
+
+    /* Stack badge */
+    --stack-badge-color: #c2410c;
+    --stack-badge-fz: 11px;
+    --stack-badge-size: 22px;
+
+
+    /* Skin / page bg alpha */
+    --page-bg-alpha: 1;
+    --skin-alpha:    1;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: transparent !important;
+    color: #d6d7df;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+    display: flex;
+    min-height: 100%;
+  }
+  #page-bg-tint {
+    position: fixed; inset: 0; z-index: -1;
+    background: #0e0f12;
+    opacity: var(--page-bg-alpha);
+    pointer-events: none;
+  }
+
+  /* ---------- Dark theme (Gmail dark mode) ---------- */
+  body.dark-theme {
+    --stage-bg: #131316;
+    --gmail-chrome: #1e1f22;
+    --gmail-border: #3c4043;
+    --gmail-text: #e3e3e3;
+    --gmail-muted: #9aa0a6;
+    --sidebar-bg: #1b1c1f;
+    --sidebar-active: #3a2a1e;
+    --gh-search-bg: #2a2b2e;
+    --compose-bg: #26272a;
+    --compose-header: #2a2b2e;
+    --compose-text: #e3e3e3;
+  }
+  /* Hardcoded light surfaces → dark equivalents */
+  body.dark-theme #page-bg-tint { background: #0a0a0c; }
+  body.dark-theme .email-row { border-bottom-color: #2a2b2e; }
+  body.dark-theme .email-row.unread { background: #1e1f22; }
+  body.dark-theme .email-row.read { background: #262629; color: var(--gmail-muted); }
+  body.dark-theme .email-row:hover {
+    box-shadow: inset 1px 0 0 #3c4043, inset -1px 0 0 #3c4043, 0 1px 3px rgba(0,0,0,0.5);
+  }
+  body.dark-theme .er-star { color: #5f6368; }
+  body.dark-theme .gh-burger:hover,
+  body.dark-theme .gh-icon:hover,
+  body.dark-theme .ib-icon:hover,
+  body.dark-theme .cp-tool:hover { background: #2f3033; }
+  body.dark-theme .gh-search:hover { background: #303134; }
+  body.dark-theme .sb-item:hover { background: #2a2b2e; }
+  body.dark-theme .sb-item.active { color: #f0824d; }
+  body.dark-theme .compose-btn { background: #c2e7ff; color: #062e6f; }
+  body.dark-theme .compose-btn:hover { background: #d3eeff; }
+  body.dark-theme .cp-field { border-bottom-color: #3c4043; }
+  body.dark-theme .cp-footer { border-top-color: #3c4043; }
+  body.dark-theme .cp-body #prompt-placeholder { color: rgba(255,255,255,0.35); }
+  body.dark-theme .cp-send { background: #8ab4f8; color: #062e6f; }
+  body.dark-theme .cp-send:hover { background: #aecbfa; }
+  body.dark-theme #gmail-frame { border-color: rgba(255,255,255,0.08); }
+
+  /* ---------- Reel mode: full-screen phone compose (vertical capture) ----------
+     The compose fills the whole 9:16 frame like the Gmail phone app, so the
+     email IS the screen and the typing sits in the upper-center reading zone. */
+  .cp-back {
+    display: none;
+    width: 34px; height: 34px; flex: 0 0 34px;
+    align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer; opacity: 0.85;
+  }
+  body.reel-mode #compose-popup {
+    top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+    width: 100% !important; height: 100% !important;
+    max-width: 100%; max-height: 100%;
+    border-radius: 0;
+    --cp-tx: 0px !important;   /* no centering offset full-screen; pop still applies */
+    transform-origin: 50% 50%; /* full-screen: pop from centre so the header isn't cropped */
+    box-shadow: none;
+  }
+  body.reel-mode .cp-header {
+    background: var(--compose-bg);
+    color: var(--gmail-text);
+    height: 56px; flex: 0 0 56px;
+    border-bottom: 1px solid var(--gmail-border);
+    padding: 0 6px; gap: 4px;
+  }
+  body.reel-mode .cp-back { display: flex; }
+  body.reel-mode .cp-header .cp-title { font-size: 17px; font-weight: 500; color: var(--gmail-text); }
+  body.reel-mode .cp-header .cp-ctl { color: var(--gmail-muted); }
+  body.reel-mode .cp-header .cp-ctl[title="Minimize"],
+  body.reel-mode .cp-header .cp-ctl[title="Fullscreen"] { display: none; }
+  body.reel-mode .cp-field { padding: 14px 16px; }
+  body.reel-mode .cp-field .cp-label { width: 64px; font-size: 15px; }
+  body.reel-mode .cp-field .cp-value { font-size: 15px; }
+  body.reel-mode .cp-body { padding: 22px 18px; }
+  body.reel-mode .cp-footer { flex: 0 0 66px; padding: 12px 16px; }
+  body.reel-mode .cp-send { padding: 11px 30px; font-size: 16px; border-radius: 24px; }
+
+  /* ---------- Present mode (clean capture for OBS Browser Source) ----------
+     Controls + editor chrome gone; the frame fills the whole window so an OBS
+     Browser Source shows ONLY the phone, no cropping. Activated via #present. */
+  body.present #controls { display: none; }
+  body.present #hint, body.present #focus-banner { display: none; }
+  body.present .frame-handle, body.present .frame-size-readout { display: none !important; }
+  body.present #stage { padding: 0; background: #000; display: block; }
+  body.present #gmail-frame {
+    position: fixed; top: 0; left: 0; inset: auto;
+    width: 700px !important; height: 600px !important;
+    max-width: none; max-height: none;
+    border: none; border-radius: 0; box-shadow: none;
+    transform: none; transform-origin: top left;
+    /* zoom (set in JS = frameWidth/700) scales this up crisply to fill the card */
+  }
+
+  /* ---------- Controls panel ---------- */
+  #controls {
+    width: 380px;
+    flex: 0 0 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: #15161a;
+    border-right: 1px solid #2a2c33;
+    padding: 18px 18px 28px;
+    font-size: 13px;
+    transition: margin-left 200ms ease;
+    z-index: 50;
+    position: sticky;
+    top: 0;
+    color: #c4c6cd;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+
+  #controls h1 {
+    font-size: 14px; margin: 0 0 16px; color: #fff;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  #controls h2 {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #8a8d96;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid #2a2c33; padding-bottom: 4px;
+  }
+
+  /* Tabs */
+  #tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #2a2c33;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .tab-btn {
+    flex: 0 0 auto;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    color: #8a8d96;
+    padding: 7px 9px;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tab-btn:hover { color: #c4c6cd; background: transparent; }
+  .tab-btn.active { color: #fff; border-bottom-color: #c2410c; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: tab-fade 160ms ease; }
+  @keyframes tab-fade { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+
+  details.shape-group {
+    border: 1px solid #2a2c33;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin: 8px 0;
+    background: #0e0f12;
+  }
+  details.shape-group > summary {
+    cursor: pointer;
+    font-size: 11px;
+    color: #c4c6cd;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 0;
+  }
+
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row label { flex: 1; color: #c4c6cd; }
+  .row input[type="number"], .row select, .row input[type="text"] {
+    width: 150px; background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 6px; padding: 5px 8px;
+    font-family: inherit; font-size: 12px;
+  }
+  .row input[type="range"] { flex: 1; }
+  .row input[type="color"] {
+    width: 40px; height: 28px; padding: 0;
+    border: 1px solid #2a2c33; border-radius: 6px; background: #0e0f12;
+  }
+  .row .val { width: 56px; text-align: right; color: #8a8d96; font-variant-numeric: tabular-nums; }
+  .row input[type="checkbox"] { accent-color: #c2410c; }
+
+  textarea#script {
+    width: 100%; height: 260px;
+    background: #0e0f12; color: #ececf1;
+    border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+    resize: vertical;
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    flex: 1;
+    background: #2b2f3a; color: #ececf1;
+    border: 1px solid #3a3f4c; border-radius: 8px;
+    padding: 9px 12px; font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: #353a47; }
+  button.primary { background: #c2410c; border-color: #c2410c; color: white; }
+  button.primary:hover { background: #d4501a; }
+  button.danger { background: #5a2a2a; border-color: #6a3535; }
+
+  .help {
+    background: #0e0f12; border: 1px solid #2a2c33; border-radius: 8px;
+    padding: 10px 12px; margin-top: 10px;
+    color: #a8abb3; font-size: 12px; line-height: 1.6;
+  }
+  .help code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+  }
+
+  /* ---------- Script key map ---------- */
+  .keymap h4 {
+    margin: 14px 0 6px; font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.07em; color: #c4c6cd; font-weight: 600;
+  }
+  .keymap h4:first-of-type { margin-top: 6px; }
+  .keymap .km {
+    display: grid; grid-template-columns: max-content 1fr;
+    gap: 3px 10px; align-items: baseline;
+  }
+  .keymap .km code {
+    background: #1a1b1f; padding: 1px 5px; border-radius: 4px;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace;
+    font-size: 11px; white-space: nowrap;
+  }
+  .keymap .km > span { color: #9a9da5; font-size: 11.5px; }
+  .keymap .note { color: #7e818a; font-size: 11px; font-style: italic; margin: 5px 0 0; }
+
+  .shape-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px;
+  }
+  .shape-grid label {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px;
+    background: #0e0f12; border: 1px solid #2a2c33;
+    border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+
+  .img-item {
+    display: flex; align-items: center; gap: 8px;
+    background: #0e0f12; border: 1px solid #2a2c33;
+    border-radius: 6px; padding: 4px 8px; margin-top: 4px;
+  }
+  .img-item .idx {
+    width: 18px; text-align: center; font-weight: 600;
+    color: #f0c674; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  }
+  .img-item video, .img-item img {
+    width: 36px; height: 36px; object-fit: cover; border-radius: 4px; background: #000;
+  }
+  .img-item .name {
+    flex: 1; color: #c4c6cd; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .img-item .remove {
+    flex: 0 0 24px; background: none; border: none; color: #888;
+    font-size: 18px; cursor: pointer; padding: 0; line-height: 1;
+  }
+  .img-item .remove:hover { color: #fff; background: none; }
+
+  /* ---------- Stage / Gmail clone ---------- */
+  #stage {
+    flex: 1;
+    height: 100vh;
+    background: var(--stage-bg);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The Gmail screen — sized like a window/device. Everything Gmail-related lives inside.
+     Resize via the corner handles or the size inputs in the controls panel. */
+  #gmail-frame {
+    position: relative;
+    width: var(--frame-w-default);
+    height: var(--frame-h-default);
+    max-width: 100%;
+    max-height: 100%;
+    background: transparent;
+    overflow: hidden;
+    border-radius: var(--frame-radius);
+    box-shadow: 0 var(--frame-shadow-y) var(--frame-shadow-blur) rgba(0,0,0,var(--frame-shadow-alpha)), 0 4px 12px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.08);
+    container-type: inline-size;
+    container-name: gframe;
+  }
+  #gmail-frame::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--gmail-chrome);
+    z-index: 0;
+    opacity: var(--skin-alpha);
+    pointer-events: none;
+    transition: opacity 120ms ease;
+    border-radius: inherit;
+  }
+  #gmail-frame > * { position: relative; z-index: 1; }
+
+  /* ---------- Fake mouse cursor (click-to-send) ----------
+     Declared after `#gmail-frame > *` so absolute positioning + z-index win. */
+  #fake-cursor {
+    position: absolute;
+    top: 0; left: 0;
+    width: 26px; height: 26px;
+    z-index: 130;
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-60px, -60px);
+    transition: transform var(--cursor-move-ms, 750ms) cubic-bezier(0.45, 0.05, 0.2, 1),
+                opacity 180ms ease;
+    will-change: transform;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.45));
+  }
+  #fake-cursor.visible { opacity: 1; }
+  #fake-cursor .cursor-arrow { display: block; }
+  #fake-cursor.pressing .cursor-arrow { transform: scale(0.82); transition: transform 90ms ease; }
+  #fake-cursor .cursor-ring {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(120,170,255,0.9);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.3);
+    pointer-events: none;
+  }
+  #fake-cursor.clicking .cursor-ring { animation: cursor-click 420ms ease-out; }
+  @keyframes cursor-click {
+    0%   { opacity: 0.75; transform: scale(0.3); }
+    100% { opacity: 0;    transform: scale(2.4); }
+  }
+  .cp-send.pressed { filter: brightness(0.9); transform: translateY(1px); }
+
+  /* ---------- Send snackbar (Gmail bottom-left "Sending…" / "Sent") ---------- */
+  #send-snackbar {
+    position: absolute;
+    left: 24px; bottom: 24px;
+    background: #2d2e31;
+    color: #e8eaed;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.45);
+    z-index: 116;
+    min-width: 240px;
+    max-width: 380px;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 220ms ease, transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    pointer-events: none;
+  }
+  #send-snackbar.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  #send-snackbar .sb-text { flex: 1; }
+  #send-snackbar .sb-spinner {
+    width: 16px; height: 16px; flex: 0 0 16px;
+    border: 2px solid rgba(255,255,255,0.25);
+    border-top-color: #8ab4f8;
+    border-radius: 50%;
+    animation: sb-spin 0.7s linear infinite;
+  }
+  @keyframes sb-spin { to { transform: rotate(360deg); } }
+  #send-snackbar .sb-check { color: #81c995; font-size: 16px; flex: 0 0 auto; }
+  #send-snackbar .sb-action {
+    color: #8ab4f8; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  @container gframe (max-width: 640px) {
+    #send-snackbar { left: 8px; right: 8px; bottom: 88px; min-width: 0; max-width: none; }
+  }
+
+  /* The zoomable layer — only the Gmail UI inside the frame moves on focus. */
+  #gmail-zoom {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 50%;
+    transform: translate(0, 0) scale(1);
+    transition: transform var(--zoom-dur, 0ms) cubic-bezier(0.55, 0.06, 0.45, 1);
+    will-change: transform;
+  }
+
+  #gmail {
+    position: absolute; inset: 0;
+    background: var(--gmail-chrome);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Compact (mobile-portrait) Gmail layout, triggered when the frame narrows. */
+  @container gframe (max-width: 640px) {
+    #gmail-sidebar { display: none; }
+    #gmail-header { height: 52px; flex-basis: 52px; padding: 0 10px; gap: 10px; }
+    .gh-logo span:not(.gh-logo-icon) { display: none; }
+    .gh-search { height: 40px; padding: 0 12px; font-size: 13px; }
+    .gh-icons .gh-icon { width: 32px; height: 32px; }
+    .gh-icon[title="Help"], .gh-icon[title="Apps"] { display: none; }
+    .compose-btn-mobile {
+      position: absolute; bottom: 24px; right: 16px;
+      width: 56px; height: 56px;
+      background: #c2dcff; color: #001d35;
+      border: none; border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 4;
+    }
+    .inbox-toolbar { padding: 4px 8px; }
+    .ib-tab { padding: 0 12px; min-width: 0; }
+    .ib-tab span:not(.ib-tab-icon) { display: none; }
+    #inbox { margin: 0; border-radius: 0; }
+    #compose-popup { right: 0 !important; left: 0 !important; bottom: 0 !important; width: 100% !important; transform: none !important; border-radius: 0; }
+    .er-from { flex-basis: 100px; font-size: 13px; }
+    .er-subject { font-size: 13px; }
+    .er-time { flex-basis: 56px; font-size: 11px; }
+  }
+  @container gframe (max-width: 420px) {
+    .gh-logo, .gh-icon[title="Settings"] { display: none; }
+    #email-rows { font-size: 12px; }
+  }
+
+  /* ---------- Gmail header bar ---------- */
+  #gmail-header {
+    display: flex; align-items: center;
+    height: var(--gmail-header-h); flex: 0 0 var(--gmail-header-h);
+    border-bottom: 1px solid var(--gmail-border);
+    padding: 0 var(--gmail-header-pad-x);
+    gap: var(--gmail-header-gap);
+    background: var(--gmail-chrome);
+    z-index: 3;
+  }
+  .gh-burger {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--gmail-muted);
+  }
+  .gh-burger:hover { background: #eef0f3; }
+  .gh-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-family: "Product Sans", "Google Sans", "Segoe UI", system-ui, sans-serif;
+    font-size: 22px; color: var(--gmail-muted); font-weight: 400;
+  }
+  .gh-logo-icon {
+    width: 40px; height: 30px;
+    display: inline-block;
+    background:
+      linear-gradient(135deg, #4285f4 0%, #4285f4 25%, transparent 25%, transparent 100%),
+      linear-gradient(225deg, #ea4335 0%, #ea4335 25%, transparent 25%, transparent 100%),
+      linear-gradient(0deg, #fbbc04 0%, #fbbc04 40%, transparent 40%, transparent 100%),
+      linear-gradient(180deg, #34a853 0%, #34a853 40%, transparent 40%, transparent 100%),
+      white;
+    border-radius: 2px;
+    position: relative;
+  }
+  .gh-logo-icon::after {
+    content: 'M';
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Google Sans", system-ui;
+    font-weight: 700; font-size: 18px;
+    color: #ea4335;
+    background: white; margin: 3px;
+    border-radius: 1px;
+  }
+  .gh-search {
+    flex: 1; max-width: 720px;
+    height: var(--gh-search-h);
+    background: var(--gh-search-bg);
+    border-radius: var(--gh-search-radius);
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+    color: var(--gmail-muted);
+    font-size: 14px;
+  }
+  .gh-search:hover { background: #e6edf6; }
+  .gh-icons { display: flex; align-items: center; gap: 6px; }
+  .gh-icon {
+    width: var(--gh-icon-size); height: var(--gh-icon-size); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--gmail-muted); font-size: 18px;
+  }
+  .gh-icon:hover { background: #eef0f3; }
+  .gh-avatar {
+    width: var(--gh-avatar-size); height: var(--gh-avatar-size); border-radius: 50%;
+    background: linear-gradient(135deg, #c2410c, #f59e0b);
+    color: white; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ---------- Gmail body: sidebar + inbox ---------- */
+  #gmail-body {
+    display: flex; flex: 1; overflow: hidden;
+  }
+  #gmail-sidebar {
+    width: var(--sidebar-width); flex: 0 0 var(--sidebar-width);
+    background: var(--sidebar-bg);
+    padding: 8px 0;
+    overflow-y: auto;
+  }
+  .compose-btn {
+    margin: 8px 12px 16px;
+    background: #c2dcff;
+    color: #001d35;
+    border: none;
+    border-radius: var(--compose-btn-radius);
+    padding: 14px 24px 14px 18px;
+    font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 16px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    width: calc(100% - 24px);
+  }
+  .compose-btn:hover { background: #d4e4fc; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .compose-btn .pencil {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sb-item {
+    display: flex; align-items: center; gap: 18px;
+    padding: 0 12px 0 var(--sb-item-pad-l);
+    height: var(--sb-item-h);
+    border-radius: 0 16px 16px 0;
+    margin: 1px 8px 1px 0;
+    cursor: pointer;
+    color: var(--gmail-text);
+    font-size: var(--sb-item-fz); font-weight: 500;
+    position: relative;
+  }
+  .sb-item:hover { background: #eaecef; }
+  .sb-item.active { background: var(--sidebar-active); color: #b1400b; font-weight: 700; }
+  .sb-item .sb-icon { width: 20px; text-align: center; font-size: 16px; }
+  .sb-item .sb-count {
+    margin-left: auto; font-size: 12px; color: var(--gmail-muted);
+    font-weight: 400; font-variant-numeric: tabular-nums;
+  }
+  .sb-section {
+    margin-top: 12px; padding: 8px 26px 4px;
+    color: var(--gmail-muted); font-size: 11px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+
+  /* ---------- Inbox surface ---------- */
+  #inbox {
+    flex: 1;
+    background: var(--gmail-chrome);
+    margin: 0 8px 8px 0;
+    border-radius: var(--inbox-radius) var(--inbox-radius) 0 0;
+    position: relative;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .inbox-toolbar {
+    display: flex; align-items: center;
+    padding: 4px 16px;
+    border-bottom: 1px solid var(--gmail-border);
+    gap: 4px;
+    flex: 0 0 var(--inbox-toolbar-h);
+    background: var(--gmail-chrome);
+    z-index: 2;
+  }
+  .ib-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gmail-muted);
+    font-size: 16px;
+    cursor: pointer;
+  }
+  .ib-icon:hover { background: #eef0f3; }
+  .inbox-tabs {
+    display: flex; flex: 0 0 var(--inbox-tabs-h);
+    border-bottom: 1px solid var(--gmail-border);
+    background: var(--gmail-chrome);
+    z-index: 2;
+  }
+  .ib-tab {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 var(--ib-tab-pad-x);
+    border-bottom: 3px solid transparent;
+    color: var(--gmail-muted);
+    font-size: var(--ib-tab-fz); font-weight: 500;
+    cursor: pointer;
+    min-width: 100px;
+  }
+  .ib-tab.active {
+    color: var(--gmail-accent);
+    border-bottom-color: var(--gmail-accent);
+    font-weight: 700;
+  }
+  .ib-tab-icon { font-size: 16px; }
+
+  /* This is the actual surface where notes drop */
+  #canvas-wrap {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+  #email-rows {
+    position: absolute; inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .email-row {
+    height: var(--email-row-h);
+    display: flex; align-items: center;
+    border-bottom: 1px solid #f0f1f3;
+    padding: 0 var(--email-row-pad-x);
+    gap: var(--email-row-gap);
+    font-size: var(--email-row-fz);
+    color: var(--gmail-text);
+    cursor: pointer;
+    background: var(--gmail-chrome);
+  }
+  .email-row:hover { box-shadow: inset 1px 0 0 #dadce0,inset -1px 0 0 #dadce0, 0 1px 2px rgba(60,64,67,0.15); z-index: 1; position: relative; }
+  .email-row.unread { font-weight: 700; background: #fff; }
+  .email-row.read { background: #f6f8fc; color: var(--gmail-muted); font-weight: 400; }
+  .er-star { color: #dadce0; width: 18px; flex: 0 0 18px; }
+  .email-row.starred .er-star { color: #f4b400; }
+  .er-from { flex: 0 0 168px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .er-subject { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .er-subject .preview { color: var(--gmail-muted); font-weight: 400; }
+  .er-time { flex: 0 0 80px; text-align: right; font-size: 12px; color: var(--gmail-muted); }
+
+  #strings {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  #canvas {
+    position: absolute; inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ---------- Resize handles on the Gmail frame ---------- */
+  .frame-handle {
+    position: absolute; width: 14px; height: 14px;
+    background: rgba(194,65,12,0.85);
+    border: 2px solid white; border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    z-index: 201;
+    touch-action: none;
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+  #gmail-frame:hover .frame-handle, body.show-handles .frame-handle { opacity: 1; }
+  body.hide-controls .frame-handle { display: none; }
+  .frame-handle-tl { top: -7px; left: -7px; cursor: nwse-resize; }
+  .frame-handle-tr { top: -7px; right: -7px; cursor: nesw-resize; }
+  .frame-handle-bl { bottom: -7px; left: -7px; cursor: nesw-resize; }
+  .frame-handle-br { bottom: -7px; right: -7px; cursor: nwse-resize; }
+  .frame-size-readout {
+    position: absolute;
+    top: -28px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.65); color: white;
+    padding: 2px 10px; border-radius: 10px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11px; letter-spacing: 0.04em;
+    pointer-events: none;
+    z-index: 202;
+    opacity: 0; transition: opacity 200ms ease;
+    white-space: nowrap;
+  }
+  #gmail-frame:hover .frame-size-readout, body.show-handles .frame-size-readout { opacity: 0.85; }
+  body.hide-controls .frame-size-readout { display: none; }
+
+  /* ---------- Compose popup ---------- */
+  #compose-popup {
+    position: absolute;
+    bottom: 0; right: 24px;
+    width: 540px; height: 480px;
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    background: var(--compose-bg);
+    border-radius: var(--compose-radius) var(--compose-radius) 0 0;
+    box-shadow: 0 8px 10px 1px rgba(0,0,0,0.14),
+                0 3px 14px 2px rgba(0,0,0,0.12),
+                0 5px 5px -3px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column;
+    z-index: 100;
+    overflow: hidden;
+    /* --cp-tx: centering offset (set by JS per position). --cp-pop: the 3D
+       scale-pop, driven to --lens-pop while .lens-zoomed and back to 1 on Send.
+       Origin is bottom-centre so the footer/Send stays anchored as it lunges. */
+    --cp-tx: 0px;
+    --cp-pop: 1;
+    transform-origin: 50% 100%;
+    transform: translate(var(--cp-tx, 0px), 0) scale(var(--cp-pop, 1));
+    transition: transform 600ms cubic-bezier(0.34, 1.42, 0.64, 1), opacity 200ms ease;
+  }
+  body.lens-on.lens-zoomed #compose-popup { --cp-pop: var(--lens-pop, 1.06); }
+  .cp-header {
+    background: var(--compose-header);
+    color: #f1f3f4;
+    height: var(--compose-header-h);
+    flex: 0 0 var(--compose-header-h);
+    display: flex; align-items: center;
+    padding: 0 16px;
+    font-size: var(--compose-header-fz); font-weight: 500;
+  }
+  .cp-header .cp-title { flex: 1; }
+  .cp-header .cp-ctl {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; opacity: 0.85;
+  }
+  .cp-header .cp-ctl:hover { opacity: 1; }
+  .cp-field {
+    border-bottom: 1px solid #f1f3f4;
+    padding: var(--compose-field-pad-y) var(--compose-field-pad-x);
+    display: flex; align-items: center;
+    font-size: var(--compose-field-fz);
+    color: var(--compose-text);
+  }
+  .cp-field .cp-label { color: var(--gmail-muted); width: 48px; }
+  .cp-field .cp-value { flex: 1; color: var(--compose-text); }
+  .cp-body {
+    flex: 1;
+    padding: var(--compose-body-pad);
+    font-family: var(--prompt-font);
+    font-size: var(--prompt-size);
+    font-weight: var(--prompt-weight);
+    color: var(--compose-text);
+    line-height: var(--compose-line-h);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    position: relative;
+    transform-origin: 50% 0;
+    transition: font-size 750ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Lens zoomed-in: the email body is brought forward and much bigger, as if
+     pushed under a glass. Driven by font-size (not transform) so long lines
+     still reflow within the body and stay readable. The playback loop adds
+     .lens-zoomed while the body is being typed and removes it on Send → the
+     body zooms back out. */
+  body.lens-on.lens-zoomed .cp-body {
+    font-size: calc(var(--prompt-size) * var(--lens-mag, 1.9));
+    line-height: calc(var(--compose-line-h) * 0.95);
+  }
+  .cp-body #prompt-placeholder { color: rgba(0,0,0,0.35); }
+  .cp-body #prompt-cursor {
+    display: inline-block;
+    width: 1.5px; height: 1.1em;
+    background: var(--compose-text);
+    vertical-align: text-bottom;
+    margin-left: 1px;
+    transform: translateY(2px);
+    animation: cursor-blink 1s steps(2, start) infinite;
+  }
+  .cp-body #prompt-cursor.block { width: 0.55em; opacity: 0.85; }
+  .cp-body #prompt-cursor.underline { width: 0.55em; height: 2px; transform: translateY(0); }
+  @keyframes cursor-blink { 50% { opacity: 0; } }
+  .cp-footer {
+    flex: 0 0 var(--compose-footer-h);
+    padding: 10px 16px;
+    border-top: 1px solid #f1f3f4;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cp-send {
+    background: var(--compose-send-bg);
+    color: white;
+    border: none;
+    border-radius: var(--compose-send-radius);
+    padding: 8px 24px;
+    font-weight: 500; font-size: 14px;
+    cursor: pointer;
+  }
+  .cp-send:hover { background: #1967d2; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .cp-tool {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gmail-muted); cursor: pointer;
+  }
+  .cp-tool:hover { background: #eef0f3; }
+
+  /* ---------- Lens vignette ----------
+     A soft dark frame over the whole compose window so the magnified email
+     body reads as if viewed down a lens / through a viewfinder. Sits inside
+     the (non-scrolling) popup so it stays pinned while the body scrolls.
+     pointer-events:none keeps the Send-button click logic working. */
+  #lens-vignette-fx {
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 600ms ease;
+    background:
+      radial-gradient(ellipse 80% 72% at 50% 44%,
+        rgba(0,0,0,0) 36%,
+        rgba(0,0,0,calc(var(--lens-vignette, 0.55) * 0.45)) 70%,
+        rgba(0,0,0,var(--lens-vignette, 0.55)) 100%);
+  }
+  body.lens-on.lens-zoomed #lens-vignette-fx { opacity: 1; }
+
+  /* ---------- Notification toasts ---------- */
+  #notif-stack {
+    position: absolute;
+    top: var(--notif-top); right: var(--notif-right);
+    z-index: 110;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+    max-width: var(--notif-max-w);
+    width: calc(100% - 32px);
+  }
+  @container gframe (max-width: 640px) {
+    #notif-stack { top: 60px; right: 8px; max-width: calc(100% - 16px); }
+  }
+  .notif {
+    background: var(--notif-bg);
+    color: var(--notif-text);
+    border-radius: var(--notif-radius);
+    padding: var(--notif-pad-y) var(--notif-pad-x);
+    box-shadow: 0 var(--notif-shadow-y) var(--notif-shadow-blur) rgba(0,0,0,var(--notif-shadow-alpha));
+    font-size: var(--notif-fz);
+    display: flex; gap: var(--notif-gap); align-items: flex-start;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity var(--notif-anim-ms) ease, transform var(--notif-anim-ms) var(--notif-anim-easing);
+    pointer-events: auto;
+    width: 100%;
+  }
+  .notif.show { opacity: 1; transform: translateX(0); }
+  .notif.dismissing { opacity: 0; transform: translateX(60px) scale(0.95); }
+  .notif-avatar {
+    width: var(--notif-avatar-size); height: var(--notif-avatar-size); border-radius: 50%;
+    background: linear-gradient(135deg, #c2410c, #f59e0b);
+    flex: 0 0 var(--notif-avatar-size);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 13px;
+    color: white;
+  }
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-title { font-weight: 600; margin-bottom: 2px; }
+  .notif-preview { color: rgba(255,255,255,0.7); font-size: 12px;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .notif-close {
+    color: rgba(255,255,255,0.5); cursor: pointer;
+    width: 16px; line-height: 1; font-size: 14px;
+  }
+  .notif-close:hover { color: white; }
+
+  /* ---------- Note base (same vocabulary as notes.html) ---------- */
+  .note {
+    position: absolute;
+    padding: var(--note-pad-y) var(--note-pad-x);
+    font-family: var(--note-font);
+    font-size: var(--note-size);
+    font-weight: var(--note-weight);
+    line-height: var(--note-line-h);
+    color: var(--note-text);
+    word-wrap: break-word; white-space: pre-wrap;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(var(--note-anim-scale-from)) rotate(var(--rot, 0deg));
+    transition: opacity var(--note-anim-fade) ease, transform var(--note-anim-scale) var(--note-anim-easing);
+    background: #fff;
+    border-radius: var(--note-radius);
+    box-shadow: 0 var(--note-shadow-y) var(--note-shadow-blur) rgba(0,0,0,var(--note-shadow-alpha)), 0 2px 6px rgba(0,0,0,0.06);
+    pointer-events: auto;
+    user-select: none;
+    z-index: 5;
+    cursor: grab;
+    box-sizing: border-box;
+    max-width: var(--note-max-w);
+    max-height: var(--note-max-h);
+    overflow: hidden;
+  }
+  .note.appear {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(var(--rot, 0deg));
+  }
+  .note.dragging { cursor: grabbing; z-index: 100; transition: none; }
+  .note.stacked { transition: opacity 400ms ease, transform 400ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+
+  .note .note-header {
+    font-size: var(--note-header-fz); text-transform: uppercase; letter-spacing: var(--note-header-spacing);
+    color: var(--note-header-color);
+    margin-bottom: var(--note-header-mb);
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-weight: var(--note-header-fw);
+  }
+  .note .note-dedication {
+    font-size: var(--note-ded-fz); font-style: italic; color: var(--note-ded-color);
+    margin: -2px 0 10px; padding-bottom: 8px;
+    border-bottom: 1px dashed rgba(0,0,0,0.18);
+    font-family: var(--note-font); line-height: 1.3;
+  }
+  .note .note-footer {
+    font-size: var(--note-footer-fz); color: var(--note-footer-color);
+    margin-top: 10px;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    font-style: italic; text-align: right;
+  }
+  .note .note-video, .note .note-image {
+    display: block; width: 100%; border-radius: 6px;
+    margin: 4px 0; background: #000;
+    max-height: 260px; object-fit: cover;
+  }
+  .note .note-video { cursor: pointer; }
+  .note.polaroid .note-video, .note.polaroid .note-image {
+    aspect-ratio: 1 / 1; max-height: none;
+  }
+  .note .note-mute {
+    position: absolute; top: 24px; right: 24px;
+    width: 26px; height: 26px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: white;
+    cursor: pointer; z-index: 10;
+    pointer-events: auto;
+    backdrop-filter: blur(6px);
+  }
+  .note.has-video.unmuted .note-mute { display: none; }
+
+  /* Per-note controls (lock, close) */
+  .note-controls {
+    position: absolute;
+    top: 4px; left: 4px;
+    display: flex; gap: 4px;
+    opacity: 0;
+    transition: opacity 160ms ease;
+    pointer-events: auto;
+  }
+  .note:hover .note-controls,
+  .note.locked .note-controls { opacity: 1; }
+  .note-ctl {
+    width: var(--noteCtl-size); height: var(--noteCtl-size);
+    background: rgba(255,255,255,0.85);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: var(--noteCtl-fz); cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    color: #333;
+  }
+  .note-ctl:hover { background: white; }
+  .note.locked .note-ctl-lock { background: #c2410c; color: white; }
+
+  /* ---------- Shape: sticky ---------- */
+  .note.sticky {
+    background: var(--note-color, var(--sk-bg));
+    width: var(--sk-w);
+    border-radius: var(--sk-radius);
+    padding: var(--sk-pad-t) var(--sk-pad-x) var(--sk-pad-b);
+    box-shadow: 0 var(--sk-shadow-y) var(--sk-shadow-blur) rgba(0,0,0,var(--sk-shadow-alpha)), 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .note.sticky::after {
+    content: '';
+    position: absolute; bottom: 0; right: 0;
+    width: 24px; height: 24px;
+    background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.12) 50%);
+  }
+  /* ---------- Shape: notebook ---------- */
+  .note.notebook {
+    background: var(--note-color, var(--nb-bg));
+    width: var(--nb-w);
+    padding: var(--nb-pad-t) var(--nb-pad-x) var(--nb-pad-t) var(--nb-pad-l);
+    background-image:
+      linear-gradient(to right, transparent 42px, var(--nb-margin-color) 42px, var(--nb-margin-color) 43px, transparent 43px),
+      repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--nb-line-h) - 1px), var(--nb-line-color) calc(var(--nb-line-h) - 1px), var(--nb-line-color) var(--nb-line-h));
+    background-size: 100% 100%, 100% var(--nb-line-h);
+    background-position: 0 0, 0 14px;
+    line-height: var(--nb-line-h);
+    border-radius: var(--nb-radius);
+  }
+  .note.notebook .note-header { margin-bottom: 0; line-height: var(--nb-line-h); color: rgba(0,0,0,0.5); }
+  /* ---------- Shape: polaroid ---------- */
+  .note.polaroid {
+    background: var(--note-color, var(--pl-bg));
+    width: var(--pl-w);
+    padding: var(--pl-pad-t) var(--pl-pad-x) var(--pl-pad-b);
+    border-radius: var(--pl-radius);
+    box-shadow: 0 var(--pl-shadow-y) var(--pl-shadow-blur) rgba(0,0,0,var(--pl-shadow-alpha)), 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .note.polaroid .note-footer {
+    position: absolute; bottom: 18px; left: 22px; right: 22px;
+    text-align: center; font-family: var(--note-font);
+    font-style: normal; font-size: var(--pl-footer-fz); color: var(--pl-footer-color); margin-top: 0;
+  }
+  /* ---------- Shape: index ---------- */
+  .note.index {
+    background: var(--note-color, var(--ix-bg));
+    width: var(--ix-w);
+    border-top: var(--ix-top-border) solid var(--ix-top-color);
+    background-image:
+      linear-gradient(to bottom, transparent 0, transparent calc(var(--ix-line-h) - 1px), var(--ix-line-color) calc(var(--ix-line-h) - 1px), var(--ix-line-color) var(--ix-line-h));
+    background-size: 100% var(--ix-line-h);
+    background-position: 0 8px;
+    border-radius: var(--ix-radius);
+    padding: var(--ix-pad-t) var(--ix-pad-x) var(--ix-pad-b);
+    line-height: var(--ix-line-h);
+  }
+  .note.index .note-header { color: var(--ix-header-color); }
+  /* ---------- Shape: postcard ---------- */
+  .note.postcard {
+    background: var(--note-color, var(--pc-bg));
+    width: var(--pc-w);
+    padding: var(--pc-pad-y) var(--pc-pad-x);
+    border-radius: var(--pc-radius);
+    border-left: 1px dashed var(--pc-divider);
+  }
+  .note.postcard .note-header { color: var(--pc-header-color); border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 6px; }
+  /* ---------- Shape: plain ---------- */
+  .note.plain {
+    background: var(--note-color, var(--pn-bg));
+    width: var(--pn-w);
+    border-radius: var(--pn-radius);
+    padding: var(--pn-pad-y) var(--pn-pad-x);
+  }
+  /* ---------- Shape: envelope (email-only) ---------- */
+  .note.envelope {
+    background: var(--note-color, var(--en-bg));
+    width: var(--en-w);
+    padding: var(--en-pad-y) var(--en-pad-x);
+    border-radius: var(--en-radius);
+    border: 1px solid var(--en-border-color);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18),
+                inset 0 -40px 0 0 rgba(216, 201, 143, 0.18);
+  }
+  .note.envelope::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 50%;
+    background: linear-gradient(to bottom right, transparent calc(50% - 1px), var(--en-border-color) 50%, transparent calc(50% + 1px));
+    pointer-events: none;
+    opacity: 0.35;
+  }
+  .note.envelope .note-header {
+    color: var(--en-header-color);
+    font-family: ui-monospace, Consolas, monospace;
+    letter-spacing: 0.12em;
+  }
+  /* ---------- Shape: stamp (small) ---------- */
+  .note.stamp {
+    background: var(--note-color, var(--st-bg));
+    width: var(--st-w);
+    padding: var(--st-pad-y) var(--st-pad-x);
+    border-radius: var(--st-radius);
+    border: 1px dashed var(--st-border-color);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.12);
+  }
+
+  /* ---------- Stack badge ---------- */
+  .note .stack-badge {
+    position: absolute;
+    top: -8px; right: -8px;
+    background: var(--stack-badge-color);
+    color: white;
+    min-width: var(--stack-badge-size); height: var(--stack-badge-size); padding: 0 6px;
+    border-radius: 11px;
+    font-size: var(--stack-badge-fz); font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    pointer-events: none;
+    font-family: ui-sans-serif, system-ui;
+  }
+  .note.drop-target {
+    box-shadow: 0 0 0 3px #c2410c, 0 8px 24px rgba(0,0,0,0.12);
+  }
+
+  /* ---------- Focus overlay ---------- */
+  #focus-banner {
+    position: absolute;
+    top: 76px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.65);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-family: ui-monospace, Consolas, monospace;
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+    letter-spacing: 0.05em;
+  }
+  #focus-banner.show { opacity: 0.9; }
+
+  /* ---------- Hint ---------- */
+  #hint {
+    position: fixed; bottom: 12px; left: 16px;
+    color: rgba(0,0,0,0.35); font-size: 11px;
+    font-family: ui-monospace, Consolas, monospace;
+    opacity: 0; transition: opacity 200ms ease;
+    pointer-events: none;
+  }
+  body.hide-controls #hint { opacity: 1; }
+
+
+  /* ============ MOBILE LAYOUT ============ */
+  @media (max-width: 900px) {
+    html, body { height: auto; overflow: visible; }
+    body {
+      flex-direction: column !important;
+      height: auto !important;
+      overflow: visible !important;
+      padding: 0;
+      gap: 0;
+    }
+    /* Stage / preview area on top */
+    main, #main, #stage, #stage-wrap, .stage, .stage-wrap, .preview, .email-preview {
+      width: 100% !important;
+      height: 60vh !important;
+      min-height: 320px;
+      flex: 0 0 auto !important;
+      position: relative !important;
+    }
+    /* Controls / sidebar below */
+    aside, #controls, .controls, #sidebar {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      flex: 1 1 auto !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-top: 1px solid #25252a !important;
+      margin: 0 !important;
+      position: relative !important;
+    }
+    /* Tabs scrollable */
+    #tabs, .tabs {
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      flex-wrap: nowrap !important;
+      scroll-snap-type: x proximity;
+    }
+    .tab-btn, .tab {
+      flex: 0 0 auto !important;
+      min-height: 36px;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+      scroll-snap-align: start;
+    }
+    /* Touch-friendly inputs */
+    button, .btn {
+      min-height: 38px;
+      padding: 9px 12px !important;
+      font-size: 13px !important;
+    }
+    .row { gap: 12px; margin: 4px 0; }
+    .row label { flex: 0 0 110px; font-size: 12px; }
+    .row input[type="text"], .row input[type="number"], .row input[type="url"], .row select, .row textarea {
+      min-height: 38px;
+      font-size: 13px;
+      padding: 8px 10px;
+    }
+    .row input[type="range"] { min-height: 36px; }
+    .row input[type="color"] { width: 44px; height: 36px; }
+    .row input[type="checkbox"] { width: 22px; height: 22px; }
+  }
+  @media (max-width: 600px) {
+    main, #stage, #stage-wrap, .preview { height: 55vh !important; }
+    .row label { flex: 0 0 95px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="bg-media-layer" style="position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;">
+  <video id="bg-video" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:1;" playsinline preload="auto"></video>
+  <video id="bg-video-next" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;opacity:0;" playsinline preload="auto"></video>
+  <img id="bg-image" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;" alt="">
+  <audio id="bg-audio-only" style="display:none;"></audio>
+</div>
+<div id="page-bg-tint"></div>
+
+<aside id="controls">
+  <h1>Email Typer · Notes-as-Mail</h1>
+
+  <div id="tabs">
+    <button class="tab-btn active" data-tab="tab-script">Script</button>
+    <button class="tab-btn" data-tab="tab-srt-script">Script SRT</button>
+    <button class="tab-btn" data-tab="tab-frame">Frame</button>
+    <button class="tab-btn" data-tab="tab-gmail">Gmail</button>
+    <button class="tab-btn" data-tab="tab-compose">Compose</button>
+    <button class="tab-btn" data-tab="tab-notes">Notes</button>
+    <button class="tab-btn" data-tab="tab-shapes">Shapes</button>
+    <button class="tab-btn" data-tab="tab-layout">Layout</button>
+    <button class="tab-btn" data-tab="tab-strings">Strings</button>
+    <button class="tab-btn" data-tab="tab-notif">Notif</button>
+    <button class="tab-btn" data-tab="tab-zoom">Zoom</button>
+    <button class="tab-btn" data-tab="tab-stack">Stack</button>
+    <button class="tab-btn" data-tab="tab-timing">Timing</button>
+    <button class="tab-btn" data-tab="tab-media">Media</button>
+    <button class="tab-btn" data-tab="tab-sound">Sound</button>
+    <button class="tab-btn" data-tab="tab-audio">Audio</button>
+    <button class="tab-btn" data-tab="tab-tts">Sync</button>
+  </div>
+
+  <!-- ============ SCRIPT TAB ============ -->
+  <div class="tab-content active" id="tab-script">
+    <textarea id="script" spellcheck="false">[[subject:tomorrow]]
+[[to:lindah@deloitte.ch]]
+dear HR. [[my boyfriend|my colleague]][[pause:400]][[ Joel|,]][[pause:600]] feels like i will be too sick tomorrow for a 9:[[pause:100]]00 am morning shift. [[m|M]]aybe at 11??</textarea>
+
+    <div class="btn-row">
+      <button id="start" class="primary">Start ▶</button>
+      <button id="stop" class="danger">Stop</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="btn-row">
+      <button id="hide">Hide panel (H)</button>
+    </div>
+
+    <details class="help keymap" open>
+      <summary style="cursor:pointer;color:#c4c6cd;">Script key map</summary>
+      <div style="margin-top:8px">
+        <span style="color:#9a9da5;">One email per block — separate emails with a <b>blank line</b>. Header tags (subject, to…) go at the very <b>start</b> of a block; everything after is the body that gets typed out.</span>
+
+        <h4>✏️ Edit while typing (use anywhere in the body)</h4>
+        <div class="km">
+          <code>[[wrong|right]]</code><span>types “wrong”, then backspaces and self-corrects to “right”</span>
+          <code>[[pause:1500]]</code><span>pause typing for 1500&nbsp;ms (alias <code>[[wait:1500]]</code>)</span>
+          <code>\[[</code><span>type a literal “[[” (escape, no directive)</span>
+        </div>
+
+        <h4>✉️ Email header (start of block)</h4>
+        <div class="km">
+          <code>[[subject:dinner tonight]]</code><span>subject line</span>
+          <code>[[to:sam@mail.com]]</code><span>recipient — overrides the default “To”</span>
+          <code>[[from:mom]]</code><span>sender name</span>
+          <code>[[time:7:02 AM]]</code><span>timestamp</span>
+        </div>
+
+        <h4>📎 Attach a file</h4>
+        <div class="km">
+          <code>[[image:1]]</code><span>insert image #1 (alias <code>[[img:1]]</code>)</span>
+          <code>[[video:1]]</code><span>insert video #1 (alias <code>[[vid:1]]</code>)</span>
+        </div>
+        <p class="note">Load files in the <b>Media</b> tab first — they’re numbered in the order added. Attachments render on the dropped note, so turn on “Drop sticky note on inbox” (Compose tab).</p>
+
+        <h4>🗒 Note style (when notes are enabled)</h4>
+        <div class="km">
+          <code>[[shape:envelope]]</code><span>envelope · sticky · notebook · polaroid · index · postcard · plain · stamp</span>
+          <code>[[color:#ffcc00]]</code><span>paper color (alias <code>[[bg:…]]</code>)</span>
+          <code>[[header:errands]]</code><span>small header label</span>
+          <code>[[footer:— m]]</code><span>footer line</span>
+          <code>[[dedication:dear j]]</code><span>italic dedication (alias <code>[[for:…]]</code>)</span>
+          <code>[[lock]]</code><span>pin the note (skips zoom-into-focus)</span>
+        </div>
+
+        <h4>🔊 Voice / narration (when TTS is on)</h4>
+        <div class="km">
+          <code>[[sync:stretch]]</code><span>fit speech to typing — also <code>sentence</code> or <code>off</code></span>
+          <code>[[ttstext:spoken line]]</code><span>speak this instead of the body (alias <code>[[narrate:…]]</code>)</span>
+          <code>[[ttsvoice:en-GB-MaisieNeural]]</code><span>pick a voice</span>
+          <code>[[ttspreset:Hype Narrator]]</code><span>apply a saved TTS-FX preset</span>
+          <code>[[ttsrate:1.1]]</code><span>rate · <code>[[ttspitch:0]]</code> · <code>[[ttsvolume:1]]</code></span>
+          <code>[[ttsfx:bass=3,treble=-2]]</code><span>per-scene audio FX · <code>[[ttsboost:1.5]]</code> · <code>[[duck:60]]</code></span>
+          <code>[[ttspredelay:300]]</code><span>delay before speech · <code>[[ttspostdelay:300]]</code> · <code>[[ttsssml:1]]</code></span>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- ============ FRAME TAB ============ -->
+  <div class="tab-content" id="tab-frame">
+    <h2>Vertical / phone capture</h2>
+    <div class="row"><label>Reel mode (full-screen phone compose)</label><input type="checkbox" id="reel-mode"></div>
+    <div class="help">Fills the frame with a full-screen phone compose, so the email <b>becomes the whole screen</b> — record the 9:16 frame directly, no cropping a small portion. Turning it on auto-sets a 9:16 (540×960) frame and enlarges the typing text. Toggle off to restore your previous size.</div>
+
+    <h2>OBS present mode</h2>
+    <div class="btn-row"><button id="copy-present-link" class="primary">📋 Copy OBS present-mode link (with script)</button></div>
+    <div class="help">For an OBS <b>Browser Source</b>: this copies a link that opens the phone <b>full-screen with your current script baked in</b> — controls hidden, auto-plays on load. Paste it as the Browser Source URL and set the source size to <b>540×960</b> (then scale it up to your 1080×1920 canvas in OBS). Refresh the source to replay for another take.</div>
+
+    <h2>Gmail screen size</h2>
+    <div class="row"><label>Width (px)</label><input type="number" id="frame-w" value="1100" min="200" max="4000" step="10"></div>
+    <div class="row"><label>Height (px)</label><input type="number" id="frame-h" value="620" min="200" max="4000" step="10"></div>
+    <div class="btn-row">
+      <button data-frame="desktop">Desktop · 1100×620</button>
+      <button data-frame="tablet">Tablet · 1024×768</button>
+    </div>
+    <div class="btn-row">
+      <button data-frame="mobile">Phone · 390×844</button>
+      <button data-frame="mobile-l">Phone L · 844×390</button>
+    </div>
+    <div class="btn-row">
+      <button data-frame="square">Square · 720×720</button>
+      <button data-frame="vertical">Reel · 540×960</button>
+    </div>
+    <div class="row"><label>Show resize handles</label><input type="checkbox" id="handles-on"></div>
+
+    <h2>Frame styling</h2>
+    <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--frame-radius" data-unit="px" value="6" min="0" max="60"></div>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--frame-shadow-y" data-unit="px" value="18" min="-50" max="200"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--frame-shadow-blur" data-unit="px" value="50" min="0" max="400"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="frame-shadow-alpha" min="0" max="100" value="18">
+      <span class="val" id="frame-shadow-alpha-val">18%</span>
+    </div>
+  </div>
+
+  <!-- ============ GMAIL CHROME TAB ============ -->
+  <div class="tab-content" id="tab-gmail">
+    <h2>Theme</h2>
+    <div class="row"><label>Dark theme</label><input type="checkbox" id="dark-theme" checked></div>
+    <div class="help">Dark theme overrides the surface colors below. Toggle it off to use the individual color pickers.</div>
+
+    <h2>Surfaces</h2>
+    <div class="row"><label>Stage background</label><input type="color" id="stage-bg" value="#f6f8fc"></div>
+    <div class="row"><label>Gmail chrome</label><input type="color" id="gmail-chrome" value="#ffffff"></div>
+    <div class="row"><label>Sidebar background</label><input type="color" id="sidebar-bg" value="#f6f8fc"></div>
+    <div class="row"><label>Sidebar active bg</label><input type="color" data-css="--sidebar-active" value="#fce8e6"></div>
+    <div class="row"><label>Accent (orange)</label><input type="color" id="gmail-accent" value="#c2410c"></div>
+    <div class="row"><label>Text color</label><input type="color" data-css="--gmail-text" value="#202124"></div>
+    <div class="row"><label>Muted text</label><input type="color" data-css="--gmail-muted" value="#5f6368"></div>
+    <div class="row"><label>Border color</label><input type="color" data-css="--gmail-border" value="#e1e4ea"></div>
+
+    <h2>Header bar</h2>
+    <div class="row"><label>Height (px)</label><input type="number" data-css="--gmail-header-h" data-unit="px" value="64" min="32" max="160"></div>
+    <div class="row"><label>Padding X (px)</label><input type="number" data-css="--gmail-header-pad-x" data-unit="px" value="16" min="0" max="80"></div>
+    <div class="row"><label>Element gap (px)</label><input type="number" data-css="--gmail-header-gap" data-unit="px" value="16" min="0" max="60"></div>
+    <div class="row"><label>Search height (px)</label><input type="number" data-css="--gh-search-h" data-unit="px" value="48" min="20" max="120"></div>
+    <div class="row"><label>Search bg</label><input type="color" data-css="--gh-search-bg" value="#eaf1fb"></div>
+    <div class="row"><label>Search radius (px)</label><input type="number" data-css="--gh-search-radius" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Icon size (px)</label><input type="number" data-css="--gh-icon-size" data-unit="px" value="40" min="20" max="80"></div>
+    <div class="row"><label>Avatar size (px)</label><input type="number" data-css="--gh-avatar-size" data-unit="px" value="32" min="20" max="80"></div>
+
+    <h2>Sidebar</h2>
+    <div class="row"><label>Width (px)</label><input type="number" data-css="--sidebar-width" data-unit="px" value="256" min="100" max="500"></div>
+    <div class="row"><label>Item height (px)</label><input type="number" data-css="--sb-item-h" data-unit="px" value="32" min="20" max="80"></div>
+    <div class="row"><label>Item left padding (px)</label><input type="number" data-css="--sb-item-pad-l" data-unit="px" value="26" min="0" max="80"></div>
+    <div class="row"><label>Item font size (px)</label><input type="number" data-css="--sb-item-fz" data-unit="px" value="14" min="8" max="24"></div>
+    <div class="row"><label>Compose btn radius (px)</label><input type="number" data-css="--compose-btn-radius" data-unit="px" value="16" min="0" max="40"></div>
+
+    <h2>Inbox toolbar / tabs</h2>
+    <div class="row"><label>Toolbar height (px)</label><input type="number" data-css="--inbox-toolbar-h" data-unit="px" value="48" min="20" max="120"></div>
+    <div class="row"><label>Tabs height (px)</label><input type="number" data-css="--inbox-tabs-h" data-unit="px" value="48" min="20" max="120"></div>
+    <div class="row"><label>Tab padding X (px)</label><input type="number" data-css="--ib-tab-pad-x" data-unit="px" value="24" min="0" max="80"></div>
+    <div class="row"><label>Tab font size (px)</label><input type="number" data-css="--ib-tab-fz" data-unit="px" value="14" min="8" max="24"></div>
+    <div class="row"><label>Inbox radius (px)</label><input type="number" data-css="--inbox-radius" data-unit="px" value="12" min="0" max="40"></div>
+
+    <h2>Decorative email rows</h2>
+    <div class="row"><label>Show decorative emails</label><input type="checkbox" id="emails-on" checked></div>
+    <div class="row"><label>Row count</label><input type="number" id="emails-n" value="14" min="0" max="60"></div>
+    <div class="row"><label>Row height (px)</label><input type="number" data-css="--email-row-h" data-unit="px" value="44" min="24" max="120"></div>
+    <div class="row"><label>Row padding X (px)</label><input type="number" data-css="--email-row-pad-x" data-unit="px" value="16" min="0" max="60"></div>
+    <div class="row"><label>Row gap (px)</label><input type="number" data-css="--email-row-gap" data-unit="px" value="12" min="0" max="40"></div>
+    <div class="row"><label>Row font size (px)</label><input type="number" data-css="--email-row-fz" data-unit="px" value="14" min="8" max="24"></div>
+  </div>
+
+  <!-- ============ COMPOSE TAB ============ -->
+  <div class="tab-content" id="tab-compose">
+    <h2>Recipient</h2>
+    <div class="row"><label>From</label><input type="text" id="compose-from" value="maggie.africanah@gmail.com"></div>
+    <div class="row"><label>To (default)</label><input type="text" id="compose-to" value="j@elsewhere.net"></div>
+    <div class="row"><label>Cc</label><input type="text" id="compose-cc" value=""></div>
+    <div class="help">From/To/Cc show in the email header. Leave Cc blank to hide that row. A per-scene <code>to:</code> in the script overrides To.</div>
+
+    <h2>Send animation</h2>
+    <div class="row"><label>Mouse moves to Send &amp; clicks</label><input type="checkbox" id="cursor-on" checked></div>
+    <div class="row"><label>Cursor move time (ms)</label><input type="number" id="cursor-move-ms" value="750" min="0" max="4000" step="50"></div>
+    <div class="row"><label>Show Sending/Sent toast</label><input type="checkbox" id="snackbar-on" checked></div>
+    <div class="row"><label>"Sending…" duration (ms)</label><input type="number" id="sending-ms" value="950" min="0" max="6000" step="50"></div>
+    <div class="row"><label>Drop sticky note on inbox</label><input type="checkbox" id="drop-note-on"></div>
+
+    <h2>Compose popup</h2>
+    <div class="row"><label>Position</label>
+      <select id="compose-pos">
+        <option value="br" selected>Bottom-right</option>
+        <option value="bl">Bottom-left</option>
+        <option value="bc">Bottom-center</option>
+      </select>
+    </div>
+    <div class="row"><label>Width (px)</label><input type="number" id="compose-w" value="540" min="100" max="2000"></div>
+    <div class="row"><label>Height (px)</label><input type="number" id="compose-h" value="480" min="100" max="2000"></div>
+    <div class="row"><label>Background</label><input type="color" data-css="--compose-bg" value="#ffffff"></div>
+    <div class="row"><label>Header color</label><input type="color" id="compose-header" value="#404040"></div>
+    <div class="row"><label>Header height (px)</label><input type="number" data-css="--compose-header-h" data-unit="px" value="40" min="20" max="100"></div>
+    <div class="row"><label>Header font size (px)</label><input type="number" data-css="--compose-header-fz" data-unit="px" value="13" min="8" max="32"></div>
+    <div class="row"><label>Body padding (px)</label><input type="number" data-css="--compose-body-pad" data-unit="px" value="16" min="0" max="60"></div>
+    <div class="row"><label>Body line-height</label><input type="number" data-css="--compose-line-h" value="1.55" min="0.8" max="3" step="0.05"></div>
+    <div class="row"><label>Field padding Y (px)</label><input type="number" data-css="--compose-field-pad-y" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Field padding X (px)</label><input type="number" data-css="--compose-field-pad-x" data-unit="px" value="16" min="0" max="60"></div>
+    <div class="row"><label>Field font size (px)</label><input type="number" data-css="--compose-field-fz" data-unit="px" value="13" min="8" max="24"></div>
+    <div class="row"><label>Footer height (px)</label><input type="number" data-css="--compose-footer-h" data-unit="px" value="56" min="20" max="120"></div>
+    <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--compose-radius" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Send button color</label><input type="color" data-css="--compose-send-bg" value="#0b57d0"></div>
+    <div class="row"><label>Send btn radius (px)</label><input type="number" data-css="--compose-send-radius" data-unit="px" value="18" min="0" max="40"></div>
+
+    <h2>Compose text</h2>
+    <div class="row"><label>Text color</label><input type="color" id="compose-text-color" value="#202124"></div>
+    <div class="row"><label>Font size (px)</label><input type="number" id="prompt-size" value="14" min="6" max="80"></div>
+    <div class="row"><label>Font weight</label>
+      <select data-css="--prompt-weight">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option><option value="700">700</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Font</label>
+      <select id="prompt-font">
+        <option value='"Google Sans", "Segoe UI", system-ui, sans-serif' selected>Sans-serif (Gmail)</option>
+        <option value='Georgia, "Times New Roman", serif'>Serif</option>
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace'>Monospace</option>
+        <option value='Inter, sans-serif'>Inter</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom font</label><input type="text" id="prompt-font-custom" placeholder='e.g. "Inter", sans-serif'></div>
+    <div class="row">
+      <label>Cursor style</label>
+      <select id="cursor-style">
+        <option value="bar">Bar (│)</option>
+        <option value="block">Block (█)</option>
+        <option value="underline">Underline (_)</option>
+      </select>
+    </div>
+
+    <h2>Lens (looking down a lens)</h2>
+    <div class="row"><label>Magnify email body</label><input type="checkbox" id="lens-on" checked></div>
+    <div class="row">
+      <label>Magnification (×)</label>
+      <input type="range" id="lens-mag" min="120" max="360" value="190">
+      <span class="val" id="lens-mag-val">1.9×</span>
+    </div>
+    <div class="row">
+      <label>Vignette strength</label>
+      <input type="range" id="lens-vignette" min="0" max="100" value="55">
+      <span class="val" id="lens-vignette-val">55%</span>
+    </div>
+    <div class="row">
+      <label>Forward pop (×)</label>
+      <input type="range" id="lens-pop" min="100" max="125" value="106">
+      <span class="val" id="lens-pop-val">1.06×</span>
+    </div>
+    <div class="help">While each email is typed, the whole email lunges forward (pop) and the body text is magnified as if seen down a lens; it zooms back out when the cursor clicks Send. The checkbox previews the zoomed state.</div>
+  </div>
+
+  <!-- ============ NOTES TAB ============ -->
+  <div class="tab-content" id="tab-notes">
+    <h2>Body font</h2>
+    <div class="row">
+      <label>Family</label>
+      <select id="note-font">
+        <option value='"Patrick Hand", "Caveat", "Comic Sans MS", "Marker Felt", cursive' selected>Handwritten</option>
+        <option value='"Caveat", "Comic Sans MS", cursive'>Caveat</option>
+        <option value='Georgia, "Times New Roman", serif'>Serif (Georgia)</option>
+        <option value='ui-sans-serif, system-ui, -apple-system, sans-serif'>Sans-serif</option>
+        <option value='Inter, ui-sans-serif, sans-serif'>Inter</option>
+        <option value='ui-monospace, "JetBrains Mono", Consolas, monospace'>Typewriter / mono</option>
+      </select>
+    </div>
+    <div class="row"><label>Custom family</label><input type="text" id="note-font-custom" placeholder='e.g. "Patrick Hand", cursive'></div>
+    <div class="row"><label>Body size (px)</label><input type="number" id="note-size" value="17" min="6" max="80"></div>
+    <div class="row"><label>Body text color</label><input type="color" id="note-text-color" value="#2a2a2a"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--note-weight">
+        <option value="300">300</option><option value="400" selected>400</option>
+        <option value="500">500</option><option value="600">600</option><option value="700">700</option>
+      </select>
+    </div>
+    <div class="row"><label>Line height</label><input type="number" data-css="--note-line-h" value="1.5" min="0.8" max="3" step="0.05"></div>
+
+    <h2>Header label</h2>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--note-header-fz" data-unit="px" value="11" min="6" max="32"></div>
+    <div class="row">
+      <label>Weight</label>
+      <select data-css="--note-header-fw">
+        <option value="400">400</option><option value="500">500</option>
+        <option value="600" selected>600</option><option value="700">700</option><option value="900">900</option>
+      </select>
+    </div>
+    <div class="row"><label>Letter spacing (em)</label><input type="number" data-css="--note-header-spacing" data-unit="em" value="0.08" min="0" max="0.5" step="0.01"></div>
+    <div class="row"><label>Margin below (px)</label><input type="number" data-css="--note-header-mb" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Color</label><input type="color" data-css="--note-header-color" value="#737373"></div>
+
+    <h2>Dedication / footer</h2>
+    <div class="row"><label>Dedication size (px)</label><input type="number" data-css="--note-ded-fz" data-unit="px" value="13" min="6" max="32"></div>
+    <div class="row"><label>Dedication color</label><input type="color" data-css="--note-ded-color" value="#8c8c8c"></div>
+    <div class="row"><label>Footer size (px)</label><input type="number" data-css="--note-footer-fz" data-unit="px" value="12" min="6" max="32"></div>
+    <div class="row"><label>Footer color</label><input type="color" data-css="--note-footer-color" value="#808080"></div>
+
+    <h2>Note base</h2>
+    <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--note-pad-y" data-unit="px" value="18" min="0" max="80"></div>
+    <div class="row"><label>Padding X (px)</label><input type="number" data-css="--note-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+    <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--note-radius" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--note-shadow-y" data-unit="px" value="8" min="0" max="80"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--note-shadow-blur" data-unit="px" value="24" min="0" max="120"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="note-shadow-alpha" min="0" max="100" value="12">
+      <span class="val" id="note-shadow-alpha-val">12%</span>
+    </div>
+
+    <h2>Entrance animation</h2>
+    <div class="row"><label>Fade duration (ms)</label><input type="number" data-css="--note-anim-fade" data-unit="ms" value="400" min="0" max="3000"></div>
+    <div class="row"><label>Scale duration (ms)</label><input type="number" data-css="--note-anim-scale" data-unit="ms" value="560" min="0" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--note-anim-easing">
+        <option value="cubic-bezier(0.34, 1.4, 0.64, 1)" selected>Pop (overshoot)</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="linear">Linear</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+        <option value="cubic-bezier(0.68, -0.55, 0.27, 1.55)">Bouncy</option>
+      </select>
+    </div>
+    <div class="row"><label>Scale from</label><input type="number" data-css="--note-anim-scale-from" value="0.5" min="0" max="2" step="0.05"></div>
+
+    <h2>Note controls (lock / dismiss)</h2>
+    <div class="row"><label>Button size (px)</label><input type="number" data-css="--noteCtl-size" data-unit="px" value="22" min="12" max="60"></div>
+    <div class="row"><label>Button font size (px)</label><input type="number" data-css="--noteCtl-fz" data-unit="px" value="11" min="6" max="32"></div>
+  </div>
+
+  <!-- ============ SHAPES TAB ============ -->
+  <div class="tab-content" id="tab-shapes">
+    <details class="shape-group" open>
+      <summary>Envelope (email-only)</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--en-bg" value="#fffdf5"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--en-w" data-unit="px" value="360" min="100" max="800"></div>
+      <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--en-pad-y" data-unit="px" value="24" min="0" max="80"></div>
+      <div class="row"><label>Padding X (px)</label><input type="number" data-css="--en-pad-x" data-unit="px" value="28" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--en-radius" data-unit="px" value="4" min="0" max="40"></div>
+      <div class="row"><label>Border color</label><input type="color" data-css="--en-border-color" value="#d8c98f"></div>
+      <div class="row"><label>Header color</label><input type="color" data-css="--en-header-color" value="#806c30"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Sticky note</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--sk-bg" value="#ffec7a"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--sk-w" data-unit="px" value="280" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--sk-pad-t" data-unit="px" value="18" min="0" max="80"></div>
+      <div class="row"><label>Padding side (px)</label><input type="number" data-css="--sk-pad-x" data-unit="px" value="20" min="0" max="80"></div>
+      <div class="row"><label>Padding bottom (px)</label><input type="number" data-css="--sk-pad-b" data-unit="px" value="26" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--sk-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--sk-shadow-y" data-unit="px" value="10" min="0" max="80"></div>
+      <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--sk-shadow-blur" data-unit="px" value="22" min="0" max="120"></div>
+      <div class="row">
+        <label>Shadow opacity</label>
+        <input type="range" id="sk-shadow-alpha" min="0" max="100" value="18">
+        <span class="val" id="sk-shadow-alpha-val">18%</span>
+      </div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Notebook page</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--nb-bg" value="#fdfcf6"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--nb-w" data-unit="px" value="340" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--nb-pad-t" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding right (px)</label><input type="number" data-css="--nb-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Left margin (px)</label><input type="number" data-css="--nb-pad-l" data-unit="px" value="56" min="0" max="200"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--nb-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Margin line color</label><input type="color" data-css="--nb-margin-color" value="#ff8888"></div>
+      <div class="row"><label>Rule color</label><input type="color" data-css="--nb-line-color" value="#b8c5d4"></div>
+      <div class="row"><label>Line height (px)</label><input type="number" data-css="--nb-line-h" data-unit="px" value="28" min="14" max="60"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Polaroid</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--pl-bg" value="#ffffff"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--pl-w" data-unit="px" value="260" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--pl-pad-t" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding side (px)</label><input type="number" data-css="--pl-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding bottom (px)</label><input type="number" data-css="--pl-pad-b" data-unit="px" value="56" min="0" max="160"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--pl-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--pl-shadow-y" data-unit="px" value="14" min="0" max="80"></div>
+      <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--pl-shadow-blur" data-unit="px" value="28" min="0" max="120"></div>
+      <div class="row">
+        <label>Shadow opacity</label>
+        <input type="range" id="pl-shadow-alpha" min="0" max="100" value="18">
+        <span class="val" id="pl-shadow-alpha-val">18%</span>
+      </div>
+      <div class="row"><label>Footer size (px)</label><input type="number" data-css="--pl-footer-fz" data-unit="px" value="16" min="6" max="40"></div>
+      <div class="row"><label>Footer color</label><input type="color" data-css="--pl-footer-color" value="#555555"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Index card</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--ix-bg" value="#fafafa"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--ix-w" data-unit="px" value="360" min="100" max="800"></div>
+      <div class="row"><label>Padding top (px)</label><input type="number" data-css="--ix-pad-t" data-unit="px" value="18" min="0" max="80"></div>
+      <div class="row"><label>Padding side (px)</label><input type="number" data-css="--ix-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Padding bottom (px)</label><input type="number" data-css="--ix-pad-b" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--ix-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Top border (px)</label><input type="number" data-css="--ix-top-border" data-unit="px" value="4" min="0" max="20"></div>
+      <div class="row"><label>Top border color</label><input type="color" data-css="--ix-top-color" value="#f25555"></div>
+      <div class="row"><label>Rule color</label><input type="color" data-css="--ix-line-color" value="#b8c5d4"></div>
+      <div class="row"><label>Line height (px)</label><input type="number" data-css="--ix-line-h" data-unit="px" value="24" min="14" max="60"></div>
+      <div class="row"><label>Header color</label><input type="color" data-css="--ix-header-color" value="#cc4444"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Postcard</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--pc-bg" value="#f3e9d2"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--pc-w" data-unit="px" value="400" min="100" max="900"></div>
+      <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--pc-pad-y" data-unit="px" value="20" min="0" max="80"></div>
+      <div class="row"><label>Padding X (px)</label><input type="number" data-css="--pc-pad-x" data-unit="px" value="24" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--pc-radius" data-unit="px" value="4" min="0" max="40"></div>
+      <div class="row"><label>Divider color</label><input type="color" data-css="--pc-divider" value="#b9a273"></div>
+      <div class="row"><label>Header color</label><input type="color" data-css="--pc-header-color" value="#6f5a35"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Plain</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--pn-bg" value="#ffffff"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--pn-w" data-unit="px" value="320" min="100" max="800"></div>
+      <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--pn-pad-y" data-unit="px" value="20" min="0" max="80"></div>
+      <div class="row"><label>Padding X (px)</label><input type="number" data-css="--pn-pad-x" data-unit="px" value="22" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--pn-radius" data-unit="px" value="14" min="0" max="60"></div>
+    </details>
+
+    <details class="shape-group">
+      <summary>Stamp</summary>
+      <div class="row"><label>Background</label><input type="color" data-css="--st-bg" value="#fef7e0"></div>
+      <div class="row"><label>Width (px)</label><input type="number" data-css="--st-w" data-unit="px" value="220" min="100" max="800"></div>
+      <div class="row"><label>Padding Y (px)</label><input type="number" data-css="--st-pad-y" data-unit="px" value="16" min="0" max="80"></div>
+      <div class="row"><label>Padding X (px)</label><input type="number" data-css="--st-pad-x" data-unit="px" value="18" min="0" max="80"></div>
+      <div class="row"><label>Corner radius (px)</label><input type="number" data-css="--st-radius" data-unit="px" value="2" min="0" max="40"></div>
+      <div class="row"><label>Border color</label><input type="color" data-css="--st-border-color" value="#806c30"></div>
+    </details>
+  </div>
+
+  <!-- ============ LAYOUT TAB ============ -->
+  <div class="tab-content" id="tab-layout">
+    <h2>Pattern</h2>
+    <div class="row">
+      <label>Layout</label>
+      <select id="layout">
+        <option value="scatter" selected>Scatter on inbox</option>
+        <option value="cascade">Cascade diagonal</option>
+        <option value="grid">Loose grid</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Jitter</label>
+      <input type="range" id="jitter" min="0" max="400" value="80">
+      <span class="val" id="jitter-val">80</span>
+    </div>
+    <div class="row">
+      <label>Rotation strength</label>
+      <input type="range" id="rotation" min="0" max="200" value="22">
+      <span class="val" id="rotation-val">2.2°</span>
+    </div>
+    <div class="row">
+      <label>Send pause (ms)</label>
+      <input type="number" id="send-pause" value="700" min="0" max="10000">
+    </div>
+    <div class="row">
+      <label>Scene settle (ms)</label>
+      <input type="number" id="scene-settle" value="180" min="0" max="5000">
+    </div>
+
+    <h2>Shape pool (when no <code>[[shape:]]</code>)</h2>
+    <div class="shape-grid">
+      <label><input type="checkbox" data-shape="envelope" checked> envelope</label>
+      <label><input type="checkbox" data-shape="sticky" checked> sticky</label>
+      <label><input type="checkbox" data-shape="notebook" checked> notebook</label>
+      <label><input type="checkbox" data-shape="polaroid" checked> polaroid</label>
+      <label><input type="checkbox" data-shape="index"> index</label>
+      <label><input type="checkbox" data-shape="postcard"> postcard</label>
+      <label><input type="checkbox" data-shape="plain"> plain</label>
+      <label><input type="checkbox" data-shape="stamp"> stamp</label>
+    </div>
+  </div>
+
+  <!-- ============ STRINGS TAB ============ -->
+  <div class="tab-content" id="tab-strings">
+    <div class="row"><label>Draw strings</label><input type="checkbox" id="strings-on"></div>
+    <div class="row"><label>Color</label><input type="color" id="string-color" value="#b9a86c"></div>
+    <div class="row">
+      <label>Width</label>
+      <input type="range" id="string-width" min="1" max="80" value="12">
+      <span class="val" id="string-width-val">1.2</span>
+    </div>
+    <div class="row">
+      <label>Style</label>
+      <select id="string-style">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="dotted">Dotted</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Curviness</label>
+      <input type="range" id="string-curve" min="0" max="200" value="40">
+      <span class="val" id="string-curve-val">40%</span>
+    </div>
+  </div>
+
+  <!-- ============ NOTIF TAB ============ -->
+  <div class="tab-content" id="tab-notif">
+    <h2>Behavior</h2>
+    <div class="row"><label>Show toast on send</label><input type="checkbox" id="notif-on" checked></div>
+    <div class="row"><label>Chime sound</label><input type="checkbox" id="notif-sound" checked></div>
+    <div class="row">
+      <label>Display time (ms)</label>
+      <input type="number" id="notif-ms" value="3800" min="100" max="20000" step="100">
+    </div>
+
+    <h2>Geometry</h2>
+    <div class="row"><label>Top offset (px)</label><input type="number" data-css="--notif-top" data-unit="px" value="76" min="0" max="300"></div>
+    <div class="row"><label>Right offset (px)</label><input type="number" data-css="--notif-right" data-unit="px" value="16" min="0" max="200"></div>
+    <div class="row"><label>Max width (px)</label><input type="number" data-css="--notif-max-w" data-unit="px" value="320" min="100" max="800"></div>
+    <div class="row"><label>Radius (px)</label><input type="number" data-css="--notif-radius" data-unit="px" value="8" min="0" max="40"></div>
+    <div class="row"><label>Pad Y (px)</label><input type="number" data-css="--notif-pad-y" data-unit="px" value="12" min="0" max="40"></div>
+    <div class="row"><label>Pad X (px)</label><input type="number" data-css="--notif-pad-x" data-unit="px" value="16" min="0" max="40"></div>
+    <div class="row"><label>Element gap (px)</label><input type="number" data-css="--notif-gap" data-unit="px" value="12" min="0" max="40"></div>
+    <div class="row"><label>Avatar size (px)</label><input type="number" data-css="--notif-avatar-size" data-unit="px" value="32" min="16" max="100"></div>
+
+    <h2>Style</h2>
+    <div class="row"><label>Background</label><input type="color" data-css="--notif-bg" value="#323639"></div>
+    <div class="row"><label>Text color</label><input type="color" data-css="--notif-text" value="#ffffff"></div>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--notif-fz" data-unit="px" value="13" min="8" max="24"></div>
+
+    <h2>Shadow</h2>
+    <div class="row"><label>Shadow Y (px)</label><input type="number" data-css="--notif-shadow-y" data-unit="px" value="4" min="0" max="80"></div>
+    <div class="row"><label>Shadow blur (px)</label><input type="number" data-css="--notif-shadow-blur" data-unit="px" value="12" min="0" max="200"></div>
+    <div class="row">
+      <label>Shadow opacity</label>
+      <input type="range" id="notif-shadow-alpha" min="0" max="100" value="30">
+      <span class="val" id="notif-shadow-alpha-val">30%</span>
+    </div>
+
+    <h2>Animation</h2>
+    <div class="row"><label>Duration (ms)</label><input type="number" data-css="--notif-anim-ms" data-unit="ms" value="260" min="50" max="3000"></div>
+    <div class="row">
+      <label>Easing</label>
+      <select data-css="--notif-anim-easing">
+        <option value="cubic-bezier(0.34, 1.56, 0.64, 1)" selected>Pop</option>
+        <option value="ease-out">Ease-out</option>
+        <option value="ease">Ease</option>
+        <option value="cubic-bezier(0.16, 1, 0.3, 1)">Soft</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ============ ZOOM TAB ============ -->
+  <div class="tab-content" id="tab-zoom">
+    <div class="row"><label>Enable</label><input type="checkbox" id="zoom-on" checked></div>
+    <div class="row">
+      <label>Mode</label>
+      <select id="zoom-mode">
+        <option value="latest">Latest only</option>
+        <option value="sequence" selected>Cycle through (skip locked)</option>
+      </select>
+    </div>
+    <div class="row"><label>Delay before zoom (ms)</label><input type="number" id="zoom-delay" value="2400" min="0" max="30000" step="100"></div>
+    <div class="row"><label>Zoom duration (ms)</label><input type="number" id="zoom-dur" value="3200" min="200" max="30000" step="100"></div>
+    <div class="row"><label>Hold at full (ms)</label><input type="number" id="zoom-hold" value="1600" min="0" max="20000" step="100"></div>
+    <div class="row"><label>Unzoom duration (ms)</label><input type="number" id="zoom-out-dur" value="700" min="0" max="10000" step="100"></div>
+    <div class="row"><label>Fit padding (px)</label><input type="number" id="zoom-pad" value="40" min="0" max="400" step="4"></div>
+    <div class="row">
+      <label>Max scale (×)</label>
+      <input type="range" id="zoom-max" min="100" max="500" value="180">
+      <span class="val" id="zoom-max-val">1.8×</span>
+    </div>
+    <div class="row">
+      <label>Dim others</label>
+      <input type="range" id="zoom-dim" min="0" max="100" value="0">
+      <span class="val" id="zoom-dim-val">0%</span>
+    </div>
+    <div class="help" style="margin-top:6px">
+      Click any note's <b>📌</b> to lock — locked notes are skipped.
+    </div>
+  </div>
+
+  <!-- ============ STACK TAB ============ -->
+  <div class="tab-content" id="tab-stack">
+    <div class="row"><label>Auto-stack threshold</label><input type="number" id="stack-threshold" value="8" min="0" max="50"></div>
+    <div class="row"><label>Auto-stack delay (ms)</label><input type="number" id="stack-delay" value="5000" min="0" max="60000" step="100"></div>
+
+    <h2>Stack badge</h2>
+    <div class="row"><label>Color</label><input type="color" data-css="--stack-badge-color" value="#c2410c"></div>
+    <div class="row"><label>Size (px)</label><input type="number" data-css="--stack-badge-size" data-unit="px" value="22" min="12" max="60"></div>
+    <div class="row"><label>Font size (px)</label><input type="number" data-css="--stack-badge-fz" data-unit="px" value="11" min="6" max="24"></div>
+
+    <div class="help" style="margin-top:6px">
+      Drag a note onto another to stack them. Drag a stack — they all move together. Click a stack to fan it out.
+    </div>
+  </div>
+
+  <!-- ============ TIMING TAB ============ -->
+  <div class="tab-content" id="tab-timing">
+    <h2>Typing feel</h2>
+    <div class="row">
+      <label>Avg ms / char</label>
+      <input type="range" id="base-ms" min="5" max="500" value="60">
+      <span class="val" id="base-ms-val">60</span>
+    </div>
+    <div class="row">
+      <label>Variance ±</label>
+      <input type="range" id="variance-ms" min="0" max="300" value="42">
+      <span class="val" id="variance-ms-val">42</span>
+    </div>
+    <div class="row">
+      <label>Think pause chance</label>
+      <input type="range" id="think-chance" min="0" max="100" value="10">
+      <span class="val" id="think-chance-val">10%</span>
+    </div>
+    <div class="row">
+      <label>Max think (ms)</label>
+      <input type="number" id="think-max" value="2400" min="0" max="20000">
+    </div>
+    <div class="row">
+      <label>Start delay (s)</label>
+      <input type="number" id="start-delay" value="0" min="0" max="60" step="0.5">
+    </div>
+
+    <h2>Punctuation pauses</h2>
+    <div class="row"><label>Sentence base (ms)</label><input type="number" id="punct-sentence" value="220" min="0" max="5000"></div>
+    <div class="row"><label>Sentence jitter (ms)</label><input type="number" id="punct-sentence-j" value="380" min="0" max="5000"></div>
+    <div class="row"><label>Comma base (ms)</label><input type="number" id="punct-comma" value="70" min="0" max="2000"></div>
+    <div class="row"><label>Comma jitter (ms)</label><input type="number" id="punct-comma-j" value="160" min="0" max="2000"></div>
+
+    <h2>Typo handling</h2>
+    <div class="row"><label>Typo pause before bs (ms)</label><input type="number" id="typo-pause" value="200" min="0" max="3000"></div>
+    <div class="row"><label>Backspace ms / char</label><input type="number" id="bs-ms" value="50" min="5" max="500"></div>
+
+    <h2>Presets</h2>
+    <div class="btn-row">
+      <button data-preset="fast">Fast</button>
+      <button data-preset="natural">Natural</button>
+      <button data-preset="slow">Slow</button>
+    </div>
+
+  </div>
+
+  <!-- ============ MEDIA TAB ============ -->
+  <div class="tab-content" id="tab-media">
+    <h2>Images</h2>
+    <input type="file" id="image-input" accept="image/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-images">＋ Add image(s)</button>
+      <button id="clear-images">Clear all</button>
+    </div>
+    <div id="image-list"></div>
+
+    <h2>Videos</h2>
+    <input type="file" id="video-input" accept="video/*" multiple style="display:none;">
+    <div class="btn-row">
+      <button id="add-videos">＋ Add video(s)</button>
+      <button id="clear-videos">Clear all</button>
+    </div>
+    <div id="video-list"></div>
+  </div>
+
+  <!-- ============ SOUND TAB ============ -->
+  <div class="tab-content" id="tab-sound">
+    <h2>Typing sound</h2>
+    <div class="row"><label>Enable typing sound</label><input type="checkbox" id="sound-on" checked></div>
+    <div class="row">
+      <label>Style</label>
+      <select id="sound-style">
+        <option value="soft">Soft tock</option>
+        <option value="mechanical">Mechanical click</option>
+        <option value="typewriter">Typewriter</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Volume</label>
+      <input type="range" id="sound-vol" min="0" max="100" value="35">
+      <span class="val" id="sound-vol-val">35%</span>
+    </div>
+
+    <h2>Event volumes</h2>
+    <div class="row">
+      <label>Send swoosh</label>
+      <input type="range" id="snd-send" min="0" max="200" value="100">
+      <span class="val" id="snd-send-val">1.0×</span>
+    </div>
+    <div class="row">
+      <label>Notification chime</label>
+      <input type="range" id="snd-chime" min="0" max="200" value="100">
+      <span class="val" id="snd-chime-val">1.0×</span>
+    </div>
+  </div>
+
+  <!-- ============ AUDIO TAB (BGM + TTS + Sync) ============ -->
+  <div class="tab-content" id="tab-audio">
+    <h2>Background music (BGM)</h2>
+    <div class="row">
+      <label>Upload audio</label>
+      <input type="file" id="bgm-file" accept="audio/*">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>File</label>
+      <span id="bgm-name" style="color:#888;flex:1;">none</span>
+      <button id="bgm-clear" style="padding:3px 8px;font-size:10px;">clear</button>
+    </div>
+    <div class="row"><label>Auto-play with show</label><input type="checkbox" id="bgm-auto" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bgm-loop"></div>
+    <div class="row"><label>Volume</label><input type="range" id="bgm-volume" min="0" max="1" step="0.05" value="0.6"></div>
+    <div class="row"><label>Start offset (s)</label><input type="number" id="bgm-start" value="0" step="0.1" min="0"></div>
+    <div class="row"><label>Fade in (ms)</label><input type="number" id="bgm-fadein" value="0" min="0" step="50"></div>
+    <div class="row"><label>Fade out (ms)</label><input type="number" id="bgm-fadeout" value="0" min="0" step="50"></div>
+    <div class="row">
+      <label>Test</label>
+      <button id="bgm-test" style="padding:5px 12px;font-size:11px;">▶ Preview 4s</button>
+      <button id="bgm-stop-test" style="padding:5px 12px;font-size:11px;margin-left:6px;">⏹ Stop</button>
+    </div>
+
+    <h2>Background media (image / video / audio)</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Full-screen background layer. Image OR video (with or without sound), plus optional separate audio-only track. Ducks during TTS.
+    </div>
+    <div class="row"><label>Background video</label><input type="file" id="bg-video-file" accept="video/*"></div>
+    <div class="row"><label>Background image</label><input type="file" id="bg-image-file" accept="image/*"></div>
+    <div class="row"><label>Audio-only file</label><input type="file" id="bg-audio-file" accept="audio/*"></div>
+    <div class="row"><label>Video playlist (multiple)</label><input type="file" id="bg-playlist-files" accept="video/*" multiple></div>
+    <div class="row" style="align-items:flex-start;"><label>Queue</label>
+      <ol id="bg-playlist-list" style="flex:1;font-size:11px;color:#aaa;padding-left:20px;margin:0;list-style:decimal;max-height:120px;overflow-y:auto;"></ol>
+    </div>
+    <div class="row"><label>Playlist mode</label><input type="checkbox" id="bg-playlist-on" checked></div>
+    <div class="row"><label>Loop playlist</label><input type="checkbox" id="bg-playlist-loop" checked></div>
+    <div class="row"><label>Crossfade (ms)</label><input type="number" id="bg-crossfade-ms" value="250" min="0" max="3000" step="50"></div>
+    <div class="row">
+      <button id="bg-playlist-next" style="padding:4px 10px;font-size:11px;">⏭ next</button>
+      <button id="bg-playlist-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear queue</button>
+    </div>
+    <div class="row"><label>Mute video sound</label><input type="checkbox" id="bg-mute" checked></div>
+    <div class="row"><label>Loop</label><input type="checkbox" id="bg-loop" checked></div>
+    <div class="row"><label>Volume</label><input type="range" id="bg-volume" min="0" max="1" step="0.05" value="0.5"></div>
+    <div class="row"><label>Fit</label>
+      <select id="bg-fit">
+        <option value="cover" selected>cover</option>
+        <option value="contain">contain</option>
+        <option value="fill">stretch (fill)</option>
+        <option value="none">none</option>
+      </select>
+    </div>
+    <div class="row"><label>Auto-start with show</label><input type="checkbox" id="bg-auto" checked></div>
+    <div class="row"><label>Duck during TTS</label><input type="checkbox" id="bg-duck-on" checked></div>
+    <div class="row"><label>Duck to (factor)</label><input type="range" id="bg-duck-to" min="0" max="1" step="0.05" value="0.3"></div>
+    <div class="row">
+      <button id="bg-play" style="padding:4px 10px;font-size:11px;">▶ play bg</button>
+      <button id="bg-stop" style="padding:4px 10px;font-size:11px;margin-left:4px;">⏹ stop</button>
+      <button id="bg-clear" style="padding:4px 10px;font-size:11px;margin-left:4px;">clear</button>
+    </div>
+
+    <h2>Skin transparency</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Drop these to let the bg video peep through. Email text stays opaque.
+    </div>
+    <div class="row">
+      <label>Page bg opacity</label>
+      <input type="range" id="page-bg-alpha" min="0" max="100" value="100">
+      <span class="val" id="page-bg-alpha-val">100%</span>
+    </div>
+    <div class="row">
+      <label>Skin bg opacity</label>
+      <input type="range" id="skin-alpha" min="0" max="100" value="100">
+      <span class="val" id="skin-alpha-val">100%</span>
+    </div>
+  </div>
+
+  <!-- ============ TTS TAB ============ -->
+  <div class="tab-content" id="tab-tts">
+    <h2>Audio-driven timing (sync)</h2>
+    <div class="row">
+      <label>Sync file</label>
+      <input type="file" id="sync-file" accept=".srt,.vtt,.json,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="sync-marker-count" style="color:#888;flex:1;">no markers</span>
+      <button id="sync-clear" style="padding:3px 8px;font-size:10px;">clear</button>
+    </div>
+    <div class="row"><label>Use sync triggers</label><input type="checkbox" id="sync-enabled"></div>
+    <div class="row">
+      <label>Sync to</label>
+      <select id="sync-source">
+        <option value="bgm" selected>BGM playhead</option>
+        <option value="clock">Wall clock from play()</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>Marker → email map</label>
+      <select id="sync-map">
+        <option value="one-to-one" selected>One marker per email (in order)</option>
+        <option value="advance">Marker just advances to next email</option>
+      </select>
+    </div>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.6;">
+      Accepts <b>.srt</b>, <b>.vtt</b>, or <b>.json</b> (array of <code>{start, end, text}</code> in ms). When enabled, emails advance at each marker's start time.
+    </div>
+
+  </div>
+
+  <!-- ============ SCRIPT SRT TAB ============ -->
+  <div class="tab-content" id="tab-srt-script">
+    <h2>Script from SRT / timestamped file</h2>
+    <div style="font-size:11px;color:#8a8a92;line-height:1.5;margin-bottom:6px;">
+      Load an <b>.srt / .vtt / .json / .txt</b>. Each cue's text appears so it fills its [start..end] window. Wall-clock from <i>Play</i>. Overrides natural pacing.
+    </div>
+    <div class="row">
+      <label>Timed script file</label>
+      <input type="file" id="srt-script-file" accept=".srt,.vtt,.json,.txt,text/plain">
+    </div>
+    <div class="row" style="font-size:11px;">
+      <label>Loaded</label>
+      <span id="srt-script-info" style="color:#888;flex:1;">no file</span>
+      <button id="srt-script-clear" style="padding:3px 8px;font-size:10px;flex:0 0 auto;">clear</button>
+    </div>
+    <div class="row"><label>Use timed script</label><input type="checkbox" id="srt-script-on"></div>
+    <div class="row">
+      <label>Cue typing fill</label>
+      <input type="range" id="srt-script-fill" min="20" max="100" value="92">
+      <span class="val" id="srt-script-fill-val">92%</span>
+    </div>
+    <div class="row">
+      <label>Between cues</label>
+      <select id="srt-script-between">
+        <option value="keep" selected>Keep previous on screen</option>
+        <option value="clear">Clear between cues</option>
+        <option value="newline">Add newline between</option>
+      </select>
+    </div>
+  </div>
+
+</aside>
+
+<main id="stage">
+  <div id="gmail-frame">
+    <div class="frame-size-readout" id="frame-size-readout">1100 × 620</div>
+    <div id="gmail-zoom">
+    <div id="gmail">
+      <div id="gmail-header">
+        <div class="gh-burger" title="Main menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+        </div>
+        <div class="gh-logo">
+          <span class="gh-logo-icon"></span>
+          <span>Mail</span>
+        </div>
+        <div class="gh-search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19zM10 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8"/></svg>
+          <span>Search mail</span>
+        </div>
+        <div class="gh-icons">
+          <div class="gh-icon" title="Help">?</div>
+          <div class="gh-icon" title="Settings">⚙</div>
+          <div class="gh-icon" title="Apps">⋮⋮⋮</div>
+          <div class="gh-avatar" id="user-avatar">M</div>
+        </div>
+      </div>
+
+      <div id="gmail-body">
+        <aside id="gmail-sidebar">
+          <button class="compose-btn">
+            <span class="pencil">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d="m4.49 17.31 2.2 2.2.001-.001 1.1 1.1c.79.78.79 2.05 0 2.83-.78.79-2.05.79-2.83 0L1.43 19.93a2 2 0 0 1 0-2.83zM18.36 2.64a2 2 0 0 1 2.83 0l.17.17a2 2 0 0 1 0 2.83L7.5 19.5l-3-3z"/>
+              </svg>
+            </span>
+            <span>Compose</span>
+          </button>
+          <div class="sb-item active">
+            <span class="sb-icon">📥</span><span>Inbox</span><span class="sb-count" id="sb-count">1,247</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon">⭐</span><span>Starred</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon">⏱</span><span>Snoozed</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon">📤</span><span>Sent</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon">📄</span><span>Drafts</span><span class="sb-count">12</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon">▼</span><span>More</span>
+          </div>
+          <div class="sb-section">Labels</div>
+          <div class="sb-item">
+            <span class="sb-icon" style="color:#f4b400">●</span><span>family</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon" style="color:#c2410c">●</span><span>the-apartment</span>
+          </div>
+          <div class="sb-item">
+            <span class="sb-icon" style="color:#34a853">●</span><span>bridge</span>
+          </div>
+        </aside>
+
+        <div id="inbox">
+          <div class="inbox-toolbar">
+            <div class="ib-icon" title="Select">☐</div>
+            <div class="ib-icon" title="Refresh">⟳</div>
+            <div class="ib-icon" title="More">⋮</div>
+            <div style="flex:1"></div>
+            <div style="font-size:12px;color:var(--gmail-muted);">1–50 of 1,247</div>
+            <div class="ib-icon" title="Newer">‹</div>
+            <div class="ib-icon" title="Older">›</div>
+          </div>
+          <div class="inbox-tabs">
+            <div class="ib-tab active"><span class="ib-tab-icon">📥</span><span>Primary</span></div>
+            <div class="ib-tab"><span class="ib-tab-icon">🏷</span><span>Promotions</span></div>
+            <div class="ib-tab"><span class="ib-tab-icon">👥</span><span>Social</span></div>
+          </div>
+          <div id="canvas-wrap">
+            <div id="email-rows"></div>
+            <svg id="strings" xmlns="http://www.w3.org/2000/svg"></svg>
+            <div id="canvas"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+  <div id="focus-banner">FOCUS LOCK · ESC to release</div>
+
+  <div id="compose-popup">
+    <div class="cp-header">
+      <span class="cp-back" title="Back">←</span>
+      <span class="cp-title">New message</span>
+      <span class="cp-ctl" title="Minimize">—</span>
+      <span class="cp-ctl" title="Fullscreen">⛶</span>
+      <span class="cp-ctl" title="Close">×</span>
+    </div>
+    <div class="cp-field">
+      <span class="cp-label">From</span>
+      <span class="cp-value" id="cp-from">maggie.africanah@gmail.com</span>
+    </div>
+    <div class="cp-field">
+      <span class="cp-label">To</span>
+      <span class="cp-value" id="cp-to">j@elsewhere.net</span>
+    </div>
+    <div class="cp-field" id="cp-cc-field" style="display:none;">
+      <span class="cp-label">Cc</span>
+      <span class="cp-value" id="cp-cc"></span>
+    </div>
+    <div class="cp-field">
+      <span class="cp-label">Subject</span>
+      <span class="cp-value" id="cp-subject">—</span>
+    </div>
+    <div class="cp-body">
+      <span id="prompt-text"></span><span id="prompt-placeholder">your thought…</span><span id="prompt-cursor"></span>
+    </div>
+    <div class="cp-footer">
+      <button class="cp-send">Send</button>
+      <div class="cp-tool" title="Attach">📎</div>
+      <div class="cp-tool" title="Link">🔗</div>
+      <div class="cp-tool" title="Image">🖼</div>
+      <div style="flex:1"></div>
+      <div class="cp-tool" title="More">⋮</div>
+    </div>
+    <div id="lens-vignette-fx"></div>
+  </div>
+
+  <div id="notif-stack"></div>
+
+  <div id="send-snackbar"></div>
+
+  <div id="fake-cursor">
+    <svg class="cursor-arrow" width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 2 L4 20 L8.7 15.4 L11.8 22.2 L14.3 21.1 L11.2 14.4 L17.4 14.4 Z"
+            fill="#ffffff" stroke="#1a1a1a" stroke-width="1.3" stroke-linejoin="round"/>
+    </svg>
+    <span class="cursor-ring"></span>
+  </div>
+
+  <div class="frame-handle frame-handle-tl"></div>
+  <div class="frame-handle frame-handle-tr"></div>
+  <div class="frame-handle frame-handle-bl"></div>
+  <div class="frame-handle frame-handle-br"></div>
+  </div>
+</main>
+
+<div id="hint">press H to show controls · Space to play · Esc to stop/release focus</div>
+
+<script>
+(() => {
+  // ====================================================================
+  // Sound engine — typing tocks, send swish, notif chime
+  // ====================================================================
+  const Sound = (() => {
+    let ctx;
+    const ensureCtx = () => {
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      return ctx;
+    };
+    let enabled = true, volume = 0.35, style = 'soft';
+    let duckFactor = 1, duckAnim = null;
+
+    function setDuckFactor(target, durMs) {
+      if (duckAnim) cancelAnimationFrame(duckAnim);
+      duckAnim = null;
+      target = Math.max(0, Math.min(1, target));
+      if (!durMs || durMs <= 0) { duckFactor = target; return; }
+      const start = duckFactor;
+      const t0 = performance.now();
+      const step = () => {
+        const t = (performance.now() - t0) / durMs;
+        if (t >= 1) { duckFactor = target; duckAnim = null; return; }
+        duckFactor = start + (target - start) * t;
+        duckAnim = requestAnimationFrame(step);
+      };
+      duckAnim = requestAnimationFrame(step);
+    }
+    function duck(amountPct, fadeMs) { setDuckFactor(Math.max(0, 1 - (amountPct || 0) / 100), fadeMs); }
+    function unduck(fadeMs) { setDuckFactor(1, fadeMs); }
+
+    function noiseBurst(c, durationS, decayPow = 4) {
+      const n = Math.floor(c.sampleRate * durationS);
+      const buf = c.createBuffer(1, n, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, decayPow);
+      return buf;
+    }
+
+    function key() {
+      if (!enabled) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      const v = volume * duckFactor;
+      if (style === 'typewriter') {
+        const burst = c.createBufferSource(); burst.buffer = noiseBurst(c, 0.06, 5);
+        const bf = c.createBiquadFilter(); bf.type='bandpass'; bf.frequency.value=2200+Math.random()*400; bf.Q.value=1.2;
+        const bg = c.createGain();
+        bg.gain.setValueAtTime(v*0.5, now);
+        bg.gain.exponentialRampToValueAtTime(0.001, now+0.08);
+        burst.connect(bf).connect(bg).connect(c.destination); burst.start(now);
+        const ping = c.createOscillator(); ping.type='triangle'; ping.frequency.value=1600+Math.random()*600;
+        const pg = c.createGain();
+        pg.gain.setValueAtTime(v*0.15, now+0.005);
+        pg.gain.exponentialRampToValueAtTime(0.001, now+0.04);
+        ping.connect(pg).connect(c.destination); ping.start(now+0.005); ping.stop(now+0.05);
+      } else if (style === 'mechanical') {
+        const burst = c.createBufferSource(); burst.buffer = noiseBurst(c, 0.05, 6);
+        const f = c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=1500+Math.random()*500; f.Q.value=3;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.55, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.06);
+        burst.connect(f).connect(g).connect(c.destination); burst.start(now);
+      } else {
+        const burst = c.createBufferSource(); burst.buffer = noiseBurst(c, 0.04, 4);
+        const f = c.createBiquadFilter(); f.type='lowpass'; f.frequency.value=900+Math.random()*200; f.Q.value=1;
+        const g = c.createGain();
+        g.gain.setValueAtTime(v*0.45, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now+0.05);
+        burst.connect(f).connect(g).connect(c.destination); burst.start(now);
+      }
+    }
+    function backspace() {
+      if (!enabled) return;
+      const c = ensureCtx(); const now = c.currentTime;
+      const burst = c.createBufferSource(); burst.buffer = noiseBurst(c, 0.03, 5);
+      const f = c.createBiquadFilter(); f.type='bandpass';
+      f.frequency.value=(style==='mechanical'?1300:style==='typewriter'?2000:800)+Math.random()*200; f.Q.value=1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(volume*duckFactor*0.35, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now+0.04);
+      burst.connect(f).connect(g).connect(c.destination); burst.start(now);
+    }
+    let mulSend = 1, mulChime = 1;
+    function sendImpl(vol) {
+      const c = ensureCtx(); const now = c.currentTime;
+      const o = c.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(880, now);
+      o.frequency.exponentialRampToValueAtTime(220, now + 0.22);
+      const g = c.createGain();
+      g.gain.setValueAtTime(vol * duckFactor * 0.4, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+      o.connect(g).connect(c.destination); o.start(now); o.stop(now + 0.28);
+    }
+    function chimeImpl(vol) {
+      const c = ensureCtx(); const now = c.currentTime;
+      [659, 988].forEach((freq, i) => {
+        const o = c.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(freq, now + i * 0.08);
+        const g = c.createGain();
+        g.gain.setValueAtTime(0, now + i * 0.08);
+        g.gain.linearRampToValueAtTime(vol * duckFactor * 0.35, now + i * 0.08 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.42);
+        o.connect(g).connect(c.destination);
+        o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.45);
+      });
+    }
+    return {
+      key, backspace,
+      send: () => sendImpl(volume * mulSend),
+      chime: () => chimeImpl(volume * mulChime),
+      setEnabled: v => enabled = v,
+      setVolume: v => volume = v,
+      setStyle: v => style = v,
+      setSendMul: v => mulSend = v,
+      setChimeMul: v => mulChime = v,
+      duck, unduck,
+      get duckFactor() { return duckFactor; },
+      resume: ensureCtx,
+    };
+  })();
+
+  // ====================================================================
+  // DOM refs + variable bindings
+  // ====================================================================
+  const $ = id => document.getElementById(id);
+  const promptText = $('prompt-text');
+  const cpBody = document.querySelector('.cp-body');
+  const promptPlaceholder = $('prompt-placeholder');
+  const promptCursor = $('prompt-cursor');
+  const composePopup = $('compose-popup');
+  const cpSubject = $('cp-subject');
+  const cpTo = $('cp-to');
+  const canvas = $('canvas');
+  const canvasWrap = $('canvas-wrap');
+  const stringsSvg = $('strings');
+  const notifStack = $('notif-stack');
+  const gmailZoom = $('gmail-zoom');
+  const focusBanner = $('focus-banner');
+  const emailRows = $('email-rows');
+  const fakeCursor = $('fake-cursor');
+  const sendBtn = document.querySelector('.cp-send');
+  const snackbar = $('send-snackbar');
+  const root = document.documentElement;
+  const body = document.body;
+
+  const setVar = (k, v) => root.style.setProperty(k, v);
+
+  // Dark theme toggle
+  const applyDarkTheme = () => body.classList.toggle('dark-theme', $('dark-theme').checked);
+  $('dark-theme').addEventListener('change', applyDarkTheme);
+  applyDarkTheme();
+
+  // Configurable recipient ("To")
+  const recipientDefault = () => ($('compose-to')?.value || '').trim();
+  $('compose-to').addEventListener('input', e => {
+    cpTo.textContent = e.target.value.trim() || 'recipients';
+  });
+  cpTo.textContent = recipientDefault() || cpTo.textContent;
+
+  // Configurable From + Cc (header detail). Cc row hides when empty.
+  const cpFrom = $('cp-from');
+  const cpCc = $('cp-cc');
+  const ccField = $('cp-cc-field');
+  const applyFrom = () => { cpFrom.textContent = ($('compose-from')?.value || '').trim() || 'you@gmail.com'; };
+  const applyCc = () => {
+    const v = ($('compose-cc')?.value || '').trim();
+    cpCc.textContent = v;
+    if (ccField) ccField.style.display = v ? '' : 'none';
+  };
+  $('compose-from')?.addEventListener('input', applyFrom);
+  $('compose-cc')?.addEventListener('input', applyCc);
+  applyFrom();
+  applyCc();
+
+  // Cursor move time → CSS var
+  const applyCursorSpeed = () => setVar('--cursor-move-ms', (+$('cursor-move-ms').value || 0) + 'ms');
+  $('cursor-move-ms').addEventListener('input', applyCursorSpeed);
+  applyCursorSpeed();
+
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      $(btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // Generic CSS-var binding (data-css="--var" data-unit="px"|"em"|"ms"|...)
+  document.querySelectorAll('[data-css]').forEach(el => {
+    const prop = el.dataset.css;
+    const unit = el.dataset.unit || '';
+    const apply = () => {
+      let v = el.value;
+      if (unit && v !== '' && !String(v).endsWith(unit)) v = v + unit;
+      setVar(prop, v);
+    };
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
+    apply();
+  });
+
+  $('stage-bg').addEventListener('input', e => setVar('--stage-bg', e.target.value));
+  $('gmail-chrome').addEventListener('input', e => setVar('--gmail-chrome', e.target.value));
+  $('sidebar-bg').addEventListener('input', e => setVar('--sidebar-bg', e.target.value));
+  $('gmail-accent').addEventListener('input', e => setVar('--gmail-accent', e.target.value));
+  $('compose-header').addEventListener('input', e => setVar('--compose-header', e.target.value));
+  $('compose-text-color').addEventListener('input', e => setVar('--compose-text', e.target.value));
+  $('prompt-size').addEventListener('input', e => setVar('--prompt-size', e.target.value + 'px'));
+  $('prompt-font').addEventListener('change', e => setVar('--prompt-font', e.target.value));
+  $('prompt-font-custom').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v) setVar('--prompt-font', v);
+  });
+  $('note-font-custom').addEventListener('input', e => {
+    const v = e.target.value.trim();
+    if (v) setVar('--note-font', v);
+  });
+
+  // Shadow alpha bindings
+  function bindAlpha(sliderId, varName) {
+    const sl = $(sliderId), out = $(sliderId + '-val');
+    if (!sl || !out) return;
+    const apply = () => {
+      out.textContent = sl.value + '%';
+      setVar(varName, (+sl.value / 100).toFixed(2));
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindAlpha('frame-shadow-alpha', '--frame-shadow-alpha');
+  bindAlpha('note-shadow-alpha', '--note-shadow-alpha');
+  bindAlpha('sk-shadow-alpha', '--sk-shadow-alpha');
+  bindAlpha('pl-shadow-alpha', '--pl-shadow-alpha');
+  bindAlpha('notif-shadow-alpha', '--notif-shadow-alpha');
+
+  // Per-event sound multipliers
+  function bindEventMul(id, setter) {
+    const sl = $(id), out = $(id + '-val');
+    if (!sl || !out) return;
+    const apply = () => {
+      out.textContent = (sl.value / 100).toFixed(1) + '×';
+      setter(+sl.value / 100);
+    };
+    sl.addEventListener('input', apply); apply();
+  }
+  bindEventMul('snd-send', Sound.setSendMul);
+  bindEventMul('snd-chime', Sound.setChimeMul);
+
+  $('cursor-style').addEventListener('change', e => {
+    promptCursor.classList.remove('block', 'underline');
+    if (e.target.value === 'block') promptCursor.classList.add('block');
+    if (e.target.value === 'underline') promptCursor.classList.add('underline');
+  });
+
+  // ---------- Lens: magnify the email body + vignette the edges ----------
+  // The playback loop adds/removes .lens-zoomed per scene (zoom in to type,
+  // zoom out on Send). The checkbox both enables the feature and previews the
+  // zoomed-in look while idle.
+  function applyLens(on) {
+    body.classList.toggle('lens-on', on);
+    body.classList.toggle('lens-zoomed', on);
+  }
+  $('lens-on').addEventListener('change', e => applyLens(e.target.checked));
+  applyLens($('lens-on').checked);
+  (() => {
+    const sl = $('lens-mag'), out = $('lens-mag-val');
+    const apply = () => { const m = +sl.value / 100; out.textContent = m.toFixed(2).replace(/0$/, '') + '×'; setVar('--lens-mag', m.toFixed(3)); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  (() => {
+    const sl = $('lens-vignette'), out = $('lens-vignette-val');
+    const apply = () => { out.textContent = sl.value + '%'; setVar('--lens-vignette', (+sl.value / 100).toFixed(2)); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  (() => {
+    const sl = $('lens-pop'), out = $('lens-pop-val');
+    const apply = () => { const m = +sl.value / 100; out.textContent = m.toFixed(2) + '×'; setVar('--lens-pop', m.toFixed(3)); };
+    sl.addEventListener('input', apply); apply();
+  })();
+  $('note-font').addEventListener('change', e => setVar('--note-font', e.target.value));
+  $('note-size').addEventListener('input', e => setVar('--note-size', e.target.value + 'px'));
+  $('note-text-color').addEventListener('input', e => setVar('--note-text', e.target.value));
+  $('string-color').addEventListener('input', e => { setVar('--string-color', e.target.value); redrawStrings(); });
+
+  function applyComposeSize() {
+    composePopup.style.width = $('compose-w').value + 'px';
+    composePopup.style.height = $('compose-h').value + 'px';
+  }
+  function applyComposePos() {
+    const pos = $('compose-pos').value;
+    composePopup.style.left = composePopup.style.right = '';
+    composePopup.style.setProperty('--cp-tx', '0px');  // transform now drives the 3D pop
+    if (pos === 'br') composePopup.style.right = '24px';
+    else if (pos === 'bl') composePopup.style.left = '24px';
+    else { composePopup.style.left = '50%'; composePopup.style.setProperty('--cp-tx', '-50%'); }
+  }
+  ['compose-w','compose-h'].forEach(id => $(id).addEventListener('input', applyComposeSize));
+  $('compose-pos').addEventListener('change', applyComposePos);
+  applyComposeSize(); applyComposePos();
+
+  const stringWidth = $('string-width'), stringWidthVal = $('string-width-val');
+  const updateStringWidth = () => {
+    const v = (+stringWidth.value / 10).toFixed(1);
+    stringWidthVal.textContent = v;
+    setVar('--string-width', v); redrawStrings();
+  };
+  stringWidth.addEventListener('input', updateStringWidth);
+  $('string-style').addEventListener('change', () => redrawStrings());
+  const stringCurve = $('string-curve'), stringCurveVal = $('string-curve-val');
+  const updateCurve = () => { stringCurveVal.textContent = stringCurve.value + '%'; redrawStrings(); };
+  stringCurve.addEventListener('input', updateCurve);
+  $('strings-on').addEventListener('change', () => redrawStrings());
+
+  const jitter = $('jitter'), jitterVal = $('jitter-val');
+  jitter.addEventListener('input', () => jitterVal.textContent = jitter.value);
+  const rotation = $('rotation'), rotationVal = $('rotation-val');
+  const updateRotation = () => rotationVal.textContent = (+rotation.value / 10).toFixed(1) + '°';
+  rotation.addEventListener('input', updateRotation);
+
+  const bindRange = (id, suffix = '') => {
+    const el = $(id), out = $(id + '-val');
+    const update = () => out.textContent = el.value + suffix;
+    el.addEventListener('input', update); update();
+  };
+  bindRange('base-ms'); bindRange('variance-ms'); bindRange('think-chance', '%');
+
+  $('sound-on').addEventListener('change', e => Sound.setEnabled(e.target.checked));
+  $('sound-style').addEventListener('change', e => Sound.setStyle(e.target.value));
+  const soundVol = $('sound-vol'), soundVolVal = $('sound-vol-val');
+  const updateVol = () => {
+    soundVolVal.textContent = soundVol.value + '%';
+    Sound.setVolume(+soundVol.value / 100);
+  };
+  soundVol.addEventListener('input', updateVol); updateVol();
+  updateStringWidth(); updateCurve(); updateRotation();
+
+  $('emails-on').addEventListener('change', renderEmailRows);
+  $('emails-n').addEventListener('change', renderEmailRows);
+
+  const presets = {
+    fast:    { base: 32, variance: 18, think: 4,  thinkMax: 800 },
+    natural: { base: 60, variance: 42, think: 10, thinkMax: 2400 },
+    slow:    { base: 130, variance: 65, think: 22, thinkMax: 4200 },
+  };
+  document.querySelectorAll('[data-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const p = presets[btn.dataset.preset];
+      $('base-ms').value = p.base; $('base-ms').dispatchEvent(new Event('input'));
+      $('variance-ms').value = p.variance; $('variance-ms').dispatchEvent(new Event('input'));
+      $('think-chance').value = p.think; $('think-chance').dispatchEvent(new Event('input'));
+      $('think-max').value = p.thinkMax;
+    });
+  });
+
+  function getShapePool() {
+    const pool = [];
+    document.querySelectorAll('.shape-grid input[type=checkbox]').forEach(cb => {
+      if (cb.checked) pool.push(cb.dataset.shape);
+    });
+    return pool.length > 0 ? pool : ['envelope'];
+  }
+
+  // ---------- Frame size controls ----------
+  const framePresets = {
+    desktop:  [1100, 620],
+    tablet:   [1024, 768],
+    mobile:   [390, 844],
+    'mobile-l': [844, 390],
+    square:   [720, 720],
+    vertical: [540, 960],
+  };
+  document.querySelectorAll('[data-frame]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [w, h] = framePresets[btn.dataset.frame];
+      frameW = w; frameH = h;
+      applyFrame();
+    });
+  });
+  $('frame-w').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    if (!isNaN(v) && v >= 200) { frameW = v; applyFrame(); }
+  });
+  $('frame-h').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    if (!isNaN(v) && v >= 150) { frameH = v; applyFrame(); }
+  });
+
+  // ---------- Reel mode (full-screen phone compose for vertical capture) ----------
+  let reelPrev = null;
+  function applyReelMode() {
+    const on = $('reel-mode').checked;
+    body.classList.toggle('reel-mode', on);
+    if (on) {
+      reelPrev = { w: frameW, h: frameH, fz: $('prompt-size').value };
+      const [w, h] = framePresets.vertical;          // 9:16 — 540×960
+      frameW = w; frameH = h; applyFrame();
+      $('prompt-size').value = 21;                    // bigger text for phone legibility
+      $('prompt-size').dispatchEvent(new Event('input'));
+    } else if (reelPrev) {
+      frameW = reelPrev.w; frameH = reelPrev.h; applyFrame();
+      $('prompt-size').value = reelPrev.fz;
+      $('prompt-size').dispatchEvent(new Event('input'));
+      reelPrev = null;
+    }
+  }
+  $('reel-mode').addEventListener('change', applyReelMode);
+  $('handles-on').addEventListener('change', e => {
+    body.classList.toggle('show-handles', e.target.checked);
+  });
+
+  // ---------- Zoom controls ----------
+  const zoomMax = $('zoom-max'), zoomMaxVal = $('zoom-max-val');
+  const updateZoomMax = () => zoomMaxVal.textContent = (+zoomMax.value / 100).toFixed(1) + '×';
+  zoomMax.addEventListener('input', updateZoomMax); updateZoomMax();
+  const zoomDim = $('zoom-dim'), zoomDimVal = $('zoom-dim-val');
+  const updateZoomDim = () => zoomDimVal.textContent = zoomDim.value + '%';
+  zoomDim.addEventListener('input', updateZoomDim); updateZoomDim();
+
+  // ====================================================================
+  // Decorative inbox rows (so the surface looks like Gmail underneath)
+  // ====================================================================
+  const sampleEmails = [
+    { from: 'LinkedIn', subject: 'You appeared in 4 searches this week', time: 'Mar 12', unread: true, starred: false },
+    { from: 'GitHub', subject: 'Security alert · 2 vulnerabilities found', time: 'Mar 11', unread: true, starred: false },
+    { from: 'Anna', subject: 'about thursday', time: 'Mar 10', unread: false, starred: true },
+    { from: 'Medium Daily Digest', subject: 'New stories from your network', time: 'Mar 10', unread: false, starred: false },
+    { from: 'mom', subject: 'the back window', time: 'Mar 9', unread: false, starred: true },
+    { from: 'Spotify', subject: 'Your week in music', time: 'Mar 9', unread: false, starred: false },
+    { from: 'j', subject: 're: the apartment', time: 'Mar 8', unread: false, starred: false },
+    { from: 'Notion', subject: 'You were mentioned in "errands"', time: 'Mar 8', unread: true, starred: false },
+    { from: 'me', subject: 'Drafts · for j', time: 'Mar 7', unread: false, starred: false },
+    { from: 'Vercel', subject: 'Deployment ready · main', time: 'Mar 7', unread: false, starred: false },
+    { from: 'Anna', subject: 'photo from the bridge', time: 'Mar 6', unread: false, starred: true },
+    { from: 'Google', subject: 'Security alert', time: 'Mar 5', unread: false, starred: false },
+    { from: 'mom', subject: 'coffee', time: 'Mar 5', unread: false, starred: false },
+    { from: 'newsletter', subject: 'this week in fog', time: 'Mar 4', unread: false, starred: false },
+    { from: 'me', subject: 'lists', time: 'Mar 3', unread: false, starred: false },
+    { from: 'building mgr', subject: 'water shutoff 9–11am', time: 'Mar 3', unread: false, starred: false },
+    { from: 'Anna', subject: 'pls read', time: 'Mar 2', unread: false, starred: true },
+    { from: 'j', subject: 'about east window', time: 'Mar 2', unread: false, starred: false },
+    { from: 'me', subject: 'note to self', time: 'Mar 1', unread: false, starred: false },
+    { from: 'Stripe', subject: 'Receipt · subscription', time: 'Feb 28', unread: false, starred: false },
+  ];
+
+  function renderEmailRows() {
+    emailRows.innerHTML = '';
+    if (!$('emails-on').checked) return;
+    const n = Math.min(+$('emails-n').value || 0, 50);
+    for (let i = 0; i < n; i++) {
+      const e = sampleEmails[i % sampleEmails.length];
+      const row = document.createElement('div');
+      row.className = 'email-row ' + (e.unread ? 'unread' : 'read') + (e.starred ? ' starred' : '');
+      row.innerHTML = `
+        <span class="er-star">${e.starred ? '★' : '☆'}</span>
+        <span class="er-from">${e.from}</span>
+        <span class="er-subject">${e.subject} <span class="preview">— preview text drifting off the edge of the table</span></span>
+        <span class="er-time">${e.time}</span>`;
+      emailRows.appendChild(row);
+    }
+  }
+  renderEmailRows();
+
+  // ====================================================================
+  // Script parsing  (same vocabulary as notes.html + `from`, `time`, `lock`)
+  // ====================================================================
+  function parseScript(input) {
+    return input.split(/\n[ \t]*\n+/).map(p => p.trim()).filter(Boolean).map(parseParagraph);
+  }
+  function parseParagraph(para) {
+    const meta = {};
+    let body = para;
+    const directiveRe = /^\[\[(\w+)(?::([^\]]*))?\]\]\s*/;
+    let m;
+    while ((m = body.match(directiveRe))) {
+      const key = m[1].toLowerCase();
+      const val = m[2] ?? '';
+      if (key === 'lock') {
+        meta.lock = true;
+      } else if (['shape','header','footer','color','bg','dedication','dedicated','for',
+                  'video','vid','image','img','from','time','subject','to','sync','ttstext','narrate','ttsvoice','ttsrate','ttspitch','ttsvolume','ttsfx','ttsssml','ttspreset','ttspredelay','ttspostdelay','ttsboost','duck'].includes(key)) {
+        const normalizedKey =
+          key === 'bg' ? 'color' :
+          (key === 'dedicated' || key === 'for') ? 'dedication' :
+          key === 'vid' ? 'video' :
+          key === 'img' ? 'image' :
+          key === 'narrate' ? 'ttstext' :
+          key;
+        meta[normalizedKey] = val;
+      } else { break; }
+      body = body.slice(m[0].length);
+    }
+    body = body.trimStart();
+    return { meta, body: parseInline(body), rawBody: stripMarkup(body) };
+  }
+  function parseInline(input) {
+    const tokens = []; let i = 0;
+    while (i < input.length) {
+      if (input[i] === '\\' && input.startsWith('[[', i + 1)) {
+        tokens.push({ type: 'text', char: '[' });
+        tokens.push({ type: 'text', char: '[' });
+        i += 3; continue;
+      }
+      if (input.startsWith('[[', i)) {
+        const end = input.indexOf(']]', i + 2);
+        if (end !== -1) {
+          const inner = input.slice(i + 2, end);
+          if (inner.startsWith('pause:') || inner.startsWith('wait:')) {
+            const ms = parseInt(inner.split(':')[1], 10);
+            if (!isNaN(ms)) tokens.push({ type: 'pause', ms });
+          } else if (inner.includes('|')) {
+            const idx = inner.indexOf('|');
+            tokens.push({ type: 'typo', wrong: inner.slice(0, idx), right: inner.slice(idx + 1) });
+          } else {
+            for (const c of '[[' + inner + ']]') tokens.push({ type: 'text', char: c });
+          }
+          i = end + 2; continue;
+        }
+      }
+      tokens.push({ type: 'text', char: input[i] }); i++;
+    }
+    return tokens;
+  }
+  function stripMarkup(text) {
+    return text
+      .replace(/\\?\[\[(?:pause|wait):\d+\]\]/g, '')
+      .replace(/\\?\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+      .replace(/\\?\[\[(?:shape|header|footer|color|bg|dedication|dedicated|for|from|time|subject|to|video|vid|image|img|lock)(?::[^\]]*)?\]\]/g, '')
+      .replace(/\\\[\[/g, '[[');
+  }
+
+  // ====================================================================
+  // Typing
+  // ====================================================================
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  let abortTyping = false;
+  function settings() {
+    return {
+      base: +$('base-ms').value,
+      variance: +$('variance-ms').value,
+      thinkChance: (+$('think-chance').value) / 100,
+      thinkMax: +$('think-max').value,
+      sentence: +$('punct-sentence').value,
+      sentenceJ: +$('punct-sentence-j').value,
+      comma: +$('punct-comma').value,
+      commaJ: +$('punct-comma-j').value,
+    };
+  }
+  function jitterFn() { return (Math.random() + Math.random() + Math.random()) / 3 - 0.5; }
+  function charDelay(ch, prevCh, s) {
+    let d = s.base + jitterFn() * 2 * s.variance;
+    if (/[.!?]/.test(ch)) d += s.sentence + Math.random() * s.sentenceJ;
+    else if (/[,;:]/.test(ch)) d += s.comma + Math.random() * s.commaJ;
+    if (ch === '\n') d += 150 + Math.random() * 250;
+    if (prevCh === ' ' || prevCh === '\n' || prevCh === undefined) {
+      if (Math.random() < s.thinkChance) d += 400 + Math.random() * Math.max(0, s.thinkMax - 400);
+    }
+    return Math.max(5, d);
+  }
+
+  let prevCh;
+  function updatePlaceholder() {
+    promptPlaceholder.style.display = promptText.textContent.length > 0 ? 'none' : '';
+  }
+  function appendChar(c) {
+    promptText.textContent += c; updatePlaceholder();
+    Sound.key(); prevCh = c;
+    // When magnified, the text grows past the body — keep the caret in view.
+    if (cpBody) cpBody.scrollTop = cpBody.scrollHeight;
+  }
+  function backspaceChar() {
+    promptText.textContent = promptText.textContent.slice(0, -1); updatePlaceholder();
+    Sound.backspace(); prevCh = promptText.textContent.slice(-1) || undefined;
+  }
+  function clearPrompt() {
+    promptText.textContent = ''; prevCh = undefined; updatePlaceholder();
+  }
+
+  async function typeText(tokens, overrideSettings) {
+    const s = overrideSettings || settings();
+    for (const tok of tokens) {
+      if (abortTyping) return;
+      if (tok.type === 'pause') { await sleep(tok.ms); continue; }
+      if (tok.type === 'typo') {
+        const typoPause = +$('typo-pause').value;
+        const bsMs = +$('bs-ms').value;
+        for (const c of tok.wrong) {
+          if (abortTyping) return;
+          await sleep(charDelay(c, prevCh, s)); appendChar(c);
+        }
+        await sleep(typoPause + Math.random() * typoPause * 2);
+        for (let i = 0; i < tok.wrong.length; i++) {
+          if (abortTyping) return;
+          await sleep(bsMs + Math.random() * bsMs * 0.6); backspaceChar();
+        }
+        for (const c of tok.right) {
+          if (abortTyping) return;
+          await sleep(charDelay(c, prevCh, s)); appendChar(c);
+        }
+        continue;
+      }
+      await sleep(charDelay(tok.char, prevCh, s));
+      appendChar(tok.char);
+    }
+  }
+
+  // ====================================================================
+  // Images & videos
+  // ====================================================================
+  const images = []; const imageList = $('image-list');
+  $('add-images').addEventListener('click', () => $('image-input').click());
+  $('clear-images').addEventListener('click', () => { images.length = 0; renderImageList(); });
+  $('image-input').addEventListener('change', async (e) => {
+    for (const file of e.target.files) {
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
+        images.push({ dataUrl, name: file.name });
+      } catch (err) { console.error('image read failed', err); }
+    }
+    renderImageList();
+    e.target.value = '';
+  });
+  function renderImageList() {
+    imageList.innerHTML = '';
+    images.forEach((img, i) => {
+      const item = document.createElement('div'); item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement('img'); thumb.src = img.dataUrl;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = img.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => { images.splice(i, 1); renderImageList(); });
+      item.append(idx, thumb, name, rm);
+      imageList.appendChild(item);
+    });
+  }
+
+  const videos = []; const videoList = $('video-list');
+  $('add-videos').addEventListener('click', () => $('video-input').click());
+  $('clear-videos').addEventListener('click', () => {
+    for (const v of videos) URL.revokeObjectURL(v.url);
+    videos.length = 0; renderVideoList();
+  });
+  $('video-input').addEventListener('change', (e) => {
+    for (const file of e.target.files) {
+      const url = URL.createObjectURL(file); videos.push({ url, name: file.name });
+    }
+    renderVideoList(); e.target.value = '';
+  });
+  function renderVideoList() {
+    videoList.innerHTML = '';
+    videos.forEach((v, i) => {
+      const item = document.createElement('div'); item.className = 'img-item';
+      const idx = document.createElement('span'); idx.className = 'idx'; idx.textContent = i + 1;
+      const thumb = document.createElement('video'); thumb.src = v.url; thumb.muted = true;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = v.name;
+      const rm = document.createElement('button'); rm.className = 'remove'; rm.textContent = '×';
+      rm.addEventListener('click', () => {
+        URL.revokeObjectURL(videos[i].url); videos.splice(i, 1); renderVideoList();
+      });
+      item.append(idx, thumb, name, rm);
+      videoList.appendChild(item);
+    });
+  }
+
+  // ====================================================================
+  // Notes — position, drag, stack
+  // ====================================================================
+  // Note registry: { el, meta, locked, stackId, scene }
+  const allNotes = [];
+  let noteIndex = 0;
+
+  // Frame state — the Gmail screen size. Notes live inside this box and can't spill out.
+  const frameEl = $('gmail-frame');
+  const frameReadout = $('frame-size-readout');
+  let frameW = 1100, frameH = 620;
+  function applyFrame() {
+    frameEl.style.width = frameW + 'px';
+    frameEl.style.height = frameH + 'px';
+    if (frameReadout) frameReadout.textContent = `${Math.round(frameW)} × ${Math.round(frameH)}`;
+    const wIn = $('frame-w'), hIn = $('frame-h');
+    if (wIn && document.activeElement !== wIn) wIn.value = Math.round(frameW);
+    if (hIn && document.activeElement !== hIn) hIn.value = Math.round(frameH);
+    clampNotesIntoFrame();
+    redrawStrings();
+  }
+  applyFrame();
+
+  function clampNotesIntoFrame() {
+    const wrap = canvasWrap.getBoundingClientRect();
+    if (wrap.width < 10 || wrap.height < 10) return;
+    for (const entry of allNotes) {
+      if (entry.stackId) continue;
+      const r = entry.el.getBoundingClientRect();
+      // r is in viewport pixels; if a zoom transform is active, divide out the scale
+      // so we operate in untransformed local coordinates that match style.left/top.
+      const scale = currentZoomScale();
+      const halfW = (r.width / scale) / 2;
+      const halfH = (r.height / scale) / 2;
+      let x = parseFloat(entry.el.style.left);
+      let y = parseFloat(entry.el.style.top);
+      const margin = 8;
+      x = Math.max(halfW + margin, Math.min(wrap.width  / scale - halfW - margin, x));
+      y = Math.max(halfH + margin, Math.min(wrap.height / scale - halfH - margin, y));
+      entry.el.style.left = x + 'px';
+      entry.el.style.top  = y + 'px';
+    }
+  }
+  function currentZoomScale() {
+    const m = gmailZoom.style.transform.match(/scale\(([^)]+)\)/);
+    return m ? parseFloat(m[1]) || 1 : 1;
+  }
+  // Re-clamp whenever the inbox area changes size (frame resize, sidebar collapse, etc).
+  if (window.ResizeObserver) {
+    new ResizeObserver(() => { clampNotesIntoFrame(); redrawStrings(); })
+      .observe(canvasWrap);
+  }
+
+  // Available drop region within #canvas-wrap (inbox minus toolbar/tabs).
+  function inboxRect() {
+    const r = canvasWrap.getBoundingClientRect();
+    return { w: r.width, h: r.height };
+  }
+
+  function computeNotePosition(index, layout, jStrength) {
+    const { w, h } = inboxRect();
+    // Adaptive margin: shrink on small frames so notes still fit on mobile
+    const margin = Math.max(24, Math.min(80, Math.min(w, h) * 0.08));
+    if (layout === 'cascade') {
+      const stepX = Math.max(40, w * 0.12), stepY = Math.max(40, h * 0.12);
+      const x = margin + (index * stepX) % Math.max(1, w - margin*2);
+      const y = margin + (index * stepY) % Math.max(1, h - margin*2);
+      return { x: x + (Math.random()-0.5)*jStrength*0.2, y: y + (Math.random()-0.5)*jStrength*0.2 };
+    }
+    if (layout === 'grid') {
+      const cols = w < 480 ? 1 : w < 720 ? 2 : 3;
+      const cellW = (w - margin*2) / cols;
+      const col = index % cols;
+      const row = Math.floor(index / cols);
+      const rowH = Math.max(180, h * 0.32);
+      return {
+        x: margin + cellW * col + cellW/2 + (Math.random()-0.5)*jStrength,
+        y: margin + 90 + row * rowH + (Math.random()-0.5)*jStrength*0.4,
+      };
+    }
+    // scatter
+    const px = margin + Math.random() * Math.max(1, w - margin*2);
+    const py = margin + Math.random() * Math.max(1, h - margin*2);
+    return {
+      x: px + (Math.random()-0.5)*jStrength*0.3,
+      y: py + (Math.random()-0.5)*jStrength*0.3,
+    };
+  }
+
+  // ====================================================================
+  // Send sequence — fake cursor clicks "Send", then Sending/Sent toast
+  // ====================================================================
+  function setCursorPos(x, y) {
+    // Arrow hotspot is ~(5,3) inside the SVG; offset so the tip lands on (x,y).
+    fakeCursor.style.transform = `translate(${(x - 5).toFixed(1)}px, ${(y - 3).toFixed(1)}px)`;
+  }
+  function hideCursor() {
+    fakeCursor.classList.remove('visible', 'clicking', 'pressing');
+  }
+  async function animateCursorToSend() {
+    const frameRect = frameEl.getBoundingClientRect();
+    const bodyEl = composePopup.querySelector('.cp-body');
+    const bRect = bodyEl.getBoundingClientRect();
+    // Start where the text was being typed (inside the compose body).
+    const startX = bRect.left - frameRect.left + Math.min(bRect.width * 0.45, 200);
+    const startY = bRect.top - frameRect.top + Math.min(bRect.height * 0.55, 140);
+    fakeCursor.style.transition = 'none';
+    setCursorPos(startX, startY);
+    fakeCursor.classList.add('visible');
+    void fakeCursor.offsetWidth; // commit start position before animating
+    fakeCursor.style.transition = '';
+    // Glide to the Send button.
+    const sRect = sendBtn.getBoundingClientRect();
+    const tx = sRect.left - frameRect.left + sRect.width / 2;
+    const ty = sRect.top - frameRect.top + sRect.height / 2;
+    await sleep(60);
+    setCursorPos(tx, ty);
+    await sleep((+$('cursor-move-ms').value || 0) + 80);
+    if (abortTyping) return;
+    // Click.
+    fakeCursor.classList.remove('clicking');
+    void fakeCursor.offsetWidth;
+    fakeCursor.classList.add('clicking', 'pressing');
+    sendBtn.classList.add('pressed');
+    // The click sends it — zoom the body back out.
+    body.classList.remove('lens-zoomed');
+    Sound.key();
+    await sleep(130);
+    sendBtn.classList.remove('pressed');
+    fakeCursor.classList.remove('pressing');
+    await sleep(120);
+  }
+
+  let snackTimer = null;
+  // Place the toast right beside the compose popup ("the prompt") instead of the far corner.
+  function positionSnackbar() {
+    snackbar.style.left = snackbar.style.right = snackbar.style.bottom = '';
+    const fr = frameEl.getBoundingClientRect();
+    const cr = composePopup.getBoundingClientRect();
+    if (!fr.width || !cr.width) return;
+    const gap = 14;
+    const leftRoom = cr.left - fr.left;     // space to the left of the compose
+    const rightRoom = fr.right - cr.right;  // space to the right of the compose
+    if (leftRoom < 180 && rightRoom < 180) return; // narrow frame: keep default placement
+    snackbar.style.bottom = Math.round(Math.max(16, fr.bottom - cr.bottom + 18)) + 'px';
+    if (leftRoom >= rightRoom) {            // compose on the right → toast just left of it
+      snackbar.style.left = 'auto';
+      snackbar.style.right = Math.round(fr.width - leftRoom + gap) + 'px';
+    } else {                                // compose on the left → toast just right of it
+      snackbar.style.right = 'auto';
+      snackbar.style.left = Math.round((cr.right - fr.left) + gap) + 'px';
+    }
+  }
+  function showSnackbar(html) {
+    clearTimeout(snackTimer);
+    snackbar.innerHTML = html;
+    positionSnackbar();
+    snackbar.classList.add('show');
+  }
+  function hideSnackbar() {
+    clearTimeout(snackTimer);
+    snackbar.classList.remove('show');
+  }
+  function snackSending() {
+    showSnackbar('<span class="sb-spinner"></span><span class="sb-text">Sending…</span>');
+  }
+  function snackSent() {
+    showSnackbar('<span class="sb-check">✓</span><span class="sb-text">Message sent.</span>' +
+                 '<span class="sb-action">Undo</span><span class="sb-action">View message</span>');
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(hideSnackbar, 4200);
+  }
+
+  // Orchestrates the realistic send: cursor → click → Sending toast → drop note → Sent toast.
+  async function sendEmail(scene) {
+    const useCursor = $('cursor-on')?.checked;
+    const useSnack = $('snackbar-on')?.checked;
+    if (useCursor && !abortTyping) await animateCursorToSend();
+    if (abortTyping) { hideCursor(); return; }
+    body.classList.remove('lens-zoomed');  // zoom out on send (also covers cursor-off)
+
+    Sound.send();
+    hideCursor();
+    if (useSnack) snackSending();
+    await sleep(Math.max(0, +$('sending-ms').value || 0));
+    if (abortTyping) { hideSnackbar(); return; }
+
+    if ($('drop-note-on')?.checked) placeNote(scene);
+    if (useSnack) snackSent();
+  }
+
+  function placeNote(scene) {
+    const note = document.createElement('div');
+    let shape;
+    if (scene.meta.shape) {
+      shape = scene.meta.shape;
+    } else {
+      const pool = getShapePool();
+      shape = pool[Math.floor(Math.random() * pool.length)];
+    }
+    note.className = `note ${shape}`;
+    note.dataset.idx = noteIndex;
+
+    const rot = (Math.random() - 0.5) * 2 * (+rotation.value / 10);
+    note.style.setProperty('--rot', rot.toFixed(2) + 'deg');
+
+    if (scene.meta.color) note.style.setProperty('--note-color', scene.meta.color);
+
+    // controls (lock, close)
+    const ctlWrap = document.createElement('div');
+    ctlWrap.className = 'note-controls';
+    const lockBtn = document.createElement('div');
+    lockBtn.className = 'note-ctl note-ctl-lock';
+    lockBtn.title = 'Lock — exempt from zoom-into-focus';
+    lockBtn.textContent = '📌';
+    lockBtn.addEventListener('mousedown', e => e.stopPropagation());
+    lockBtn.addEventListener('click', e => { e.stopPropagation(); toggleLock(note); });
+    const closeBtn = document.createElement('div');
+    closeBtn.className = 'note-ctl';
+    closeBtn.title = 'Dismiss';
+    closeBtn.textContent = '×';
+    closeBtn.addEventListener('mousedown', e => e.stopPropagation());
+    closeBtn.addEventListener('click', e => { e.stopPropagation(); dismissNote(note); });
+    ctlWrap.append(lockBtn, closeBtn);
+    note.appendChild(ctlWrap);
+
+    if (scene.meta.header) {
+      const h = document.createElement('div'); h.className = 'note-header';
+      h.textContent = scene.meta.header; note.appendChild(h);
+    }
+    if (scene.meta.dedication) {
+      const d = document.createElement('div'); d.className = 'note-dedication';
+      d.textContent = scene.meta.dedication; note.appendChild(d);
+    }
+
+    if (scene.meta.video) {
+      const vi = parseInt(scene.meta.video, 10) - 1;
+      if (videos[vi]) {
+        const v = document.createElement('video');
+        v.src = videos[vi].url; v.muted = true; v.loop = true; v.autoplay = true;
+        v.playsInline = true; v.className = 'note-video';
+        v.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (v.muted) { v.muted = false; v.controls = true; note.classList.add('unmuted'); }
+        });
+        note.appendChild(v);
+        note.classList.add('has-video');
+        const muteIcon = document.createElement('div');
+        muteIcon.className = 'note-mute';
+        muteIcon.innerHTML = '🔇';
+        muteIcon.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          v.muted = false; v.controls = true;
+          note.classList.add('unmuted');
+        });
+        note.appendChild(muteIcon);
+        v.play().catch(()=>{});
+      }
+    } else if (scene.meta.image) {
+      const ii = parseInt(scene.meta.image, 10) - 1;
+      if (images[ii]) {
+        const im = document.createElement('img');
+        im.src = images[ii].dataUrl; im.className = 'note-image';
+        note.appendChild(im);
+      }
+    }
+
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'note-body';
+    bodyEl.textContent = scene.rawBody;
+    note.appendChild(bodyEl);
+
+    if (scene.meta.footer) {
+      const f = document.createElement('div'); f.className = 'note-footer';
+      f.textContent = scene.meta.footer; note.appendChild(f);
+    }
+
+    const layout = $('layout').value;
+    const jStrength = +$('jitter').value;
+    const pos = computeNotePosition(noteIndex, layout, jStrength);
+    note.style.left = pos.x + 'px';
+    note.style.top = pos.y + 'px';
+
+    canvas.appendChild(note);
+    requestAnimationFrame(() => note.classList.add('appear'));
+
+    const entry = {
+      el: note,
+      meta: scene.meta,
+      locked: !!scene.meta.lock,
+      stackId: null,
+      idx: noteIndex,
+      scene,
+    };
+    if (entry.locked) note.classList.add('locked');
+    allNotes.push(entry);
+    attachDrag(entry);
+
+    noteIndex++;
+    redrawStrings();
+    maybeAutoStack();
+    scheduleFocus();
+  }
+
+  function toggleLock(noteEl) {
+    const entry = allNotes.find(n => n.el === noteEl);
+    if (!entry) return;
+    entry.locked = !entry.locked;
+    noteEl.classList.toggle('locked', entry.locked);
+    if (entry.locked && currentFocusEntry === entry) releaseFocus();
+  }
+  function dismissNote(noteEl) {
+    const entry = allNotes.find(n => n.el === noteEl);
+    if (!entry) return;
+    if (entry.stackId) unstack(entry);
+    noteEl.style.transition = 'opacity 240ms ease, transform 240ms ease';
+    noteEl.style.opacity = '0';
+    noteEl.style.transform = `translate(-50%, -50%) scale(0.85) rotate(${noteEl.style.getPropertyValue('--rot')||'0deg'})`;
+    setTimeout(() => {
+      noteEl.remove();
+      const i = allNotes.indexOf(entry);
+      if (i >= 0) allNotes.splice(i, 1);
+      redrawStrings();
+    }, 260);
+  }
+
+  // ---------- Drag & stacking ----------
+  let stackCounter = 0;
+  // stacks: id -> [entries] (top of stack = last)
+  const stacks = new Map();
+
+  function attachDrag(entry) {
+    const el = entry.el;
+    let startX, startY, origLeft, origTop, dragging = false, moved = false;
+    const onDown = (e) => {
+      if (inFocus) return;
+      if (e.target.closest('.note-ctl') || e.target.closest('.note-mute')) return;
+      if (e.target.tagName === 'VIDEO' && el.classList.contains('unmuted')) return;
+      const pt = e.touches ? e.touches[0] : e;
+      startX = pt.clientX; startY = pt.clientY;
+      const left = parseFloat(el.style.left), top = parseFloat(el.style.top);
+      origLeft = left; origTop = top;
+      dragging = true; moved = false;
+      el.classList.add('dragging');
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+      document.addEventListener('touchmove', onMove, { passive: false });
+      document.addEventListener('touchend', onUp);
+      e.preventDefault();
+    };
+    const onMove = (e) => {
+      if (!dragging) return;
+      const pt = e.touches ? e.touches[0] : e;
+      const dx = pt.clientX - startX, dy = pt.clientY - startY;
+      if (Math.hypot(dx, dy) > 3) moved = true;
+      const nl = origLeft + dx, nt = origTop + dy;
+      // If part of a stack, move whole stack
+      if (entry.stackId) {
+        const stack = stacks.get(entry.stackId) || [];
+        const baseEntry = stack[0];
+        const baseLeft = parseFloat(baseEntry.el.style.left);
+        const baseTop  = parseFloat(baseEntry.el.style.top);
+        const baseDx = nl - parseFloat(el.style.left);
+        const baseDy = nt - parseFloat(el.style.top);
+        stack.forEach(s => {
+          s.el.style.left = (parseFloat(s.el.style.left) + baseDx) + 'px';
+          s.el.style.top  = (parseFloat(s.el.style.top)  + baseDy) + 'px';
+        });
+      } else {
+        el.style.left = nl + 'px';
+        el.style.top  = nt + 'px';
+      }
+      highlightDropTarget(entry, pt.clientX, pt.clientY);
+      redrawStrings();
+      e.preventDefault();
+    };
+    const onUp = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      el.classList.remove('dragging');
+      const target = findDropTarget(entry);
+      clearHighlights();
+      if (target && moved) tryStack(entry, target);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      redrawStrings();
+    };
+    el.addEventListener('mousedown', onDown);
+    el.addEventListener('touchstart', onDown, { passive: false });
+    el.addEventListener('click', (e) => {
+      // fan-out click: if entry is in a stack, fan it open
+      if (entry.stackId && !moved) {
+        const stack = stacks.get(entry.stackId) || [];
+        const fanned = stack[0].el.dataset.fanned === '1';
+        if (fanned) collapseStack(entry.stackId);
+        else fanOutStack(entry.stackId);
+      }
+    });
+  }
+  function findDropTarget(entry) {
+    return canvas.querySelector('.note.drop-target') || null;
+  }
+  function highlightDropTarget(entry, cx, cy) {
+    clearHighlights();
+    const el = document.elementFromPoint(cx, cy);
+    if (!el) return;
+    const noteEl = el.closest('.note');
+    if (noteEl && noteEl !== entry.el) noteEl.classList.add('drop-target');
+  }
+  function clearHighlights() {
+    canvas.querySelectorAll('.note.drop-target').forEach(n => n.classList.remove('drop-target'));
+  }
+  function tryStack(dragEntry, targetEl) {
+    const targetEntry = allNotes.find(n => n.el === targetEl);
+    if (!targetEntry) return;
+    if (dragEntry.stackId && dragEntry.stackId === targetEntry.stackId) return;
+    let stackId = targetEntry.stackId;
+    if (!stackId) {
+      stackId = 'stk-' + (++stackCounter);
+      targetEntry.stackId = stackId;
+      stacks.set(stackId, [targetEntry]);
+    }
+    if (dragEntry.stackId && dragEntry.stackId !== stackId) {
+      // merging stacks: relocate every entry to the new stack
+      const src = stacks.get(dragEntry.stackId) || [];
+      src.forEach(s => { s.stackId = stackId; stacks.get(stackId).push(s); });
+      stacks.delete(dragEntry.stackId);
+    } else {
+      dragEntry.stackId = stackId;
+      stacks.get(stackId).push(dragEntry);
+    }
+    layoutStack(stackId);
+  }
+  function unstack(entry) {
+    if (!entry.stackId) return;
+    const stackId = entry.stackId;
+    const stk = stacks.get(stackId) || [];
+    const i = stk.indexOf(entry);
+    if (i >= 0) stk.splice(i, 1);
+    entry.stackId = null;
+    if (stk.length === 0) {
+      stacks.delete(stackId);
+    } else if (stk.length === 1) {
+      const last = stk[0];
+      last.stackId = null;
+      last.el.querySelector('.stack-badge')?.remove();
+      delete last.el.dataset.fanned;
+      stacks.delete(stackId);
+    } else {
+      layoutStack(stackId);
+    }
+  }
+  function layoutStack(stackId) {
+    const stk = stacks.get(stackId); if (!stk) return;
+    const base = stk[0];
+    const baseLeft = parseFloat(base.el.style.left);
+    const baseTop  = parseFloat(base.el.style.top);
+    stk.forEach((s, i) => {
+      s.el.classList.add('stacked');
+      const offX = i * 4, offY = i * 4;
+      const rot = ((i * 73) % 17 - 8) / 4;
+      s.el.style.zIndex = 5 + i;
+      s.el.style.left = (baseLeft + offX) + 'px';
+      s.el.style.top  = (baseTop  + offY) + 'px';
+      s.el.style.setProperty('--rot', rot.toFixed(2) + 'deg');
+      s.el.dataset.fanned = '0';
+      let badge = s.el.querySelector('.stack-badge');
+      if (i === stk.length - 1) {
+        if (!badge) { badge = document.createElement('div'); badge.className = 'stack-badge'; s.el.appendChild(badge); }
+        badge.textContent = '+' + (stk.length - 1);
+      } else {
+        s.el.querySelector('.stack-badge')?.remove();
+      }
+    });
+  }
+  function fanOutStack(stackId) {
+    const stk = stacks.get(stackId); if (!stk) return;
+    const base = stk[0];
+    const baseLeft = parseFloat(base.el.style.left);
+    const baseTop  = parseFloat(base.el.style.top);
+    stk.forEach((s, i) => {
+      const angle = -1.0 + (i / Math.max(1, stk.length - 1)) * 2.0;
+      const dx = angle * 200; const dy = Math.abs(angle) * 60;
+      s.el.style.left = (baseLeft + dx) + 'px';
+      s.el.style.top  = (baseTop  + dy) + 'px';
+      s.el.style.setProperty('--rot', (angle * 6).toFixed(2) + 'deg');
+      s.el.dataset.fanned = '1';
+      s.el.querySelector('.stack-badge')?.remove();
+    });
+    redrawStrings();
+  }
+  function collapseStack(stackId) { layoutStack(stackId); redrawStrings(); }
+
+  function maybeAutoStack() {
+    const threshold = +$('stack-threshold').value;
+    const delay = +$('stack-delay').value;
+    if (allNotes.length <= threshold) return;
+    // After delay, stack the oldest free note onto the nearest neighbor
+    setTimeout(() => {
+      const free = allNotes.filter(n => !n.stackId);
+      if (free.length <= threshold) return;
+      const oldest = free[0];
+      let best = null, bestDist = Infinity;
+      for (const other of free) {
+        if (other === oldest) continue;
+        const dx = parseFloat(other.el.style.left) - parseFloat(oldest.el.style.left);
+        const dy = parseFloat(other.el.style.top)  - parseFloat(oldest.el.style.top);
+        const d = Math.hypot(dx, dy);
+        if (d < bestDist) { bestDist = d; best = other; }
+      }
+      if (best) tryStack(oldest, best.el);
+    }, delay);
+  }
+
+  // ====================================================================
+  // Strings (decorative; off by default in email layout)
+  // ====================================================================
+  function redrawStrings() {
+    stringsSvg.innerHTML = '';
+    if (!$('strings-on').checked) return;
+    const free = allNotes.filter(n => !n.stackId);
+    if (free.length < 2) return;
+    const wrapRect = canvasWrap.getBoundingClientRect();
+    stringsSvg.setAttribute('viewBox', `0 0 ${wrapRect.width} ${wrapRect.height}`);
+    stringsSvg.setAttribute('width',  wrapRect.width);
+    stringsSvg.setAttribute('height', wrapRect.height);
+    const style = $('string-style').value;
+    const curve = +$('string-curve').value / 100;
+    const color = getComputedStyle(root).getPropertyValue('--string-color').trim() || '#b9a86c';
+    const width = parseFloat(getComputedStyle(root).getPropertyValue('--string-width')) || 1.2;
+    for (let i = 1; i < free.length; i++) {
+      const a = free[i - 1].el; const b = free[i].el;
+      const ax = parseFloat(a.style.left), ay = parseFloat(a.style.top);
+      const bx = parseFloat(b.style.left), by = parseFloat(b.style.top);
+      const mx = (ax + bx) / 2, my = (ay + by) / 2 + Math.hypot(bx-ax, by-ay) * 0.5 * curve;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${ax} ${ay} Q ${mx} ${my} ${bx} ${by}`);
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width', width);
+      path.setAttribute('fill', 'none');
+      if (style === 'dashed') path.setAttribute('stroke-dasharray', '8 6');
+      if (style === 'dotted') path.setAttribute('stroke-dasharray', '2 5');
+      stringsSvg.appendChild(path);
+    }
+  }
+
+  // ====================================================================
+  // Notifications
+  // ====================================================================
+  function showNotif(scene) {
+    if (!$('notif-on').checked) return;
+    const from = scene.meta.from || 'unknown';
+    const subject = scene.meta.subject || scene.meta.header || '(no subject)';
+    const time = scene.meta.time || new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const preview = (scene.rawBody || '').slice(0, 120);
+    const initials = (from.match(/[A-Za-z0-9]/) || ['?'])[0].toUpperCase();
+
+    const n = document.createElement('div');
+    n.className = 'notif';
+    n.innerHTML = `
+      <div class="notif-avatar">${initials}</div>
+      <div class="notif-body">
+        <div class="notif-title">${escapeHtml(from)} · <span style="font-weight:400;color:rgba(255,255,255,0.7)">${escapeHtml(time)}</span></div>
+        <div class="notif-preview"><b>${escapeHtml(subject)}</b> — ${escapeHtml(preview)}</div>
+      </div>
+      <div class="notif-close">×</div>`;
+    notifStack.appendChild(n);
+    requestAnimationFrame(() => n.classList.add('show'));
+    const dismiss = () => {
+      n.classList.remove('show');
+      n.classList.add('dismissing');
+      setTimeout(() => n.remove(), 260);
+    };
+    n.querySelector('.notif-close').addEventListener('click', dismiss);
+    const ms = +$('notif-ms').value;
+    setTimeout(dismiss, ms);
+
+    if ($('notif-sound').checked) Sound.chime();
+
+    // Also nudge the compose subject/from line to reflect what was just sent
+    cpTo.textContent = scene.meta.to || recipientDefault() || cpTo.textContent;
+    cpSubject.textContent = subject;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  }
+
+  // ====================================================================
+  // Zoom-into-focus
+  // ====================================================================
+  let currentFocusEntry = null;
+  let focusTimer = null;
+  let inFocus = false;
+  let focusSeqIdx = 0;
+
+  function scheduleFocus() {
+    if (!$('zoom-on').checked) return;
+    clearTimeout(focusTimer);
+    const delay = +$('zoom-delay').value;
+    focusTimer = setTimeout(triggerFocus, delay);
+  }
+  function pickNextFocusEntry() {
+    const eligible = allNotes.filter(n => !n.locked && !n.stackId);
+    if (eligible.length === 0) return null;
+    const mode = $('zoom-mode').value;
+    if (mode === 'latest') return eligible[eligible.length - 1];
+    // sequence: start from focusSeqIdx and wrap
+    if (focusSeqIdx >= eligible.length) focusSeqIdx = 0;
+    const pick = eligible[focusSeqIdx];
+    focusSeqIdx = (focusSeqIdx + 1) % eligible.length;
+    return pick;
+  }
+
+  function triggerFocus() {
+    if (inFocus) return;
+    const entry = pickNextFocusEntry();
+    if (!entry) return;
+    zoomTo(entry);
+  }
+
+  function computeZoomTransform(targetEl) {
+    // The visible area is the gmail-frame, not the whole stage. The transform-origin
+    // of #gmail-zoom is the center of the frame, so target/frame deltas are what matter.
+    const frame = frameEl.getBoundingClientRect();
+    const tr = targetEl.getBoundingClientRect();
+    const pad = +$('zoom-pad').value;
+    const availW = Math.max(1, frame.width  - pad * 2);
+    const availH = Math.max(1, frame.height - pad * 2);
+    const fitScale = Math.min(availW / tr.width, availH / tr.height);
+    const maxScale = (+$('zoom-max').value) / 100;
+    const scale = Math.max(1.05, Math.min(maxScale, fitScale));
+    const targetCx = tr.left + tr.width / 2;
+    const targetCy = tr.top + tr.height / 2;
+    const frameCx = frame.left + frame.width / 2;
+    const frameCy = frame.top + frame.height / 2;
+    const tx = (frameCx - targetCx) * scale;
+    const ty = (frameCy - targetCy) * scale;
+    return { scale, tx, ty };
+  }
+
+  function applyDimOthers(focusedEntry, on) {
+    const dim = (+$('zoom-dim').value) / 100;
+    for (const e of allNotes) {
+      if (!on || e === focusedEntry) {
+        e.el.style.filter = '';
+        e.el.style.opacity = '';
+      } else {
+        e.el.style.transition = `opacity ${(+$('zoom-dur').value)}ms ease, filter ${(+$('zoom-dur').value)}ms ease`;
+        e.el.style.opacity = (1 - dim * 0.85).toFixed(2);
+        if (dim > 0.4) e.el.style.filter = `blur(${(dim * 4).toFixed(1)}px)`;
+      }
+    }
+  }
+
+  function zoomTo(entry) {
+    inFocus = true;
+    currentFocusEntry = entry;
+    const dur = +$('zoom-dur').value;
+    setVar('--zoom-dur', dur + 'ms');
+    const { scale, tx, ty } = computeZoomTransform(entry.el);
+    gmailZoom.style.transformOrigin = '50% 50%';
+    gmailZoom.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    applyDimOthers(entry, true);
+    focusBanner.classList.add('show');
+
+    const hold = +$('zoom-hold').value;
+    setTimeout(() => {
+      if (!inFocus || currentFocusEntry !== entry) return;
+      releaseFocus().then(() => {
+        if (!$('zoom-on').checked) return;
+        const eligible = allNotes.filter(n => !n.locked && !n.stackId);
+        if ($('zoom-mode').value === 'sequence') {
+          if (eligible.length > 1) setTimeout(triggerFocus, 240);
+        } else {
+          // latest: re-schedule so any new note that arrived during the zoom gets its turn
+          if (eligible.length > 0 && eligible[eligible.length - 1] !== entry) {
+            setTimeout(triggerFocus, 240);
+          }
+        }
+      });
+    }, dur + hold);
+  }
+
+  function releaseFocus() {
+    return new Promise(resolve => {
+      const outDur = +$('zoom-out-dur').value;
+      setVar('--zoom-dur', outDur + 'ms');
+      gmailZoom.style.transform = 'translate(0, 0) scale(1)';
+      applyDimOthers(null, false);
+      focusBanner.classList.remove('show');
+      setTimeout(() => {
+        inFocus = false;
+        currentFocusEntry = null;
+        resolve();
+      }, outDur + 20);
+    });
+  }
+
+  // ====================================================================
+  // Frame drag-resize
+  // ====================================================================
+  let resizingFrame = null;
+  document.querySelectorAll('.frame-handle').forEach(h => {
+    const startResize = (e) => {
+      e.preventDefault();
+      const pt = e.touches ? e.touches[0] : e;
+      const handleClass = [...h.classList].find(c => c.startsWith('frame-handle-')).slice('frame-handle-'.length);
+      const rect = frameEl.getBoundingClientRect();
+      resizingFrame = { startX: pt.clientX, startY: pt.clientY, startW: rect.width, startH: rect.height, corner: handleClass };
+      document.addEventListener('mousemove', onResize);
+      document.addEventListener('mouseup', endResize);
+      document.addEventListener('touchmove', onResize, { passive: false });
+      document.addEventListener('touchend', endResize);
+    };
+    h.addEventListener('mousedown', startResize);
+    h.addEventListener('touchstart', startResize, { passive: false });
+  });
+  function onResize(e) {
+    if (!resizingFrame) return;
+    const pt = e.touches ? e.touches[0] : e;
+    let dW = pt.clientX - resizingFrame.startX;
+    let dH = pt.clientY - resizingFrame.startY;
+    if (resizingFrame.corner.includes('l')) dW = -dW;
+    if (resizingFrame.corner.includes('t')) dH = -dH;
+    frameW = Math.max(200, resizingFrame.startW + dW * 2);
+    frameH = Math.max(150, resizingFrame.startH + dH * 2);
+    applyFrame();
+    if (e.touches) e.preventDefault();
+  }
+  function endResize() {
+    resizingFrame = null;
+    document.removeEventListener('mousemove', onResize);
+    document.removeEventListener('mouseup', endResize);
+    document.removeEventListener('touchmove', onResize);
+    document.removeEventListener('touchend', endResize);
+  }
+
+  // ====================================================================
+  // BGM / TTS / SYNC
+  // ====================================================================
+  const audioState = {
+    bgm: null,
+    bgmUrl: null,
+    bgmName: '',
+    markers: [],
+    playStartWall: 0,
+    fadeTimer: null,
+  };
+
+  function setBgmFile(file) {
+    clearBgm();
+    audioState.bgmUrl = URL.createObjectURL(file);
+    audioState.bgmName = file.name;
+    audioState.bgm = new Audio(audioState.bgmUrl);
+    audioState.bgm.preload = 'auto';
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.volume = parseFloat($('bgm-volume').value) || 0;
+    $('bgm-name').textContent = file.name;
+  }
+
+  function clearBgm() {
+    if (audioState.bgm) {
+      audioState.bgm.pause();
+      audioState.bgm.src = '';
+    }
+    if (audioState.bgmUrl) URL.revokeObjectURL(audioState.bgmUrl);
+    audioState.bgm = null;
+    audioState.bgmUrl = null;
+    audioState.bgmName = '';
+    $('bgm-name').textContent = 'none';
+  }
+
+  function startBgm(opts) {
+    if (!audioState.bgm) return;
+    if (!$('bgm-auto').checked && !opts?.force) return;
+    audioState.bgm.loop = $('bgm-loop').checked;
+    audioState.bgm.currentTime = parseFloat($('bgm-start').value) || 0;
+    const targetVol = parseFloat($('bgm-volume').value) || 0;
+    const fadeIn = parseFloat($('bgm-fadein').value) || 0;
+    if (fadeIn > 0) {
+      audioState.bgm.volume = 0;
+      audioState.bgm.play().catch(() => {});
+      const steps = 20;
+      const stepMs = fadeIn / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.min(targetVol, (i / steps) * targetVol);
+        if (i >= steps) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+      }, stepMs);
+    } else {
+      audioState.bgm.volume = targetVol;
+      audioState.bgm.play().catch(() => {});
+    }
+  }
+
+  function stopBgm() {
+    if (!audioState.bgm) return;
+    if (audioState.fadeTimer) { clearInterval(audioState.fadeTimer); audioState.fadeTimer = null; }
+    const fadeOut = parseFloat($('bgm-fadeout').value) || 0;
+    if (fadeOut > 0) {
+      const startVol = audioState.bgm.volume;
+      const steps = 20;
+      const stepMs = fadeOut / steps;
+      let i = 0;
+      audioState.fadeTimer = setInterval(() => {
+        i++;
+        audioState.bgm.volume = Math.max(0, startVol * (1 - i / steps));
+        if (i >= steps) {
+          clearInterval(audioState.fadeTimer); audioState.fadeTimer = null;
+          audioState.bgm.pause();
+        }
+      }, stepMs);
+    } else {
+      audioState.bgm.pause();
+    }
+  }
+
+  $('bgm-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) setBgmFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('bgm-clear')?.addEventListener('click', clearBgm);
+  $('bgm-volume')?.addEventListener('input', e => {
+    if (audioState.bgm) audioState.bgm.volume = parseFloat(e.target.value);
+  });
+  $('bgm-loop')?.addEventListener('change', e => {
+    if (audioState.bgm) audioState.bgm.loop = e.target.checked;
+  });
+  $('bgm-test')?.addEventListener('click', () => {
+    if (!audioState.bgm) return;
+    startBgm({ force: true });
+    setTimeout(() => stopBgm(), 4000);
+  });
+  $('bgm-stop-test')?.addEventListener('click', () => stopBgm());
+
+  /* ===== SYNC FILE ===== */
+  function parseTimestamp(s) {
+    const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+    if (m) return (+m[1]) * 3600000 + (+m[2]) * 60000 + (+m[3]) * 1000 + (+m[4]);
+    const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+    if (m2) return (+m2[1]) * 60000 + (+m2[2]) * 1000 + (+m2[3]);
+    return parseFloat(s) || 0;
+  }
+
+  function parseSrt(text) {
+    const out = [];
+    text = text.replace(/^WEBVTT.*?\n\n/s, '');
+    const blocks = text.split(/\n\s*\n/);
+    for (const block of blocks) {
+      const lines = block.trim().split(/\r?\n/);
+      if (!lines.length) continue;
+      const tIdx = lines.findIndex(l => l.includes('-->'));
+      if (tIdx < 0) continue;
+      const [s, e] = lines[tIdx].split('-->').map(x => parseTimestamp(x.trim()));
+      const txt = lines.slice(tIdx + 1).join(' ').trim();
+      out.push({ start: s, end: e, text: txt });
+    }
+    return out;
+  }
+
+  function loadSyncFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      let markers = [];
+      try {
+        if (/\.json$/i.test(file.name) || text.trim().startsWith('[') || text.trim().startsWith('{')) {
+          const parsed = JSON.parse(text);
+          markers = Array.isArray(parsed) ? parsed : parsed.markers || [];
+        } else {
+          markers = parseSrt(text);
+        }
+      } catch (err) {
+        markers = parseSrt(text);
+      }
+      audioState.markers = markers;
+      $('sync-marker-count').textContent = `${markers.length} markers loaded from ${file.name}`;
+    };
+    reader.readAsText(file);
+  }
+
+  $('sync-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) loadSyncFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('sync-clear')?.addEventListener('click', () => {
+    audioState.markers = [];
+    $('sync-marker-count').textContent = 'no markers';
+  });
+
+  function getPlayElapsed() {
+    if ($('sync-source').value === 'bgm' && audioState.bgm && !audioState.bgm.paused) {
+      return audioState.bgm.currentTime * 1000;
+    }
+    return performance.now() - audioState.playStartWall;
+  }
+
+  async function waitForMarker(idx) {
+    const markers = audioState.markers;
+    if (!markers || idx >= markers.length) return;
+    const startMs = markers[idx].start || 0;
+    while (!abortTyping) {
+      const t = getPlayElapsed();
+      if (t >= startMs) return;
+      await sleep(30);
+    }
+  }
+
+  // ====================================================================
+  // Run loop
+  // ====================================================================
+  async function runOnce() {
+    if (typeof SrtScript !== 'undefined' && SrtScript && SrtScript.enabled && SrtScript.enabled()) {
+      abortTyping = false;
+      await playSrtScript();
+      return;
+    }
+    const scenes = parseScript($('script').value);
+    if (scenes.length === 0) return;
+    abortTyping = false;
+    // Start zoomed out; each scene pushes in as its body is typed.
+    body.classList.remove('lens-zoomed');
+
+    // Build email list for TTS random-pick + speakItem
+    const allEmails = scenes.map(s => ({
+      from: s.meta.from || '',
+      to: s.meta.to || '',
+      subject: s.meta.subject || s.meta.header || '',
+      body: s.rawBody || '',
+    }));
+
+    // Start audio with show
+    audioState.playStartWall = performance.now();
+    startBgm();
+    const syncEnabled = $('sync-enabled')?.checked && audioState.markers.length > 0;
+
+    // Start delay (silent pre-roll; no countdown overlay)
+    const startDelayS = +$('start-delay').value;
+    if (startDelayS > 0) { if (abortTyping) return; await sleep(startDelayS * 1000); }
+
+    const baseSettings = settings();
+
+    for (let sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
+      const scene = scenes[sceneIdx];
+      if (abortTyping) return;
+      if (syncEnabled) await waitForMarker(sceneIdx);
+      if (abortTyping) return;
+      clearPrompt();
+      hideSnackbar();
+      cpSubject.textContent = scene.meta.subject || scene.meta.header || '(no subject)';
+      cpTo.textContent = scene.meta.to || recipientDefault() || cpTo.textContent;
+
+      // Lens: push the body forward + magnify as this email starts being typed.
+      if ($('lens-on')?.checked) {
+        if (cpBody) cpBody.scrollTop = 0;
+        body.classList.add('lens-zoomed');
+      }
+
+      await sleep(+$('scene-settle').value);
+      await typeText(scene.body, baseSettings);
+
+      if (abortTyping) return;
+      const pause = +$('send-pause').value;
+      await sleep(pause);
+      await sendEmail(scene);
+      if (abortTyping) return;
+      clearPrompt();
+    }
+  }
+
+  // ====================================================================
+  // Skin / page-bg alpha sliders
+  // ====================================================================
+  function bindAlphaSlider(sliderId, cssVar, valId) {
+    const s = document.getElementById(sliderId), v = document.getElementById(valId);
+    if (!s) return;
+    const apply = () => {
+      const pct = +s.value;
+      document.documentElement.style.setProperty(cssVar, (pct / 100).toFixed(3));
+      if (v) v.textContent = pct + '%';
+    };
+    s.addEventListener('input', apply); apply();
+  }
+  bindAlphaSlider('page-bg-alpha', '--page-bg-alpha', 'page-bg-alpha-val');
+  bindAlphaSlider('skin-alpha', '--skin-alpha', 'skin-alpha-val');
+
+  // ====================================================================
+  // SRT-driven scripted playback
+  // ====================================================================
+  const SrtScript = {
+    cues: null,
+    parseTimestamp(s) {
+      const m = s.match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+      if (m) return (+m[1])*3600 + (+m[2])*60 + (+m[3]) + (+m[4])/1000;
+      const m2 = s.match(/(\d+):(\d+)[,.](\d+)/);
+      if (m2) return (+m2[1])*60 + (+m2[2]) + (+m2[3])/1000;
+      return parseFloat(s) || 0;
+    },
+    parseAny(text, name) {
+      const lower = (name || '').toLowerCase();
+      try {
+        if (lower.endsWith('.json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+          const j = JSON.parse(text);
+          if (Array.isArray(j)) return j.map(x => ({ start: +x.start, end: +x.end, text: x.text || x.word || '' }));
+          if (Array.isArray(j.cues)) return j.cues.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+          if (Array.isArray(j.segments)) return j.segments.map(x => ({ start: +x.start, end: +x.end, text: x.text || '' }));
+        }
+      } catch {}
+      const cleaned = text.replace(/^WEBVTT[^\n]*\n/, '').replace(/^NOTE[^\n]*\n/gm, '');
+      const out = [];
+      const blocks = cleaned.split(/\n\s*\n/);
+      for (const block of blocks) {
+        const lines = block.trim().split(/\r?\n/);
+        if (!lines.length) continue;
+        const ti = lines.findIndex(l => l.includes('-->'));
+        if (ti < 0) continue;
+        const [sStr, eStr] = lines[ti].split('-->').map(x => x.trim());
+        const start = this.parseTimestamp(sStr);
+        const end   = this.parseTimestamp(eStr);
+        const txt   = lines.slice(ti + 1).join('\n').trim();
+        if (txt) out.push({ start, end, text: txt });
+      }
+      return out;
+    },
+    load(file) {
+      const r = new FileReader();
+      r.onload = e => {
+        try { this.cues = this.parseAny(e.target.result, file.name); } catch { this.cues = null; }
+        const info = document.getElementById('srt-script-info');
+        if (info) info.textContent = (this.cues && this.cues.length) ? `${this.cues.length} cues · ${file.name}` : 'parse failed';
+      };
+      r.readAsText(file);
+    },
+    clear() {
+      this.cues = null;
+      const info = document.getElementById('srt-script-info'); if (info) info.textContent = 'no file';
+    },
+    enabled() { return !!document.getElementById('srt-script-on')?.checked && this.cues && this.cues.length > 0; }
+  };
+  document.getElementById('srt-script-file')?.addEventListener('change', e => {
+    if (e.target.files[0]) SrtScript.load(e.target.files[0]);
+    e.target.value = '';
+  });
+  document.getElementById('srt-script-clear')?.addEventListener('click', () => SrtScript.clear());
+  document.getElementById('srt-script-fill')?.addEventListener('input', e => {
+    const v = document.getElementById('srt-script-fill-val'); if (v) v.textContent = e.target.value + '%';
+  });
+  window.SrtScript = SrtScript;
+
+  async function playSrtScript() {
+    if (!SrtScript.cues || !SrtScript.cues.length) return;
+    const fill = (+(document.getElementById('srt-script-fill')?.value) || 92) / 100;
+    const between = document.getElementById('srt-script-between')?.value || 'keep';
+
+    // Email layout: type into the compose-body prompt-text span (the email-body equivalent).
+    const target = document.getElementById('prompt-text') ||
+                   document.querySelector('.cp-body') ||
+                   document.querySelector('.email-body, .email-message-body, #email-body, .compose-body') ||
+                   document.getElementById('gmail-zoom');
+    const placeholder = document.getElementById('prompt-placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+    if (target) target.textContent = '';
+    const t0 = performance.now();
+    for (let i = 0; i < SrtScript.cues.length; i++) {
+      if (typeof abortTyping !== 'undefined' && abortTyping) break;
+      const cue = SrtScript.cues[i];
+      const waitMs = cue.start * 1000 - (window.__srtElapsed ? window.__srtElapsed(t0) : (performance.now() - t0));
+      if (waitMs > 0) await new Promise(r => setTimeout(r, waitMs));
+      if (i > 0 && target) {
+        if (between === 'clear') target.textContent = '';
+        else if (between === 'newline') target.appendChild(document.createElement('br'));
+        else if (between === 'keep') target.appendChild(document.createTextNode(' '));
+      }
+      const winMs = Math.max(80, (cue.end - cue.start) * 1000 * fill);
+      const perChar = cue.text.length ? winMs / cue.text.length : 0;
+      const cueStartAt = performance.now();
+      for (let k = 0; k < cue.text.length; k++) {
+        if (typeof abortTyping !== 'undefined' && abortTyping) break;
+        const elapsed = performance.now() - cueStartAt;
+        const drift = ((k + 1) * perChar) - elapsed;
+        if (drift > 0) await new Promise(r => setTimeout(r, drift));
+        if (target) target.appendChild(document.createTextNode(cue.text[k]));
+      }
+    }
+  }
+
+  let running = false;
+  $('start').addEventListener('click', async () => {
+    if (running) return;
+    Sound.resume();
+    running = true;
+    try {
+      // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+      // (present/render/audiocap) does one take — refresh the source for a fresh take.
+      var oneShot = window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash);
+      // loop back to start when typing ends — until the user clicks stop
+      while (true) {
+        await runOnce();
+        if (abortTyping || oneShot) break;
+        // clear stage so the next loop starts fresh
+        canvas.innerHTML = '';
+        allNotes.length = 0;
+        stacks.clear();
+        noteIndex = 0;
+        focusSeqIdx = 0;
+        releaseFocus();
+        clearPrompt();
+        cpSubject.textContent = '—';
+        cpTo.textContent = recipientDefault() || cpTo.textContent;
+        redrawStrings();
+        notifStack.innerHTML = '';
+        hideSnackbar();
+        hideCursor();
+        applyLens($('lens-on').checked);
+        await sleep(800);
+        if (abortTyping) break;
+      }
+    } finally { running = false; }
+  });
+  $('stop').addEventListener('click', () => {
+    abortTyping = true;
+    stopBgm();
+    hideCursor();
+  });
+  $('reset').addEventListener('click', () => {
+    abortTyping = true;
+    stopBgm();
+    canvas.innerHTML = '';
+    allNotes.length = 0;
+    stacks.clear();
+    noteIndex = 0;
+    focusSeqIdx = 0;
+    releaseFocus();
+    clearPrompt();
+    cpSubject.textContent = '—';
+    cpTo.textContent = recipientDefault() || 'j@elsewhere.net';
+    redrawStrings();
+    notifStack.innerHTML = '';
+    hideSnackbar();
+    hideCursor();
+    applyLens($('lens-on').checked);  // restore idle lens preview
+  });
+  $('hide').addEventListener('click', () => body.classList.toggle('hide-controls'));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'h' || e.key === 'H') {
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+      body.classList.toggle('hide-controls');
+    }
+    if (e.key === ' ' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+      e.preventDefault();
+      if (!running) $('start').click();
+    }
+    if (e.key === 'Escape') {
+      if (inFocus) releaseFocus();
+      else { abortTyping = true; stopBgm(); hideCursor(); }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    redrawStrings();
+    renderEmailRows();
+  });
+
+  // ---------- Present mode (clean OBS Browser Source capture) ----------
+  // Remember the last script so a present link / reopen keeps your content.
+  try {
+    const saved = localStorage.getItem('emailtyper:script');
+    if (saved != null && !location.hash.includes('present') && !location.search.includes('present')) {
+      $('script').value = saved;
+    }
+  } catch {}
+  $('script').addEventListener('input', () => { try { localStorage.setItem('emailtyper:script', $('script').value); } catch {} });
+
+  function copyText(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch {}
+    ta.remove();
+    if (!ok && navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+    return ok;
+  }
+  $('copy-present-link')?.addEventListener('click', () => {
+    const base = location.href.replace(/[#?].*$/, '');
+    const script = $('script').value;
+    const url = base + '#present' + (script.trim() ? '&s=' + encodeURIComponent(script) : '');
+    copyText(url);
+    const btn = $('copy-present-link');
+    const label = btn.textContent;
+    btn.textContent = '✓ Copied — paste into OBS Browser Source URL';
+    setTimeout(() => { btn.textContent = label; }, 2200);
+  });
+
+  // Expose the present-relevant settings so the hub's "OBS URL" button can bake
+  // them into the link (the script travels via &s=; this carries typing speed).
+  window.__obsParams = function () {
+    try {
+      return '&base=' + encodeURIComponent($('base-ms').value) +
+             '&var=' + encodeURIComponent($('variance-ms').value) +
+             '&think=' + encodeURIComponent($('think-chance').value) +
+             '&thinkmax=' + encodeURIComponent($('think-max').value);
+    } catch (e) { return ''; }
+  };
+
+  (function presentInit() {
+    const raw = (location.hash.slice(1) || location.search.slice(1));
+    const params = new URLSearchParams(raw);
+    if (!params.has('present')) return;
+    // Script: URL param wins, then last-saved, then whatever's in the box.
+    let s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem('emailtyper:script'); } catch {} }
+    if (s) $('script').value = s;
+    // Typing speed baked into the OBS link (base/variance/think/thinkmax). Without
+    // this, present mode kept the default speed regardless of the editor choice.
+    const setIn = (id, key, fire) => {
+      const v = params.get(key);
+      if (v != null && v !== '') { $(id).value = v; if (fire) $(id).dispatchEvent(new Event('input')); }
+    };
+    setIn('base-ms', 'base', true);
+    setIn('variance-ms', 'var', true);
+    setIn('think-chance', 'think', true);
+    setIn('think-max', 'thinkmax', false);
+    // Desktop Gmail look (inbox + floating compose). CSS makes #gmail-frame fill
+    // the whole window; we keep reel-mode OFF so it stays the PC layout.
+    if ($('reel-mode').checked) { $('reel-mode').checked = false; applyReelMode(); }
+    // Scale the desktop view up to fill the frame using CSS zoom (re-renders text
+    // sharp, unlike transform). #gmail-frame lays out at 700px logical (desktop).
+    var setGZoom = function () {
+      var gf = $('gmail-frame');
+      if (gf) gf.style.zoom = (window.innerWidth / 700).toFixed(4);
+    };
+    setGZoom();
+    window.addEventListener('resize', setGZoom);
+    body.classList.add('present');
+    // Auto-play shortly after load → refreshing the OBS source = a fresh take.
+    setTimeout(() => { if (!running) $('start').click(); }, 1200);
+  })();
+
+  // Init defaults
+  setVar('--zoom-dur', '0ms');
+  updatePlaceholder();
+})();
+</script>
+</body>
+</html>

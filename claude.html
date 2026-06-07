@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude CLI — sim</title>
+<style>
+  :root {
+    --term-bg: #0d0d0f;
+    --term-fg: #d7d6d2;
+    --term-dim: #8a8a86;
+    --accent: #d97757;        /* Claude coral */
+    --type-fz: 16px;
+    /* Lens / zoom (magnify the conversation + typing, frame with a vignette) */
+    --lens-mag: 1.2;
+    --lens-vignette: 0.55;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; background: #0a0a0b; color: #ddd;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  /* ---------- Controls ---------- */
+  #controls {
+    width: 380px; flex: 0 0 380px; height: 100vh; overflow-y: auto;
+    background: #15161a; border-right: 1px solid #2a2c33;
+    padding: 18px 18px 30px; font-size: 13px; color: #c4c6cd;
+    transition: margin-left 200ms ease; z-index: 10;
+  }
+  body.hide-controls #controls { margin-left: -380px; }
+  #controls h1 { font-size: 15px; margin: 0 0 4px; color: #fff; }
+  #controls .sub { color: #777b84; font-size: 11.5px; margin: 0 0 14px; }
+  #controls h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: #7e828b; margin: 18px 0 8px; }
+  #controls .row { display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin: 7px 0; }
+  #controls label { color: #b9bcc4; }
+  #controls input[type="text"], #controls input[type="number"] {
+    background: #0e0f12; border: 1px solid #2a2c33; color: #e7e7ea;
+    border-radius: 6px; padding: 6px 8px; font: inherit; }
+  #controls input[type="number"] { width: 88px; }
+  #controls input[type="text"] { flex: 1; min-width: 0; }
+  #controls textarea {
+    width: 100%; min-height: 190px; resize: vertical;
+    background: #0e0f12; border: 1px solid #2a2c33; color: #e7e7ea;
+    border-radius: 8px; padding: 10px; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace;
+  }
+  .btn-row { display: flex; gap: 8px; margin-top: 10px; }
+  #controls button {
+    flex: 1; background: #23252b; border: 1px solid #33363d; color: #e7e7ea;
+    border-radius: 7px; padding: 9px; font: 600 13px/1 inherit; cursor: pointer;
+  }
+  #controls button.primary { background: var(--accent); border-color: var(--accent); color: #2a1409; }
+  #controls button.primary:hover { filter: brightness(1.07); }
+  #controls button:hover { background: #2b2e35; }
+  #hideBtn { flex: none; width: 100%; margin-top: 8px; }
+  .help { color: #6b6f78; font-size: 11px; margin-top: 6px; line-height: 1.5; }
+  .help code { background: #0e0f12; border: 1px solid #23252b; border-radius: 4px;
+    padding: 1px 5px; color: #cdb; }
+
+  /* ---------- Stage / terminal frame ---------- */
+  #stage {
+    flex: 1; height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #0a0a0b; overflow: hidden;
+  }
+  #frame {
+    width: 540px; height: 960px; position: relative;
+    background: var(--term-bg); border-radius: 26px; overflow: hidden;
+    box-shadow: 0 30px 90px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .phone-screen { width: 100%; height: 100%; }
+
+  #term {
+    width: 100%; height: 100%; display: flex; flex-direction: column;
+    background: var(--term-bg); color: var(--term-fg);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: var(--type-fz); line-height: 1.5; padding: 16px 16px 0;
+  }
+  #scroll { flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  #scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  .psline { margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; }
+  .psline .path { color: #cdcdc9; }
+  .psline .cmd { color: #f2f2ee; font-weight: 700; }
+
+  /* welcome box */
+  .welcome-box {
+    position: relative; border: 1px solid var(--accent); border-radius: 9px;
+    padding: 18px 16px 15px; margin-bottom: 16px;
+    transition: opacity .4s ease;
+  }
+  .wb-legend {
+    position: absolute; top: -0.62em; left: 14px; background: var(--term-bg);
+    padding: 0 8px; color: var(--accent); font-size: 14px; letter-spacing: .01em;
+  }
+  .wb-legend .ver { color: var(--term-dim); }
+  .wb-welcome { text-align: center; color: #f0efeb; margin: 2px 0 6px; }
+  .mascot-wrap { margin: 6px auto 12px; position: relative; }
+  #mascot { position: absolute; top: 0; left: 0; }
+  .wb-account { text-align: center; color: #9b9b97; font-size: 14px; line-height: 1.65; }
+  .wb-account .em { color: #b9b8b3; }
+  .wb-divider { border-top: 1px solid rgba(255,255,255,.09); margin: 15px 0 13px; }
+  .wb-h { color: var(--accent); font-weight: 700; margin-bottom: 5px; }
+  .wb-p { color: #bdbcb7; margin-bottom: 12px; }
+  .wb-li { color: #bdbcb7; margin: 2px 0; padding-left: 14px; text-indent: -14px; }
+  .wb-note { color: var(--term-dim); font-style: italic; margin-top: 8px; }
+
+  #convo { display: flex; flex-direction: column; gap: 15px; margin: 6px 0 16px; }
+  .line { white-space: pre-wrap; word-break: break-word; }
+  .line.user { color: #d2cfca; }
+  .line.user .chev { color: var(--accent); font-weight: 700; margin-right: 9px; }
+  .think .row1 { display: flex; align-items: baseline; gap: 9px; }
+  .think .spin { color: var(--accent); width: 1.1em; display: inline-block; }
+  .think .verb { color: var(--term-fg); }
+  .think .stats { color: var(--term-dim); font-size: 13.5px; }
+  .think .trace { color: #75736e; font-size: 13.5px; font-style: italic; margin: 6px 0 0 28px;
+    opacity: 0; transition: opacity .25s ease; min-height: 1.35em; }
+  .think .trace.show { opacity: 1; }
+  .resp { display: flex; gap: 10px; }
+  .resp .bullet { color: var(--accent); flex: 0 0 auto; }
+  .resp .rtext { flex: 1; white-space: pre-wrap; word-break: break-word; }
+
+  /* input area (rules above/below the >) */
+  #inputwrap { flex: 0 0 auto; }
+  .in-rule { border-top: 1px solid #2b2b29; }
+  #inputbar { display: flex; align-items: flex-start; gap: 11px; padding: 13px 4px; }
+  #inputbar .chev { color: var(--accent); font-weight: 700; }
+  #inputbar .intext { white-space: pre-wrap; word-break: break-word; flex: 1; min-width: 0; }
+  #inputbar .ph { color: var(--term-dim); }
+  .cursor { display: inline-block; width: .55ch; height: 1.12em; transform: translateY(.16em);
+    background: var(--term-fg); margin-left: 1px; }
+  .cursor.blink { animation: bl 1.05s steps(1) infinite; }
+  @keyframes bl { 50% { opacity: 0; } }
+  .footer { color: var(--term-dim); font-size: 13px; padding: 7px 4px 14px; }
+
+  /* ---------- Lens / zoom: magnify the terminal text + an extra bump on the input
+     bar so the prompt being typed is the visual focus (not buried at the bottom).
+     Welcome-box headers keep their own sizes so the splash stays calm. ---------- */
+  #term { transition: font-size 500ms cubic-bezier(.22,1,.36,1); }
+  body.lens-on #term { font-size: calc(var(--type-fz) * var(--lens-mag, 1.2)); }
+  /* The user prompt types directly into a .line.user in the conversation (so the eye
+     stays where the thinking + reply will appear). Give it an extra bump so the prompt
+     reads as the foreground. */
+  #convo .line.user, #inputbar { transition: font-size 500ms cubic-bezier(.22,1,.36,1); }
+  body.lens-on #convo .line.user,
+  body.lens-on #inputbar { font-size: calc(var(--type-fz) * var(--lens-mag, 1.2) * 1.18); }
+  /* Vignette — frames the terminal screen. */
+  #lens-vignette-fx {
+    position: absolute; inset: 0; pointer-events: none; z-index: 40; opacity: 0;
+    transition: opacity 500ms ease; border-radius: inherit;
+    background: radial-gradient(ellipse 84% 76% at 50% 48%,
+      rgba(0,0,0,0) 42%,
+      rgba(0,0,0,calc(var(--lens-vignette, 0.55) * 0.5)) 72%,
+      rgba(0,0,0,var(--lens-vignette, 0.55)) 100%);
+  }
+  body.lens-on #lens-vignette-fx { opacity: 1; }
+
+  #hint {
+    position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%);
+    color: #7a7d84; font-size: 12px; background: rgba(0,0,0,.5);
+    padding: 6px 12px; border-radius: 20px; pointer-events: none; z-index: 50;
+    transition: opacity .3s ease;
+  }
+  body.hide-controls #hint { opacity: .35; }
+</style>
+</head>
+<body>
+<aside id="controls">
+  <h1>Claude CLI</h1>
+  <p class="sub">Welcome screen → type prompt → thinking → streamed reply.</p>
+
+  <h2>Script</h2>
+  <textarea id="script" spellcheck="false">[[model:Claude Opus 4.7]]
+write a text to my boss for why i'm late. believable
+[[think:2800]]
+[[reply]]
+Hi Marcus — running ~20 min behind, a water main burst
+on Oak St and the road's taped off.
+
+Rerouting now, in ASAP. Sorry for the scramble!</textarea>
+  <div class="btn-row">
+    <button id="start" class="primary">Start ▶</button>
+    <button id="stop">Stop</button>
+    <button id="reset">Reset</button>
+  </div>
+  <button id="hideBtn">Hide panel (H)</button>
+  <div class="help">
+    Before <code>[[reply]]</code> = the prompt you type; after = Claude's streamed answer.<br>
+    <code>[[model:Claude Opus 4.7]]</code> · <code>[[think:2800]]</code> ms ·
+    <code>[[verb:Pondering]]</code> · <code>[[wrong|right]]</code> · <code>[[pause:600]]</code>
+  </div>
+
+  <h2>Header</h2>
+  <div class="row"><label>Welcome name</label><input type="text" id="cfg-name" value="Dev"></div>
+  <div class="row"><label>Account email</label><input type="text" id="cfg-email" value="claude.dev@gmx.ch"></div>
+  <div class="row"><label>Working dir</label><input type="text" id="cfg-cwd" value="C:\Users\atjul"></div>
+  <div class="row"><label>Version</label><input type="text" id="cfg-ver" value="2.1.150"></div>
+
+  <h2>Timing</h2>
+  <div class="row"><label>Type speed (ms/char)</label><input type="number" id="type-ms" value="44" min="0" max="400"></div>
+  <div class="row"><label>Reply speed (ms/token)</label><input type="number" id="resp-ms" value="40" min="0" max="400"></div>
+  <div class="row"><label>Thinking (ms)</label><input type="number" id="think-ms" value="2800" min="0" max="20000" step="100"></div>
+  <div class="row"><label>Keystroke sound</label><input type="checkbox" id="snd" checked></div>
+
+  <h2>Lens / zoom</h2>
+  <div class="row"><label>Magnify terminal text</label><input type="checkbox" id="lens-on" checked></div>
+  <div class="row"><label>Magnification (×)</label><input type="range" id="lens-mag" min="100" max="220" value="120"><span id="lens-mag-val" style="min-width:42px;text-align:right;color:#9aa0aa">1.2×</span></div>
+  <div class="row"><label>Vignette</label><input type="range" id="lens-vignette" min="0" max="100" value="55"><span id="lens-vignette-val" style="min-width:42px;text-align:right;color:#9aa0aa">55%</span></div>
+  <div class="help">Magnifies the conversation; the <code>&gt;</code> prompt gets an extra bump so the typing reads as the focus, not background.</div>
+</aside>
+
+<main id="stage">
+  <div id="frame">
+    <div class="phone-screen">
+      <div id="term">
+        <div id="scroll">
+          <div class="psline"></div>
+          <div class="welcome-box" id="welcome">
+            <span class="wb-legend">Claude Code <span class="ver" id="wb-ver">v2.1.150</span></span>
+            <div class="wb-welcome" id="wb-welcome">Welcome back Dev!</div>
+            <div class="mascot-wrap" id="mascot-wrap"><div id="mascot"></div></div>
+            <div class="wb-account">
+              Opus 4.7 (1M context) · Claude Max<br>
+              <span class="em" id="wb-org">claude.dev@gmx.ch</span>'s Organization<br>
+              <span id="wb-cwd">C:\Users\atjul</span>
+            </div>
+            <div class="wb-divider"></div>
+            <div class="wb-h">Tips for getting started</div>
+            <div class="wb-p">Run <span style="color:#cdb">/init</span> to create a CLAUDE.md file with instructions for Claude.</div>
+            <div class="wb-h">What's new</div>
+            <div class="wb-li">• <span style="color:#cdb">/usage</span> now shows a per-category breakdown of what's driving spend</div>
+            <div class="wb-li">• <span style="color:#cdb">/diff</span> detail view can now be scrolled with the keyboard</div>
+            <div class="wb-note">/release-notes for more</div>
+          </div>
+          <div id="convo"></div>
+        </div>
+        <div id="inputwrap">
+          <div class="in-rule"></div>
+          <div id="inputbar">
+            <span class="chev">&gt;</span>
+            <span class="intext" id="intext"><span class="ph" id="ph">Try "how does &lt;filepath&gt; work?"</span></span>
+            <span class="cursor blink" id="cursor"></span>
+          </div>
+          <div class="in-rule"></div>
+          <div class="footer">? for shortcuts&nbsp; · &nbsp;← for agents</div>
+        </div>
+      </div>
+    </div>
+    <div id="lens-vignette-fx"></div>
+  </div>
+</main>
+
+<div id="hint">press H for controls · Space to play · Esc to stop</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var scroll = $('scroll'), convo = $('convo'), intext = $('intext'), cursor = $('cursor');
+  var running = false, abort = false;
+
+  var SPIN = ['✻', '✶', '✳', '✺', '✸', '✷'];
+  var DEFAULT_VERBS = ['Thinking', 'Pondering', 'Percolating', 'Noodling', 'Conjuring',
+    'Cogitating', 'Ruminating', 'Marinating', 'Vibing', 'Scheming', 'Finessing'];
+  var TRACE = ['parsing the request', 'weighing a couple angles', 'drafting a first pass',
+    'checking the tone', 'trimming the fat', 'almost there'];
+
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function fmtTok(n) { return n >= 1000 ? (n / 1000).toFixed(1) + 'k' : ('' + n); }
+  function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function scrollEnd() { scroll.scrollTop = scroll.scrollHeight; }
+  function snd() { return $('snd').checked; }
+
+  // ---- mascot pixel sprite (box-shadow) ----
+  var ART = [
+    '   OOOOOOOO   ',
+    '  OOOOOOOOOO  ',
+    ' OOOOOOOOOOOO ',
+    ' OOxxOOOOxxOO ',
+    ' OOxxOOOOxxOO ',
+    ' OOOOOOOOOOOO ',
+    ' OOOOOOOOOOOO ',
+    '  OO OO OO OO ',
+    '  OO OO OO OO '
+  ];
+  function drawMascot() {
+    var px = 6, on = '#d97757', eye = '#2b2422', sh = [], cols = 0;
+    for (var r = 0; r < ART.length; r++) {
+      cols = Math.max(cols, ART[r].length);
+      for (var c = 0; c < ART[r].length; c++) {
+        var ch = ART[r][c]; if (ch === ' ') continue;
+        sh.push((c * px) + 'px ' + (r * px) + 'px 0 0 ' + (ch === 'x' ? eye : on));
+      }
+    }
+    var m = $('mascot'); m.style.width = px + 'px'; m.style.height = px + 'px';
+    m.style.boxShadow = sh.join(',');
+    var w = $('mascot-wrap'); w.style.width = (cols * px) + 'px'; w.style.height = (ART.length * px) + 'px';
+  }
+
+  // ---- audio blips ----
+  var actx;
+  function ac() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } return actx; }
+  function blip(freq, dur, vol, type) {
+    if (!snd()) return; var c = ac(); if (!c) return;
+    try { var o = c.createOscillator(), g = c.createGain(); o.type = type || 'square'; o.frequency.value = freq;
+      o.connect(g); g.connect(c.destination); var t = c.currentTime; g.gain.setValueAtTime(vol || 0.03, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (dur || 0.03)); o.start(t); o.stop(t + (dur || 0.03)); } catch (e) {}
+  }
+  var keySnd = function () { blip(380 + Math.random() * 160, 0.018, 0.02, 'square'); };
+  var enterSnd = function () { blip(640, 0.06, 0.04, 'square'); setTimeout(function () { blip(900, 0.05, 0.03, 'square'); }, 45); };
+  var doneSnd = function () { blip(520, 0.09, 0.03, 'sine'); };
+
+  // ---- config / parsing ----
+  function applyConfig() {
+    var ver = $('cfg-ver').value || '2.1.150';
+    $('wb-ver').textContent = 'v' + ver.replace(/^v/, '');
+    $('wb-welcome').textContent = 'Welcome back ' + ($('cfg-name').value || 'Dev') + '!';
+    $('wb-org').textContent = $('cfg-email').value || 'claude.dev@gmx.ch';
+    $('wb-cwd').textContent = $('cfg-cwd').value || 'C:\\Users\\atjul';
+    var cwd = $('cfg-cwd').value || 'C:\\Users\\atjul';
+    document.querySelector('.psline').innerHTML = '<span class="path">PS ' + esc(cwd) + '&gt; </span><span class="cmd" id="ps-cmd"></span><span class="cursor blink" id="ps-cursor"></span>';
+  }
+  ['cfg-ver', 'cfg-name', 'cfg-email', 'cfg-cwd'].forEach(function (id) {
+    $(id).addEventListener('input', applyConfig);
+  });
+
+  function parse(text) {
+    var model = 'Claude Opus 4.7', thinkMs = +$('think-ms').value || 2600, verb = null;
+    var lines = text.split('\n'), prompt = [], reply = [], inReply = false;
+    for (var i = 0; i < lines.length; i++) {
+      var ln = lines[i], mm = ln.match(/^\s*\[\[(model|think|verb):(.*)\]\]\s*$/i);
+      if (mm && !inReply) {
+        var k = mm[1].toLowerCase(), v = mm[2].trim();
+        if (k === 'model') model = v; else if (k === 'think') thinkMs = +v || thinkMs; else if (k === 'verb') verb = v;
+        continue;
+      }
+      if (/^\s*\[\[reply\]\]\s*$/i.test(ln)) { inReply = true; continue; }
+      (inReply ? reply : prompt).push(ln);
+    }
+    return {
+      model: model, thinkMs: thinkMs, verb: verb,
+      promptTokens: tokenizePrompt(prompt.join('\n').replace(/^\n+|\n+$/g, '')),
+      reply: reply.join('\n').replace(/^\n+|\n+$/g, '')
+    };
+  }
+  function tokenizePrompt(s) {
+    var toks = [], re = /\[\[([^\]]*)\]\]/g, last = 0, m;
+    while ((m = re.exec(s))) {
+      for (var i = last; i < m.index; i++) toks.push({ t: 'c', c: s[i] });
+      var inner = m[1], pm = inner.match(/^(?:pause|wait):(\d+)$/i);
+      if (pm) toks.push({ t: 'pause', ms: +pm[1] });
+      else if (inner.indexOf('|') >= 0) { var p = inner.indexOf('|'); toks.push({ t: 'typo', wrong: inner.slice(0, p), right: inner.slice(p + 1) }); }
+      else for (var j = 0; j < inner.length; j++) toks.push({ t: 'c', c: inner[j] });
+      last = re.lastIndex;
+    }
+    for (var k = last; k < s.length; k++) toks.push({ t: 'c', c: s[k] });
+    return toks;
+  }
+
+  function el(cls, html) { var d = document.createElement('div'); d.className = cls; if (html != null) d.innerHTML = html; return d; }
+
+  function resetUI() {
+    applyConfig(); drawMascot();
+    convo.innerHTML = '';
+    intext.innerHTML = '<span class="ph">Try "how does &lt;filepath&gt; work?"</span>';
+    cursor.classList.add('blink');
+    // Start at a bare prompt: the `claude` invocation is typed live in play(), then
+    // the welcome screen + REPL input appear — so the launch is seen, not pre-rendered.
+    var w = $('welcome'); if (w) { w.style.display = 'none'; w.style.opacity = ''; }
+    var iw = $('inputwrap'); if (iw) iw.style.display = 'none';
+    scroll.scrollTop = 0;
+  }
+
+  // Type the `claude` command live at the PowerShell prompt.
+  async function typeCmd(word) {
+    var psCmd = $('ps-cmd'), psCur = $('ps-cursor');
+    if (psCur) psCur.classList.remove('blink');
+    var typeMs = +$('type-ms').value || 44;
+    for (var i = 0; i < word.length; i++) {
+      if (abort) return;
+      if (psCmd) psCmd.textContent += word[i];
+      keySnd(); scrollEnd();
+      await sleep(typeMs + Math.random() * typeMs * 0.7);
+    }
+    if (psCur) psCur.classList.add('blink');
+  }
+  // Bring up the welcome screen + REPL input after `claude` runs.
+  function revealWelcome() {
+    var w = $('welcome');
+    if (w) { w.style.display = ''; w.style.opacity = '0'; requestAnimationFrame(function () { w.style.opacity = '1'; }); }
+    // Note: #inputwrap intentionally stays hidden — the user prompt is typed directly
+    // into the conversation (see play()), so the bottom input bar is unused.
+    scrollEnd();
+  }
+
+  async function typePrompt(toks) {
+    intext.textContent = ''; cursor.classList.remove('blink');
+    var typeMs = +$('type-ms').value || 40, buf = '';
+    var setBuf = function () { intext.textContent = buf; scrollEnd(); };
+    for (var i = 0; i < toks.length; i++) {
+      if (abort) return; var tk = toks[i];
+      if (tk.t === 'c') { buf += tk.c; setBuf(); keySnd(); await sleep(typeMs + Math.random() * typeMs * 0.7); }
+      else if (tk.t === 'pause') { await sleep(tk.ms); }
+      else if (tk.t === 'typo') {
+        for (var a = 0; a < tk.wrong.length; a++) { if (abort) return; buf += tk.wrong[a]; setBuf(); keySnd(); await sleep(typeMs + Math.random() * typeMs * 0.7); }
+        await sleep(260 + Math.random() * 220);
+        for (var b = 0; b < tk.wrong.length; b++) { if (abort) return; buf = buf.slice(0, -1); setBuf(); await sleep(typeMs * 0.55); }
+        for (var d = 0; d < tk.right.length; d++) { if (abort) return; buf += tk.right[d]; setBuf(); keySnd(); await sleep(typeMs + Math.random() * typeMs * 0.7); }
+      }
+    }
+    cursor.classList.add('blink');
+  }
+
+  async function think(verb, ms) {
+    var line = el('line think');
+    line.innerHTML = '<div class="row1"><span class="spin">✻</span><span class="verb"></span><span class="stats"></span></div><div class="trace"></div>';
+    convo.appendChild(line); scrollEnd();
+    var spin = line.querySelector('.spin'), vb = line.querySelector('.verb'),
+        stats = line.querySelector('.stats'), trace = line.querySelector('.trace');
+    vb.textContent = (verb || DEFAULT_VERBS[rint(0, DEFAULT_VERBS.length - 1)]) + '…';
+    var t0 = Date.now(), tokTarget = rint(640, 2400), si = 0, ti = -1;
+    var timer = setInterval(function () {
+      var elp = (Date.now() - t0) / 1000; si = (si + 1) % SPIN.length; spin.textContent = SPIN[si];
+      var frac = Math.min(1, elp * 1000 / ms), tok = Math.round(tokTarget * (frac * (2 - frac)));
+      stats.textContent = '(' + elp.toFixed(0) + 's · ↑ ' + fmtTok(tok) + ' tokens · esc to interrupt)';
+      var want = Math.min(TRACE.length - 1, Math.floor(frac * TRACE.length));
+      if (want !== ti) { ti = want; trace.classList.remove('show');
+        setTimeout(function () { trace.textContent = TRACE[ti] + '…'; trace.classList.add('show'); }, 120); }
+      scrollEnd();
+    }, 90);
+    var w = 0; while (w < ms) { if (abort) break; await sleep(60); w += 60; }
+    clearInterval(timer); convo.removeChild(line);
+  }
+
+  async function stream(text) {
+    var line = el('line resp'); line.innerHTML = '<span class="bullet">⏺</span><span class="rtext"></span>';
+    convo.appendChild(line); var rt = line.querySelector('.rtext');
+    var respMs = +$('resp-ms').value || 40, toks = text.match(/\s+|[^\s]+/g) || [], out = '';
+    for (var i = 0; i < toks.length; i++) {
+      if (abort) return; out += toks[i]; rt.textContent = out; scrollEnd();
+      if (/\S/.test(toks[i])) keySnd();
+      await sleep(respMs + Math.random() * respMs * 0.8);
+    }
+  }
+
+  async function play() {
+    if (running) return; running = true; abort = false;
+    var data = parse($('script').value);
+    resetUI();
+    await sleep(600); if (abort) return finish();
+    await typeCmd('claude'); if (abort) return finish();   // launch Claude — typed live
+    await sleep(320);
+    enterSnd();
+    var psCur = $('ps-cursor'); if (psCur) psCur.remove();
+    revealWelcome();                                       // welcome fades in
+    await sleep(760); if (abort) return finish();
+    // ---- Type the prompt LIVE into a user line in the conversation ----
+    // so the typing happens where the thinking spinner + reply will appear (in-flow),
+    // not buried in a bottom input bar.
+    var u = el('line user');
+    u.innerHTML = '<span class="chev">&gt;</span><span class="utext"></span><span class="cursor blink" id="user-cursor"></span>';
+    convo.appendChild(u); scrollEnd();
+    var utextEl = u.querySelector('.utext');
+    var userCur = u.querySelector('#user-cursor');
+    userCur.classList.remove('blink');
+    var typeMs = +$('type-ms').value || 40, buf = '';
+    var setUserBuf = function () { utextEl.textContent = buf; scrollEnd(); };
+    for (var pi = 0; pi < data.promptTokens.length; pi++) {
+      if (abort) return finish();
+      var ptk = data.promptTokens[pi];
+      if (ptk.t === 'c') { buf += ptk.c; setUserBuf(); keySnd(); await sleep(typeMs + Math.random() * typeMs * 0.7); }
+      else if (ptk.t === 'pause') { await sleep(ptk.ms); }
+      else if (ptk.t === 'typo') {
+        for (var pa = 0; pa < ptk.wrong.length; pa++) { if (abort) return finish(); buf += ptk.wrong[pa]; setUserBuf(); keySnd(); await sleep(typeMs + Math.random() * typeMs * 0.7); }
+        await sleep(260 + Math.random() * 220);
+        for (var pb = 0; pb < ptk.wrong.length; pb++) { if (abort) return finish(); buf = buf.slice(0, -1); setUserBuf(); await sleep(typeMs * 0.55); }
+        for (var pd = 0; pd < ptk.right.length; pd++) { if (abort) return finish(); buf += ptk.right[pd]; setUserBuf(); keySnd(); await sleep(typeMs + Math.random() * typeMs * 0.7); }
+      }
+    }
+    userCur.classList.add('blink');
+    await sleep(420);
+    enterSnd();
+    userCur.remove();   // submitted — the user line stays in the conversation
+    await sleep(380); if (abort) return finish();
+    await think(data.verb, data.thinkMs); if (abort) return finish();
+    await sleep(160);
+    await stream(data.reply);
+    doneSnd(); finish();
+    // Auto-repeat only in the standalone editor preview. A hub/OBS pass
+    // (present/render/audiocap) does one take — refresh the source for a fresh take.
+    if (!abort && !(window.__SIM_ONESHOT__ || /[#&](present|render|audiocap)\b/.test(location.hash))) setTimeout(function () { if (!abort) play(); }, 800);
+  }
+  function finish() { running = false; }
+  function stop() { abort = true; finish(); }
+  function reset() { abort = true; finish(); setTimeout(resetUI, 30); }
+
+  $('start').addEventListener('click', function () { if (ac()) try { ac().resume(); } catch (e) {} play(); });
+  $('stop').addEventListener('click', stop);
+  $('reset').addEventListener('click', reset);
+  $('hideBtn').addEventListener('click', function () { document.body.classList.toggle('hide-controls'); });
+
+  document.addEventListener('keydown', function (e) {
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (e.key === 'h' || e.key === 'H') { document.body.classList.toggle('hide-controls'); e.preventDefault(); }
+    else if (e.key === ' ') { e.preventDefault(); if (running) stop(); else { if (ac()) try { ac().resume(); } catch (er) {} play(); } }
+    else if (e.key === 'Escape') { stop(); }
+  });
+
+  // ---- Lens / zoom: magnify the terminal text + vignette ----
+  (function () {
+    var on = $('lens-on'); if (!on) return;
+    var apply = function () { document.body.classList.toggle('lens-on', on.checked); };
+    on.addEventListener('change', apply); apply();
+    var mag = $('lens-mag'), mv = $('lens-mag-val');
+    if (mag) {
+      var am = function () { var m = +mag.value / 100; if (mv) mv.textContent = m.toFixed(2).replace(/0$/, '') + '×'; document.documentElement.style.setProperty('--lens-mag', m.toFixed(3)); };
+      mag.addEventListener('input', am); am();
+    }
+    var vg = $('lens-vignette'), vv = $('lens-vignette-val');
+    if (vg) {
+      var av = function () { if (vv) vv.textContent = vg.value + '%'; document.documentElement.style.setProperty('--lens-vignette', (+vg.value / 100).toFixed(2)); };
+      vg.addEventListener('input', av); av();
+    }
+  })();
+
+  resetUI();
+})();
+</script>
+
+<!-- ===== Universal OBS present mode (#present) — shared across sims ===== -->
+<style>
+  body.present { background: #000 !important; overflow: hidden !important; }
+  body.present, body.present * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+  body.present *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+  body.present #controls { display: none !important; }
+  body.present #stage { padding: 0 !important; margin: 0 !important; overflow: hidden !important; }
+  body.present .present-frame {
+    position: fixed !important; inset: 0 !important;
+    width: auto !important; height: auto !important;
+    min-width: 0 !important; min-height: 0 !important;
+    max-width: none !important; max-height: none !important;
+    margin: 0 !important; border: none !important; border-radius: 0 !important;
+    transform: none !important; box-shadow: none !important; overflow: hidden !important;
+  }
+  body.present .present-frame .phone-screen {
+    width: 100% !important; height: 100% !important;
+    max-width: none !important; max-height: none !important;
+    border-radius: 0 !important; margin: 0 !important; border: none !important;
+  }
+  body.present #hint { display: none !important; }
+  #obs-link-btn {
+    position: fixed; left: 12px; bottom: 12px; z-index: 99999;
+    background: #c2410c; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 12px; font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.45); opacity: 0.92;
+  }
+  #obs-link-btn:hover { opacity: 1; }
+  body.present #obs-link-btn { display: none !important; }
+</style>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = 'sim:script:' + (location.pathname.split('/').pop() || 'sim');
+  var scriptEl = $('script');
+  function buildLink() {
+    var base = location.href.replace(/[#?].*$/, '');
+    var s = scriptEl ? scriptEl.value : '';
+    return base + '#present' + (s && s.trim() ? '&s=' + encodeURIComponent(s) : '');
+  }
+  function copyText(t) {
+    var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    var ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
+    if (!ok && navigator.clipboard) { try { navigator.clipboard.writeText(t); } catch (e) {} }
+  }
+  if (scriptEl) { scriptEl.addEventListener('input', function () { try { localStorage.setItem(KEY, scriptEl.value); } catch (e) {} }); }
+  var params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
+  if (params.has('present')) {
+    var s = params.get('s');
+    if (s == null) { try { s = localStorage.getItem(KEY); } catch (e) {} }
+    if (s && scriptEl) scriptEl.value = s;
+    var stage = $('stage');
+    var frame = (stage && stage.querySelector('#gmail-frame, #tt-frame, #frame, .phone-wrap')) || stage;
+    if (frame) frame.classList.add('present-frame');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.classList.add('present', 'hide-controls');
+    setTimeout(function () { var b = $('start') || $('btn-play'); if (b) b.click(); }, 1200);
+  } else {
+    var btn = document.createElement('button');
+    btn.id = 'obs-link-btn'; btn.type = 'button'; btn.textContent = '📋 OBS link';
+    btn.addEventListener('click', function () {
+      copyText(buildLink());
+      var t = btn.textContent; btn.textContent = '✓ Copied!'; setTimeout(function () { btn.textContent = t; }, 1600);
+    });
+    document.body.appendChild(btn);
+  }
+})();
+</script>
+</body>
+</html>
