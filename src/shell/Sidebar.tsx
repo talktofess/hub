@@ -1,7 +1,7 @@
 import { useRecording } from '../recording/useRecording';
 import { SIMS } from '../sims/registry';
 
-export function Sidebar() {
+export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
   const rec = useRecording();
   return (
     <aside className="sidebar">
@@ -26,6 +26,7 @@ export function Sidebar() {
           </button>
         ))}
       </nav>
+      <button className="settings-btn" onClick={onOpenSettings}>⚙ Settings</button>
       <div className="sidebar-foot">OBS-ready · {SIMS.filter((s) => s.ready).length}/{SIMS.length} built</div>
     </aside>
   );

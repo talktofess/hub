@@ -1,20 +1,13 @@
-/* Keystroke audio engine.
+/* Keystroke audio engine with selectable sound profiles.
 
-   Replaces the legacy approach (a shim that hooked every AudioNode.connect on an
-   iframe). Here we own the graph directly:
+   Graph:  per-key nodes -> master -> destination          (audible, OBS records)
+   Single-take recording: keystroke audio plays through the browser source and
+   OBS captures it directly — one URL, one pass. (master can still be muted; the
+   deterministic two-pass path lives in legacy/.) */
 
-     osc/noise -> voiceGain -> master -> destination          (audible)
-                                       \-> capDest -> MediaRecorder   (#audiocap)
+import type { SoundProfile } from './settings';
 
-   - #render  : master muted (OBS records silent keystrokes + the sync marker;
-                remux.js muxes the clean track in later).
-   - #audiocap: master tee'd into a MediaRecorder; on stop we hand back a webm
-                blob tagged with the first-keystroke offset (t0) for the remux. */
-
-export interface CaptureResult {
-  blob: Blob;
-  name: string;
-}
+export interface CaptureResult { blob: Blob; name: string }
 
 export class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -30,7 +23,9 @@ export class AudioEngine {
   private simName = 'sim';
   private onCapture: ((r: CaptureResult) => void) | null = null;
 
-  /** Lazily build the graph (must follow a user gesture for autoplay policy). */
+  profile: SoundProfile = 'mechanical';
+  volume = 0.85;
+
   private ensure(): AudioContext {
     if (this.ctx) return this.ctx;
     const AC = window.AudioContext || (window as any).webkitAudioContext;
@@ -44,12 +39,10 @@ export class AudioEngine {
     return ctx;
   }
 
-  setMuted(m: boolean) {
-    this.muted = m;
-    if (this.master) this.master.gain.value = m ? 0 : 1;
-  }
+  setProfile(p: SoundProfile) { this.profile = p; }
+  setVolume(v: number) { this.volume = v; }
+  setMuted(m: boolean) { this.muted = m; if (this.master) this.master.gain.value = m ? 0 : 1; }
 
-  /** Arm capture mode (call before play). simName tags the downloaded file. */
   armCapture(simName: string, onCapture: (r: CaptureResult) => void) {
     this.capturing = true;
     this.simName = simName;
@@ -73,60 +66,95 @@ export class AudioEngine {
       };
       this.recStart = (this.ctx.currentTime || 0) * 1000;
       this.recorder.start();
-    } catch {
-      /* MediaRecorder unsupported — capture just no-ops */
-    }
+    } catch { /* unsupported — no-op */ }
   }
 
   stopCapture() {
     try { if (this.recorder && this.recorder.state === 'recording') this.recorder.stop(); } catch { /* ignore */ }
   }
 
-  /** Resume the context (after a gesture). Returns true once running. */
   async resume(): Promise<void> {
     const ctx = this.ensure();
     if (ctx.state === 'suspended') { try { await ctx.resume(); } catch { /* ignore */ } }
   }
 
-  /** Play one keystroke click. Pitch jitter uses Math.random (seeded in render/
-      audiocap), so the two passes produce identical sound timing/params. */
+  /** Play one keystroke using the active profile. Jitter uses Math.random
+      (seeded in render/audiocap) so repeated takes are identical. */
   key() {
+    if (this.profile === 'none' || this.volume <= 0) return;
     const ctx = this.ensure();
     const t = ctx.currentTime;
     if (!this.sawKey) { this.sawKey = true; this.firstKey = t * 1000; }
-
-    // short filtered noise burst = the "tick"; a low sine = the "thock"
-    const dur = 0.045;
-    const noise = ctx.createBufferSource();
-    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2.5);
-    noise.buffer = buf;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = 1800 + Math.random() * 1200;
-    bp.Q.value = 0.8;
-    const ng = ctx.createGain();
-    ng.gain.value = 0.5;
-
-    const thock = ctx.createOscillator();
-    thock.type = 'sine';
-    thock.frequency.value = 120 + Math.random() * 50;
-    const tg = ctx.createGain();
-    tg.gain.setValueAtTime(0.0001, t);
-    tg.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
-    tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
-
-    noise.connect(bp).connect(ng).connect(this.master!);
-    thock.connect(tg).connect(this.master!);
-    noise.start(t); noise.stop(t + dur);
-    thock.start(t); thock.stop(t + 0.07);
+    const v = this.volume;
+    switch (this.profile) {
+      case 'typewriter': return this.synthTypewriter(ctx, t, v);
+      case 'soft': return this.synthSoft(ctx, t, v);
+      case 'tactile': return this.synthTactile(ctx, t, v);
+      default: return this.synthMechanical(ctx, t, v);
+    }
   }
 
-  /** A softer click for the spacebar. */
-  space() {
-    const saved = this.muted; // reuse key() with a slightly lower profile
-    this.key();
-    void saved;
+  space() { this.key(); }
+
+  // ---- profiles ----
+  private noise(ctx: AudioContext, dur: number, decay: number): AudioBufferSourceNode {
+    const src = ctx.createBufferSource();
+    const buf = ctx.createBuffer(1, Math.max(1, Math.ceil(ctx.sampleRate * dur)), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, decay);
+    src.buffer = buf;
+    return src;
+  }
+
+  private synthMechanical(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const dur = 0.045;
+    const n = this.noise(ctx, dur, 2.5);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800 + Math.random() * 1200; bp.Q.value = 0.8;
+    const ng = ctx.createGain(); ng.gain.value = 0.5 * v;
+    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 120 + Math.random() * 50;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.22 * v, t + 0.004); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    n.connect(bp).connect(ng).connect(m); osc.connect(og).connect(m);
+    n.start(t); n.stop(t + dur); osc.start(t); osc.stop(t + 0.07);
+  }
+
+  private synthTypewriter(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const n = this.noise(ctx, 0.03, 4);
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2600;
+    const ng = ctx.createGain(); ng.gain.value = 0.55 * v;
+    const clack = ctx.createOscillator(); clack.type = 'square'; clack.frequency.value = 180 + Math.random() * 40;
+    const cg = ctx.createGain();
+    cg.gain.setValueAtTime(0.0001, t); cg.gain.exponentialRampToValueAtTime(0.18 * v, t + 0.003); cg.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    const ring = ctx.createOscillator(); ring.type = 'triangle'; ring.frequency.value = 2400 + Math.random() * 400;
+    const rg = ctx.createGain();
+    rg.gain.setValueAtTime(0.0001, t); rg.gain.exponentialRampToValueAtTime(0.05 * v, t + 0.002); rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    n.connect(hp).connect(ng).connect(m); clack.connect(cg).connect(m); ring.connect(rg).connect(m);
+    n.start(t); n.stop(t + 0.03); clack.start(t); clack.stop(t + 0.05); ring.start(t); ring.stop(t + 0.04);
+  }
+
+  private synthSoft(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const n = this.noise(ctx, 0.05, 2);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500 + Math.random() * 150;
+    const ng = ctx.createGain(); ng.gain.value = 0.28 * v;
+    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 85 + Math.random() * 30;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.16 * v, t + 0.006); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    n.connect(lp).connect(ng).connect(m); osc.connect(og).connect(m);
+    n.start(t); n.stop(t + 0.05); osc.start(t); osc.stop(t + 0.08);
+  }
+
+  private synthTactile(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const n = this.noise(ctx, 0.04, 3);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100 + Math.random() * 300;
+    const ng = ctx.createGain(); ng.gain.value = 0.32 * v;
+    const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 95 + Math.random() * 25;
+    const og = ctx.createGain();
+    og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.3 * v, t + 0.005); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.085);
+    n.connect(lp).connect(ng).connect(m); osc.connect(og).connect(m);
+    n.start(t); n.stop(t + 0.04); osc.start(t); osc.stop(t + 0.09);
   }
 }

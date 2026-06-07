@@ -23,6 +23,7 @@ export function useTypewriter() {
     rec.setPlaying(true);
     await rec.audio.resume();
     const t0 = performance.now();
+    const speed = rec.settings.speed || 1; // universal typing-rate multiplier
     let firstKey = false;
 
     for (const step of plan) {
@@ -39,11 +40,11 @@ export function useTypewriter() {
       let cur = '';
       for (const a of tokenize(step.text)) {
         if (aborted()) return;
-        if (a.t === 'wait') { await sleep(a.ms); continue; }
+        if (a.t === 'wait') { await sleep(a.ms / speed); continue; }
         if (a.t === 'back') {
           cur = cur.slice(0, -1);
           step.onUpdate(cur);
-          await sleep(45 + Math.random() * 35);
+          await sleep((45 + Math.random() * 35) / speed);
           continue;
         }
         cur += a.ch;
@@ -53,7 +54,7 @@ export function useTypewriter() {
           if (rec.mode === 'render') rec.flashMarker();
         }
         rec.audio.key(); // muted via master gain in #render; keeps timing identical
-        await sleep(charDelay(a.ch));
+        await sleep(charDelay(a.ch) / speed);
       }
     }
 

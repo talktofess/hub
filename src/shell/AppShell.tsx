@@ -4,10 +4,12 @@ import { SIMS } from '../sims/registry';
 import { Sidebar } from './Sidebar';
 import { Stage } from './Stage';
 import { ControlPanel } from './ControlPanel';
+import { SettingsPanel } from './SettingsPanel';
 
 export function AppShell() {
   const rec = useRecording();
   const [started, setStarted] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // keyboard: digits switch ready sims, P preview, Esc stop (ignored in fields)
   useEffect(() => {
@@ -56,9 +58,10 @@ export function AppShell() {
 
   return (
     <div className="edit-root">
-      <Sidebar />
+      <Sidebar onOpenSettings={() => setSettingsOpen(true)} />
       <main className="stage-wrap"><Stage /></main>
-      <ControlPanel />
+      <ControlPanel onOpenSettings={() => setSettingsOpen(true)} />
+      <SettingsPanel open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

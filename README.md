@@ -28,22 +28,28 @@ npm run typecheck
   supports the typo-and-correct markup `[[wrong|right]]` — types the wrong
   spelling, backspaces, types the correction.
 
-### Recording (OBS)
+### Recording (OBS) — one URL
 
-The recording pipeline from the legacy tool is preserved — modes live in the URL
-hash so they work as a Browser Source with no server routing:
+**Copy OBS URL** builds a single link and you paste it **once** into an OBS
+Browser Source. OBS records the take directly (video + keystroke audio together).
+The URL carries everything needed to reproduce it:
 
-| URL hash                       | Pass | Behavior |
-|--------------------------------|------|----------|
-| `#present&sim=NAME&s=…`         | audible preview take | autostarts one take, audible keystrokes |
-| `#render&sim=NAME&s=…`          | OBS **video** pass | seeded (reproducible take), flashes the corner **sync marker**, **mutes** keystrokes |
-| `#audiocap&sim=NAME&s=…`        | clean **audio** pass | same seed ⇒ identical take; records keystrokes to `NAME__t0-<ms>ms.webm` |
+```
+…/#present&sim=notes&s=<script>&snd=typewriter&spd=1.5&kvol=0.6&bg=<url>
+```
 
-Use the **Video** + **Audio** buttons in the control panel to copy these URLs.
-Optional `&bg=`, `&bgloop=`, `&bgsrt=` carry background media + SRT pacing.
-Mux the clean audio onto the OBS video with `legacy/remux.js` (ffmpeg) — see
-`legacy/RENDER.md`. Because it's served over **https**, the audio pass
-(`MediaRecorder`) and clipboard work reliably (both need a secure context).
+- `sim`, `s` — the sim and its script (per-sim content)
+- `snd`, `kvol`, `spd` — typing sound profile, keystroke volume, speed
+- `bg`, `bgk`, `bgloop`, `bgvol` — background media
+
+**Universal settings** (typing sound, speed, volume, background) live in the
+gear → *Universal settings* drawer. They are global — the same for every sim —
+and are baked into the URL. Because it's served over **https**, clipboard +
+audio work reliably (both need a secure context).
+
+> The legacy deterministic two-pass flow (`#render` muted video + `#audiocap`
+> clean audio, mux via `legacy/remux.js`) is still parsed for backward
+> compatibility, but the one-click export emits a single `#present` URL.
 
 ## Architecture
 

@@ -5,14 +5,9 @@ import type { CaptureResult } from './audio';
 import { installSeededRandom } from './rng';
 import { readBootConfig } from './url';
 import type { BootConfig, Mode } from './url';
-import { SIMS, defaultSimId, getSim } from '../sims/registry';
-
-export interface BgState {
-  url: string | null;
-  kind: 'video' | 'audio';
-  loop: boolean;
-  volume: number;
-}
+import { DEFAULT_SETTINGS, loadSettings, mergeSettings, saveSettings } from './settings';
+import type { BgSettings, Settings } from './settings';
+import { defaultSimId, getSim } from '../sims/registry';
 
 export interface RecordingContextValue {
   mode: Mode;
@@ -23,6 +18,8 @@ export interface RecordingContextValue {
   setSimId: (id: string) => void;
   script: string;
   setScript: (s: string) => void;
+  settings: Settings;
+  setSettings: (next: Partial<Settings>) => void;
   audio: AudioEngine;
   elapsed: (t0: number) => number;
   flashMarker: () => void;
@@ -33,8 +30,9 @@ export interface RecordingContextValue {
   stop: () => void;
   playing: boolean;
   setPlaying: (p: boolean) => void;
-  bg: BgState;
-  setBg: (next: Partial<BgState>) => void;
+  // background media (convenience view over settings.bg)
+  bg: BgSettings;
+  setBg: (next: Partial<BgSettings>) => void;
   bgRef: RefObject<HTMLVideoElement>;
   boot: BootConfig;
 }
@@ -42,7 +40,6 @@ export interface RecordingContextValue {
 export const RecordingContext = createContext<RecordingContextValue | null>(null);
 
 const scriptKey = (id: string) => 'sim:script:' + id;
-const BG_KEY = 'hub:bgmedia';
 
 function loadScript(id: string, fallback: string): string {
   try {
@@ -50,18 +47,6 @@ function loadScript(id: string, fallback: string): string {
     if (s != null) return s;
   } catch { /* ignore */ }
   return fallback;
-}
-
-function loadBg(boot: BootConfig): BgState {
-  if (boot.bg) return { url: boot.bg, kind: boot.bgKind || 'video', loop: boot.bgLoop, volume: 0.5 };
-  try {
-    const raw = localStorage.getItem(BG_KEY);
-    if (raw) {
-      const o = JSON.parse(raw);
-      return { url: o.url || null, kind: o.kind || 'video', loop: o.loop !== false, volume: typeof o.volume === 'number' ? o.volume : 0.5 };
-    }
-  } catch { /* ignore */ }
-  return { url: null, kind: 'video', loop: true, volume: 0.5 };
 }
 
 export function RecordingProvider({ children }: { children: ReactNode }) {
@@ -80,23 +65,24 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const initialScript = boot.script != null ? boot.script : loadScript(initialSim, getSim(initialSim)?.defaultScript ?? '');
   const [script, setScriptState] = useState(initialScript);
 
+  // universal settings: URL (a baked OBS take) wins over saved/defaults
+  const [settings, setSettingsState] = useState<Settings>(() => mergeSettings(loadSettings(), boot.settings));
+
   const [playing, setPlaying] = useState(false);
   const [playSignal, setPlaySignal] = useState(0);
   const [stopSignal, setStopSignal] = useState(0);
   const [markerSignal, setMarkerSignal] = useState(0);
-  const [bg, setBgState] = useState<BgState>(() => loadBg(boot));
 
-  // ---- seeded RNG for the reproducible render/audiocap passes ----
-  useEffect(() => {
-    if (mode === 'render' || mode === 'audiocap') {
-      const restore = installSeededRandom(simId, script);
-      return restore;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]); // script/sim are fixed for the lifetime of a record pass
-
-  // ---- mute keystrokes in the video pass ----
+  // apply settings to the audio engine
+  useEffect(() => { audio.setProfile(settings.sound); }, [audio, settings.sound]);
+  useEffect(() => { audio.setVolume(settings.volume); }, [audio, settings.volume]);
   useEffect(() => { audio.setMuted(mode === 'render'); }, [audio, mode]);
+
+  // seeded RNG for reproducible render/audiocap passes (legacy two-pass)
+  useEffect(() => {
+    if (mode === 'render' || mode === 'audiocap') return installSeededRandom(simId, script);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   const setSimId = useCallback((id: string) => {
     const def = getSim(id);
@@ -111,26 +97,28 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     if (!isRecording) { try { localStorage.setItem(scriptKey(simId), s); } catch { /* ignore */ } }
   }, [isRecording, simId]);
 
-  const setBg = useCallback((next: Partial<BgState>) => {
-    setBgState((prev) => {
-      const merged = { ...prev, ...next };
-      try { localStorage.setItem(BG_KEY, JSON.stringify(merged)); } catch { /* ignore */ }
+  const setSettings = useCallback((next: Partial<Settings>) => {
+    setSettingsState((prev) => {
+      const merged = mergeSettings(prev, next);
+      if (!isRecording) saveSettings(merged); // OBS context shouldn't clobber the editor's saved settings
       return merged;
     });
-  }, []);
+  }, [isRecording]);
+
+  const setBg = useCallback((next: Partial<BgSettings>) => {
+    setSettings({ bg: { ...next } as BgSettings });
+  }, [setSettings]);
 
   const play = useCallback(() => setPlaySignal((n) => n + 1), []);
   const stop = useCallback(() => setStopSignal((n) => n + 1), []);
   const flashMarker = useCallback(() => setMarkerSignal((n) => n + 1), []);
 
-  // SRT clock: typing follows the BG audio playhead when one is playing.
   const elapsed = useCallback((t0: number) => {
     const a = bgRef.current;
     if (a && a.currentSrc && !a.paused && isFinite(a.currentTime)) return a.currentTime * 1000;
     return performance.now() - t0;
   }, []);
 
-  // download the clean track when an audiocap take finishes
   useEffect(() => {
     if (mode !== 'audiocap') return;
     audio.armCapture(simId, (r: CaptureResult) => {
@@ -148,12 +136,13 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const value: RecordingContextValue = {
     mode, isRecording, oneShot, capturing,
     simId, setSimId, script, setScript,
+    settings, setSettings,
     audio, elapsed, flashMarker, markerSignal,
     playSignal, stopSignal, play, stop, playing, setPlaying,
-    bg, setBg, bgRef, boot,
+    bg: settings.bg, setBg, bgRef, boot,
   };
 
   return <RecordingContext.Provider value={value}>{children}</RecordingContext.Provider>;
 }
 
-export { SIMS };
+export { DEFAULT_SETTINGS };
