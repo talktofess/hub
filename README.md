@@ -62,12 +62,19 @@ Global — the same for **every** sim, baked into the one URL:
 ### Media (universal, uploaded — not in the URL)
 
 Big media can't ride in the URL (that's what truncated images in OBS). Instead,
-**upload** images/videos/audio in the settings drawer: they're stored by the
-local server (`uploads/`) and loaded by both the editor and OBS as **real
-files** over `http://localhost` — so complete images render, no truncation. Pick
-one as the background and choose a **display mode**: cover / contain / blur-fill /
-stretch / tile / center, with optional **Ken Burns** pan-zoom; a video can play
-as video or **audio-only**.
+**upload** images/videos/audio in the settings drawer; they're stored in
+**Supabase Storage** and loaded by both the editor and OBS as **real https
+files** — complete images, no truncation, and it works from any machine + the
+hosted Vercel app. Set up once: see [`SUPABASE.md`](./SUPABASE.md) (reuses the
+shared vault/inkwell project, its own `hub-media` bucket). The config token is
+stored there too, so `…#present&sim=NAME&cfg=TOKEN` resolves from the cloud.
+
+Without Supabase env vars, it falls back to the **local server** (`npm run
+local`, serves `uploads/` over `http://localhost`).
+
+Pick a media item as the background and choose a **display mode**: cover /
+contain / blur-fill / stretch / tile / center, with optional **Ken Burns**
+pan-zoom; a video can play as video or **audio-only**.
 
 > The legacy deterministic two-pass flow (`#render` + `#audiocap`, mux via
 > `legacy/remux.js`) is still parsed for backward compatibility.

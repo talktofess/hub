@@ -33,8 +33,9 @@ export function MediaLibrary() {
   if (ok === false) {
     return (
       <p className="hint">
-        Uploads need the local server. Run <code>npm run local</code> and open
-        <code> http://localhost:3000</code> — then OBS loads uploaded media as real files. You can
+        Uploads need a storage backend. Either set Supabase env vars
+        (<code>VITE_SUPABASE_URL</code> / <code>VITE_SUPABASE_ANON_KEY</code> — see
+        <code> SUPABASE.md</code>), or run the local server (<code>npm run local</code>). You can
         still paste a direct URL below.
       </p>
     );
