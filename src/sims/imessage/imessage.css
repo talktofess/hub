@@ -1,0 +1,156 @@
+/* iMessage sim — a clean iOS Messages thread at 1080x1920 logical (the stage
+   scales it, so it reads identically at any OBS resolution). Light mode, classic
+   blue/grey bubbles. */
+
+.im-root {
+  width: 1080px;
+  height: 1920px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #000;
+  font-family: -apple-system, 'SF Pro Text', 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Status bar */
+.im-statusbar {
+  height: 96px;
+  flex: 0 0 auto;
+  padding: 0 70px 0 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+.im-time { font-size: 34px; letter-spacing: 0.5px; }
+.im-status-right { display: flex; align-items: center; gap: 14px; }
+.im-signal { display: flex; align-items: flex-end; gap: 4px; height: 26px; }
+.im-signal i { width: 7px; background: #000; border-radius: 2px; }
+.im-signal i:nth-child(1) { height: 12px; }
+.im-signal i:nth-child(2) { height: 17px; }
+.im-signal i:nth-child(3) { height: 22px; }
+.im-signal i:nth-child(4) { height: 27px; }
+.im-5g { font-size: 30px; font-weight: 600; }
+.im-battery {
+  width: 50px; height: 26px; border: 3px solid rgba(0,0,0,0.45);
+  border-radius: 7px; padding: 3px; position: relative;
+}
+.im-battery::after {
+  content: ''; position: absolute; right: -7px; top: 8px; width: 4px; height: 10px;
+  background: rgba(0,0,0,0.45); border-radius: 0 2px 2px 0;
+}
+.im-battery-fill { display: block; width: 100%; height: 100%; background: #000; border-radius: 2px; }
+
+/* Conversation header */
+.im-header {
+  flex: 0 0 auto;
+  height: 150px;
+  display: grid;
+  grid-template-columns: 100px 1fr 100px;
+  align-items: center;
+  border-bottom: 1px solid #e6e6e8;
+}
+.im-chevron { font-size: 70px; color: #007AFF; font-weight: 300; text-align: center; line-height: 1; }
+.im-contact { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.im-avatar {
+  width: 86px; height: 86px; border-radius: 50%;
+  background: linear-gradient(160deg, #b8c0cc, #8a93a3);
+  color: #fff; font-size: 38px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+.im-name { font-size: 28px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.im-name-chevron { color: #b9b9bf; font-weight: 400; }
+.im-facetime { display: flex; align-items: center; justify-content: center; }
+
+/* Thread */
+.im-thread { flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; }
+.im-thread::-webkit-scrollbar { width: 0; height: 0; }
+.im-thread-inner {
+  display: flex; flex-direction: column;
+  padding: 40px 44px 30px;
+  gap: 8px;
+  zoom: var(--font-scale, 1);
+}
+
+.im-row { display: flex; }
+.im-row.sent { justify-content: flex-end; }
+.im-row.recv { justify-content: flex-start; }
+.im-stack { display: flex; flex-direction: column; max-width: 760px; }
+.im-row.sent .im-stack { align-items: flex-end; }
+.im-row.recv .im-stack { align-items: flex-start; }
+
+.im-bubble {
+  position: relative;
+  font-size: 41px;
+  line-height: 1.28;
+  padding: 22px 34px;
+  border-radius: 46px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  max-width: 760px;
+  animation: im-pop 0.18s ease-out;
+}
+.im-bubble.sent { background: #007AFF; color: #fff; border-bottom-right-radius: 14px; }
+.im-bubble.recv { background: #E9E9EB; color: #000; border-bottom-left-radius: 14px; }
+.im-row.sent + .im-row.sent .im-bubble,
+.im-row.recv + .im-row.recv .im-bubble { margin-top: 2px; }
+
+@keyframes im-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Tapback reaction */
+.im-tapback {
+  position: absolute; top: -34px; font-size: 40px;
+  background: #fff; border-radius: 50%; padding: 6px 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  line-height: 1;
+}
+.im-bubble.sent .im-tapback { left: -18px; }
+.im-bubble.recv .im-tapback { right: -18px; }
+
+/* Delivered / Read */
+.im-status { font-size: 24px; color: #8e8e93; margin: 8px 6px 6px; font-weight: 500; }
+
+/* Their typing indicator */
+.im-bubble.typing { display: flex; gap: 14px; align-items: center; padding: 30px 36px; }
+.im-bubble.typing .dot {
+  width: 20px; height: 20px; border-radius: 50%; background: #a3a3a8;
+  animation: im-bounce 1.2s infinite ease-in-out;
+}
+.im-bubble.typing .dot:nth-child(2) { animation-delay: 0.18s; }
+.im-bubble.typing .dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes im-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-10px); opacity: 1; }
+}
+
+/* Composer */
+.im-composer {
+  flex: 0 0 auto;
+  padding: 22px 40px 56px;
+  display: flex; align-items: flex-end; gap: 22px;
+  border-top: 1px solid #ececee;
+}
+.im-plus {
+  width: 70px; height: 70px; flex: 0 0 auto;
+  border-radius: 50%; background: #e9e9eb; color: #555;
+  font-size: 50px; font-weight: 300;
+  display: flex; align-items: center; justify-content: center;
+}
+.im-input {
+  flex: 1 1 auto; min-height: 70px;
+  border: 2px solid #d6d6da; border-radius: 38px;
+  padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
+  font-size: 38px; color: #000;
+}
+.im-input-ph { color: #b9b9bf; }
+.im-input-text { word-break: break-word; }
+.im-send {
+  flex: 0 0 auto; margin-left: 18px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #007AFF; color: #fff; font-weight: 700; font-size: 38px;
+  display: inline-flex; align-items: center; justify-content: center;
+}

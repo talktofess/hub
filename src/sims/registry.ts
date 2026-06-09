@@ -1,5 +1,6 @@
 import type { SimDef } from './types';
 import { notesSim } from './notes';
+import { imessageSim } from './imessage';
 
 /* Roadmap placeholders for the sims not yet rebuilt — they show in the launcher
    as "soon" so the full roster is visible. Each becomes a real entry (ready:true
@@ -10,7 +11,7 @@ function soon(id: string, label: string, glyph: string, accent: string, frame: S
 
 export const SIMS: SimDef[] = [
   notesSim,
-  soon('imessage', 'iMessage', '💬', '#2ecc71', 'phone'),
+  imessageSim,
   soon('email', 'Email', '✉️', '#ea4335', 'desktop'),
   soon('lists', 'Lists', '✅', '#5b8def', 'phone'),
   soon('corporate', 'Corporate', '🏢', '#8a94a6', 'desktop'),
