@@ -1,0 +1,95 @@
+/* TikTok sim — vertical 1080x1920 with hook banner, caption zone, action rail
+   and footer handle. The background is transparent-ish so shell media shows
+   through; a dark gradient fills when there's none. */
+
+.tk-root {
+  width: 1080px;
+  height: 1920px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #2a2730 0%, #14121a 50%, #000 100%);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  color: #fff;
+}
+
+/* Hook banner */
+.tk-hook {
+  position: absolute;
+  top: 120px; left: 50%; transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  padding: 22px 44px;
+  border-radius: 20px;
+  white-space: nowrap;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Caption zone — positioned band that holds the typed caption */
+.tk-caption-zone {
+  position: absolute;
+  left: 70px; right: 240px;
+  display: flex;
+  zoom: var(--font-scale, 1);
+}
+.tk-caption-zone.place-top { top: 300px; align-items: flex-start; }
+.tk-caption-zone.place-center { top: 50%; transform: translateY(-50%); align-items: center; }
+.tk-caption-zone.place-bottom { bottom: 460px; align-items: flex-end; }
+
+.tk-caption {
+  display: inline-block;
+}
+.tk-caption-text {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: pre-wrap;
+  word-break: break-word;
+  /* TikTok-style boxed caption: each line wrapped in a dark highlight */
+  background: rgba(0, 0, 0, 0.62);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 10px 20px;
+  border-radius: 10px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* Right-side action rail */
+.tk-rail {
+  position: absolute;
+  right: 44px; bottom: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 56px;
+}
+.tk-avatar {
+  width: 110px; height: 110px; border-radius: 50%;
+  background: linear-gradient(135deg, #ff2d55, #ff6b9d);
+  border: 5px solid #fff;
+}
+.tk-railbtn { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.tk-railglyph { font-size: 76px; line-height: 1; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.5)); }
+.tk-railcount { font-size: 30px; font-weight: 600; }
+.tk-disc {
+  width: 96px; height: 96px; border-radius: 50%;
+  background: radial-gradient(circle, #555 0 28%, #111 30% 100%);
+  border: 6px solid #1a1a1a;
+  animation: tk-spin 3.5s linear infinite;
+}
+@keyframes tk-spin { to { transform: rotate(360deg); } }
+
+/* Footer: @handle + sub + hashtags */
+.tk-footer {
+  position: absolute;
+  left: 70px; right: 240px; bottom: 150px;
+  zoom: var(--font-scale, 1);
+}
+.tk-handle { font-size: 44px; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+.tk-sub { font-size: 36px; margin-top: 14px; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }
+.tk-tags { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 22px; }
+.tk-tag { font-size: 34px; font-weight: 700; color: #d6e4ff; text-shadow: 0 2px 8px rgba(0,0,0,0.6); }

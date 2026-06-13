@@ -1,0 +1,66 @@
+/* Journal sim — a ruled paper page with a red margin, written in a loose hand.
+   Lays out at 1080x1920; the stage scales it. */
+
+.jr-root {
+  width: 1080px;
+  height: 1920px;
+  background: #1b1712;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  overflow: hidden;
+  padding: 80px 70px;
+  font-family: 'Caveat', cursive;
+}
+
+.jr-page {
+  flex: 1;
+  position: relative;
+  background-color: #f4ece0;
+  background-image: repeating-linear-gradient(
+    transparent 0 95px,
+    rgba(90, 120, 160, 0.32) 95px 97px
+  );
+  background-position: 0 70px;
+  border-radius: 6px;
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(120, 90, 50, 0.08);
+  padding: 110px 90px 140px 150px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.jr-page::-webkit-scrollbar { width: 0; height: 0; }
+
+/* red margin rule */
+.jr-page::before {
+  content: '';
+  position: absolute;
+  left: 110px; top: 0; bottom: 0;
+  width: 3px;
+  background: rgba(200, 90, 90, 0.55);
+}
+
+.jr-date {
+  text-align: right;
+  font-size: 58px;
+  color: #4a4036;
+  opacity: 0.75;
+  margin-bottom: 30px;
+  transform: rotate(-1deg);
+}
+
+.jr-lines {
+  zoom: var(--font-scale, 1);
+}
+.jr-line {
+  font-size: 64px;
+  line-height: 96px;
+  color: #2b2620;
+  min-height: 96px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+}
+.jr-nbsp { opacity: 0; }
+
+/* the handwriting caret reads like a pencil tip — a short dark stroke */
+.jr-line .caret { background: #2b2620 !important; }

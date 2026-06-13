@@ -2,24 +2,23 @@ import type { SimDef } from './types';
 import { notesSim } from './notes';
 import { imessageSim } from './imessage';
 import { emailSim } from './email';
-
-/* Roadmap placeholders for the sims not yet rebuilt — they show in the launcher
-   as "soon" so the full roster is visible. Each becomes a real entry (ready:true
-   with a Component) as it's ported from /legacy, one at a time. */
-function soon(id: string, label: string, glyph: string, accent: string, frame: SimDef['frame']): SimDef {
-  return { id, label, glyph, accent, frame, logical: { w: 1080, h: 1920 }, ready: false, defaultScript: '' };
-}
+import { listsSim } from './lists';
+import { corporateSim } from './corporate';
+import { typerSim } from './typer';
+import { tiktokSim } from './tiktok';
+import { claudeSim } from './claude';
+import { journalSim } from './journal';
 
 export const SIMS: SimDef[] = [
   notesSim,
   imessageSim,
   emailSim,
-  soon('lists', 'Lists', '✅', '#5b8def', 'phone'),
-  soon('corporate', 'Corporate', '🏢', '#8a94a6', 'desktop'),
-  soon('typer', 'Typer', '⌨️', '#a78bfa', 'free'),
-  soon('tiktok', 'TikTok', '🎵', '#ff2d55', 'phone'),
-  soon('claude', 'Claude', '✳️', '#d97757', 'free'),
-  soon('journal', 'Journal', '📔', '#c0875b', 'phone'),
+  listsSim,
+  corporateSim,
+  typerSim,
+  tiktokSim,
+  claudeSim,
+  journalSim,
 ];
 
 export function getSim(id: string): SimDef | undefined {

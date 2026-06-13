@@ -6,10 +6,15 @@ import { handleLocalApi } from './server/localApi.js';
 // Serves the local media + config API during `vite dev` and `vite preview`,
 // so uploads/config work while editing exactly as they do for OBS.
 function localApi() {
-  const mw = (server: any) => server.middlewares.use(async (req: any, res: any, next: any) => {
-    try { if (await handleLocalApi(req, res)) return; } catch (e) { res.statusCode = 500; res.end(String(e)); return; }
-    next();
-  });
+  // NB: block body (not an expression arrow) so the hook returns undefined.
+  // Returning the value of `.use()` (the connect app) makes Vite treat it as a
+  // post-config hook and call it with no args → `Cannot read 'url' of undefined`.
+  const mw = (server: any) => {
+    server.middlewares.use(async (req: any, res: any, next: any) => {
+      try { if (await handleLocalApi(req, res)) return; } catch (e) { res.statusCode = 500; res.end(String(e)); return; }
+      next();
+    });
+  };
   return { name: 'local-api', configureServer: mw, configurePreviewServer: mw };
 }
 

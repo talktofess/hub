@@ -1,0 +1,27 @@
+/* Typer sim — large centred text on a calm gradient. Lays out at 1080x1920;
+   the stage scales it. Background media (if set) sits behind via the shell. */
+
+.ty-root {
+  width: 1080px;
+  height: 1920px;
+  background: radial-gradient(120% 90% at 50% 30%, #20232c 0%, #0d0e12 75%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 140px 120px;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+.ty-text {
+  color: #f4f5f7;
+  font-size: 96px;
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  text-align: center;
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45);
+  zoom: var(--font-scale, 1);
+}

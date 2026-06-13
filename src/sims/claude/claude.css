@@ -1,0 +1,72 @@
+/* Claude sim — a terminal running Claude Code, on a dark phone-tall screen.
+   Lays out at 1080x1920; the stage scales it. */
+
+.cl-root {
+  width: 1080px;
+  height: 1920px;
+  background: #0d0d0f;
+  color: #d7d6d2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 40px;
+  line-height: 1.5;
+  padding: 56px 56px 0;
+}
+.cl-root { --accent: #d97757; }
+
+.cl-scroll { flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; zoom: var(--font-scale, 1); }
+.cl-scroll::-webkit-scrollbar { width: 0; height: 0; }
+
+.cl-psline { margin-bottom: 28px; white-space: pre-wrap; word-break: break-word; }
+.cl-path { color: #cdcdc9; }
+.cl-cmd { color: #f2f2ee; font-weight: 700; }
+
+/* welcome box */
+.cl-welcome {
+  position: relative;
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 40px 36px 34px;
+  margin-bottom: 40px;
+}
+.cl-wb-legend {
+  position: absolute; top: -0.66em; left: 28px;
+  background: #0d0d0f; padding: 0 16px;
+  color: var(--accent); font-size: 34px;
+}
+.cl-ver { color: #8a8a86; }
+.cl-mascot { text-align: center; color: var(--accent); font-size: 110px; line-height: 1; margin: 14px 0 18px; }
+.cl-wb-welcome { text-align: center; color: #f0efeb; font-size: 40px; margin-bottom: 14px; }
+.cl-wb-account { text-align: center; color: #9b9b97; font-size: 32px; line-height: 1.6; }
+.cl-em { color: #b9b8b3; }
+.cl-wb-divider { border-top: 1px solid rgba(255,255,255,.1); margin: 30px 0 26px; }
+.cl-wb-h { color: var(--accent); font-weight: 700; margin-bottom: 10px; }
+.cl-wb-p, .cl-wb-li { color: #bdbcb7; margin-bottom: 14px; }
+.cl-wb-li { margin: 6px 0; }
+.cl-cmdname { color: #c9d6a8; }
+.cl-wb-note { color: #75736e; font-style: italic; margin-top: 14px; }
+
+/* user prompt line */
+.cl-user { display: flex; gap: 20px; margin: 16px 0 26px; }
+.cl-chev { color: var(--accent); font-weight: 700; }
+.cl-utext { color: #d2cfca; white-space: pre-wrap; word-break: break-word; flex: 1; min-width: 0; }
+
+/* thinking */
+.cl-think { margin: 8px 0 24px; }
+.cl-think-row { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.cl-spin { color: var(--accent); width: 1.1em; display: inline-block; }
+.cl-verb { color: #d7d6d2; }
+.cl-stats { color: #8a8a86; font-size: 32px; }
+.cl-trace { color: #75736e; font-size: 32px; font-style: italic; margin: 12px 0 0 52px; }
+
+/* response */
+.cl-resp { display: flex; gap: 20px; margin: 6px 0 30px; }
+.cl-bullet { color: var(--accent); flex: 0 0 auto; }
+.cl-rtext { flex: 1; white-space: pre-wrap; word-break: break-word; color: #e3e2de; }
+
+.cl-footer { flex: 0 0 auto; color: #8a8a86; font-size: 30px; padding: 18px 0 30px; }
+
+/* caret recolour to terminal foreground regardless of the global setting */
+.cl-root .caret { background: var(--caret-color, #d7d6d2); }
