@@ -1,0 +1,10 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Compose owns the real theming (see ui/theme). This XML theme only sets the
+         window chrome before Compose takes over: dark background, edge-to-edge bars. -->
+    <style name="Theme.Recorder" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/sim_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+    </style>
+</resources>

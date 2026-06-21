@@ -21,6 +21,7 @@ export interface RecordingContextValue {
   setScript: (s: string) => void;
   settings: Settings;
   setSettings: (next: Partial<Settings>) => void;
+  setSimSettings: (simId: string, patch: Record<string, unknown>) => void;
   audio: AudioEngine;
   elapsed: (t0: number) => number;
   flashMarker: () => void;
@@ -77,9 +78,20 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   // gate autostart until a token config has loaded (so the take uses it)
   const [bootReady, setBootReady] = useState(boot.mode === 'edit' || !boot.cfg);
 
-  // apply settings to the audio engine
-  useEffect(() => { audio.setProfile(settings.sound); }, [audio, settings.sound]);
-  useEffect(() => { audio.setVolume(settings.volume); }, [audio, settings.volume]);
+  // keystroke audio: a sim may override the universal sound/volume while active
+  // (journal → pencil, typewriter → typewriter) via a `sound`/`soundVolume` key
+  // in its own settings. Resolve the effective values here.
+  const simSound = useMemo(() => {
+    const def = getSim(simId);
+    const eff = { ...(def?.defaultSettings ?? {}), ...(settings.sim?.[simId] ?? {}) } as Record<string, unknown>;
+    return {
+      profile: typeof eff.sound === 'string' ? (eff.sound as Settings['sound']) : null,
+      volume: typeof eff.soundVolume === 'number' ? (eff.soundVolume as number) : null,
+    };
+  }, [simId, settings.sim]);
+
+  useEffect(() => { audio.setProfile(simSound.profile ?? settings.sound); }, [audio, simSound.profile, settings.sound]);
+  useEffect(() => { audio.setVolume(simSound.volume ?? settings.volume); }, [audio, simSound.volume, settings.volume]);
   useEffect(() => { audio.setMuted(mode === 'render'); }, [audio, mode]);
 
   // fetch a token config (the one OBS URL → full config from the local store)
@@ -138,6 +150,15 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
     });
   }, [isRecording]);
 
+  const setSimSettings = useCallback((id: string, patch: Record<string, unknown>) => {
+    setSettingsState((prev) => {
+      const cur = prev.sim?.[id] ?? {};
+      const merged: Settings = { ...prev, sim: { ...prev.sim, [id]: { ...cur, ...patch } } };
+      if (!isRecording) saveSettings(merged);
+      return merged;
+    });
+  }, [isRecording]);
+
   const setBg = useCallback((next: Partial<BackgroundSetting>) => {
     setSettings({ bg: { ...next } as BackgroundSetting });
   }, [setSettings]);
@@ -169,7 +190,7 @@ export function RecordingProvider({ children }: { children: ReactNode }) {
   const value: RecordingContextValue = {
     mode, isRecording, oneShot, capturing,
     simId, setSimId, script, setScript,
-    settings, setSettings,
+    settings, setSettings, setSimSettings,
     audio, elapsed, flashMarker, markerSignal,
     playSignal, stopSignal, play, stop, playing, setPlaying,
     bg: settings.bg, setBg, bgRef, boot, bootReady,

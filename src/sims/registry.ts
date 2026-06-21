@@ -5,17 +5,21 @@ import { emailSim } from './email';
 import { listsSim } from './lists';
 import { corporateSim } from './corporate';
 import { typerSim } from './typer';
+import { typewriterSim } from './typewriter';
 import { tiktokSim } from './tiktok';
 import { claudeSim } from './claude';
 import { journalSim } from './journal';
+import { whatsappSim } from './whatsapp';
 
 export const SIMS: SimDef[] = [
   notesSim,
   imessageSim,
+  whatsappSim,
   emailSim,
   listsSim,
   corporateSim,
   typerSim,
+  typewriterSim,
   tiktokSim,
   claudeSim,
   journalSim,

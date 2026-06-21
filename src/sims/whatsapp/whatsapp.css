@@ -1,0 +1,135 @@
+/* WhatsApp sim — 1080×1920. Dark by default (the popular look); light theme
+   available. Green sent bubbles, ✓✓ ticks (blue when read), story-reply quotes,
+   typing indicator, doodle wallpaper. */
+
+.wa-root {
+  width: 1080px; height: 1920px;
+  display: flex; flex-direction: column; overflow: hidden;
+  font-family: 'Helvetica Neue', 'Segoe UI', -apple-system, 'Inter', sans-serif;
+  --wa-bg: #0b141a; --wa-bar: #202c33; --wa-bar-fg: #e9edef;
+  --wa-recv: #202c33; --wa-sent: #005c4b; --wa-fg: #e9edef; --wa-muted: #8696a0;
+  --wa-tick-read: #53bdeb;
+  background: var(--wa-bg); color: var(--wa-fg);
+}
+.wa-root[data-theme="light"] {
+  --wa-bg: #efeae2; --wa-bar: #008069; --wa-bar-fg: #ffffff;
+  --wa-recv: #ffffff; --wa-sent: #d9fdd3; --wa-fg: #111b21; --wa-muted: #667781;
+}
+
+/* doodle wallpaper */
+.wa-root.wall .wa-thread {
+  background-image: radial-gradient(rgba(255,255,255,.04) 2px, transparent 2px),
+                    radial-gradient(rgba(255,255,255,.03) 2px, transparent 2px);
+  background-size: 120px 120px, 80px 80px; background-position: 0 0, 40px 40px;
+}
+.wa-root.wall[data-theme="light"] .wa-thread {
+  background-image: radial-gradient(rgba(0,0,0,.04) 2px, transparent 2px),
+                    radial-gradient(rgba(0,0,0,.03) 2px, transparent 2px);
+}
+
+/* status bar */
+.wa-statusbar {
+  height: 92px; flex: 0 0 auto; padding: 0 70px 0 78px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--wa-bar); color: var(--wa-bar-fg); font-weight: 600;
+}
+.wa-time-sb { font-size: 34px; }
+.wa-sb-right { display: flex; align-items: center; gap: 14px; }
+.wa-signal { display: flex; align-items: flex-end; gap: 4px; height: 26px; }
+.wa-signal i { width: 7px; background: currentColor; border-radius: 2px; }
+.wa-signal i:nth-child(1){height:12px}.wa-signal i:nth-child(2){height:17px}
+.wa-signal i:nth-child(3){height:22px}.wa-signal i:nth-child(4){height:27px}
+.wa-5g { font-size: 28px; }
+.wa-battery { width: 50px; height: 26px; border: 3px solid currentColor; border-radius: 7px; padding: 3px; position: relative; opacity: .9; }
+.wa-battery::after { content:''; position:absolute; right:-7px; top:8px; width:4px; height:10px; background: currentColor; border-radius:0 2px 2px 0; }
+.wa-battery-fill { display: block; width: 100%; height: 100%; background: currentColor; border-radius: 2px; }
+
+/* header */
+.wa-header {
+  flex: 0 0 auto; height: 130px; display: flex; align-items: center; gap: 22px;
+  padding: 0 30px; background: var(--wa-bar); color: var(--wa-bar-fg);
+}
+.wa-chevron { font-size: 60px; font-weight: 300; line-height: 1; }
+.wa-avatar {
+  width: 84px; height: 84px; border-radius: 50%; flex: 0 0 auto;
+  background: linear-gradient(135deg, #25d366, #128c7e); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 600;
+}
+.wa-contact { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.wa-name { font-size: 38px; font-weight: 600; }
+.wa-presence { font-size: 26px; opacity: .85; }
+.wa-hicons { display: flex; gap: 26px; opacity: .95; }
+
+/* thread */
+.wa-thread { flex: 1 1 auto; overflow-y: auto; scrollbar-width: none; padding: 24px 28px 12px; }
+.wa-thread::-webkit-scrollbar { width: 0; }
+.wa-thread-inner { display: flex; flex-direction: column; gap: 14px; min-height: 100%; justify-content: flex-end; }
+.wa-daystamp { display: flex; justify-content: center; margin: 4px 0 10px; }
+.wa-daystamp span {
+  background: var(--wa-bar); color: var(--wa-muted); font-size: 24px; font-weight: 600;
+  padding: 9px 22px; border-radius: 10px; letter-spacing: .04em;
+}
+
+.wa-row { display: flex; }
+.wa-row.sent { justify-content: flex-end; }
+.wa-row.recv { justify-content: flex-start; }
+.wa-bubble {
+  position: relative; max-width: 76%;
+  padding: 18px 24px 14px; border-radius: 18px; font-size: 38px; line-height: 1.32;
+  color: var(--wa-fg); box-shadow: 0 1px 1px rgba(0,0,0,.2);
+  display: flex; flex-direction: column;
+}
+.wa-bubble.sent { background: var(--wa-sent); border-top-right-radius: 6px; }
+.wa-bubble.recv { background: var(--wa-recv); border-top-left-radius: 6px; }
+.wa-text { white-space: pre-wrap; word-break: break-word; }
+.wa-meta { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 2px; }
+.wa-time { font-size: 24px; color: var(--wa-muted); }
+.wa-ticks { font-size: 26px; color: var(--wa-muted); letter-spacing: -6px; padding-right: 6px; }
+.wa-ticks.double { letter-spacing: -10px; padding-right: 10px; }
+.wa-ticks.read { color: var(--wa-tick-read); }
+.wa-reaction {
+  position: absolute; bottom: -22px; right: 18px;
+  background: var(--wa-bar); border-radius: 50%; padding: 6px 8px; font-size: 28px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.35);
+}
+
+/* story-reply quote */
+.wa-quote {
+  display: flex; align-items: stretch; gap: 14px; margin-bottom: 10px;
+  background: rgba(0,0,0,.18); border-radius: 10px; overflow: hidden;
+  border-left: 8px solid #25d366;
+}
+.wa-quote-body { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 12px 16px; min-width: 0; }
+.wa-quote-who { font-size: 27px; font-weight: 700; color: #25d366; }
+.wa-quote-cap { font-size: 28px; color: var(--wa-muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.wa-quote-thumb {
+  flex: 0 0 96px; width: 96px;
+  background: linear-gradient(135deg, #7b4dff, #25d366, #ffb02e);
+}
+
+/* typing indicator */
+.wa-bubble.typing { flex-direction: row; gap: 12px; padding: 26px 28px; }
+.wa-bubble.typing .dot {
+  width: 18px; height: 18px; border-radius: 50%; background: var(--wa-muted);
+  animation: wa-typing 1.2s infinite ease-in-out;
+}
+.wa-bubble.typing .dot:nth-child(2){animation-delay:.15s}
+.wa-bubble.typing .dot:nth-child(3){animation-delay:.3s}
+@keyframes wa-typing { 0%,60%,100%{opacity:.35;transform:translateY(0)} 30%{opacity:1;transform:translateY(-6px)} }
+
+/* composer */
+.wa-composer { flex: 0 0 auto; display: flex; align-items: center; gap: 18px; padding: 18px 26px 34px; background: var(--wa-bg); }
+.wa-input {
+  flex: 1; display: flex; align-items: center; gap: 18px;
+  background: var(--wa-bar); border-radius: 36px; padding: 20px 28px; min-height: 84px;
+  font-size: 36px; color: var(--wa-fg);
+}
+.wa-input-ph { color: var(--wa-muted); flex: 1; }
+.wa-input-text { flex: 1; }
+.wa-emoji, .wa-clip, .wa-cam { font-size: 36px; opacity: .85; }
+.wa-clip { margin-left: auto; }
+.wa-mic {
+  width: 84px; height: 84px; flex: 0 0 auto; border-radius: 50%;
+  background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 40px;
+}
+.wa-input .caret { background: var(--wa-fg); }

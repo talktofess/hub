@@ -94,11 +94,23 @@ export class AudioEngine {
       case 'vintage': return this.synthVintage(ctx, t, v);
       case 'bubble': return this.synthBubble(ctx, t, v);
       case 'mush': return this.synthMush(ctx, t, v);
+      case 'pencil': return this.synthPencil(ctx, t, v);
       default: return this.synthMechanical(ctx, t, v);
     }
   }
 
   space() { this.key(); }
+
+  /** A one-off non-keystroke sound (carriage return ding, page turn, …) used by
+      sims for moments that aren't a letter. Routed through the same master so
+      OBS records it with everything else. */
+  cue(name: 'return' | 'ding' | 'space') {
+    if (this.volume <= 0) return;
+    const ctx = this.ensure();
+    const t = ctx.currentTime;
+    if (name === 'return' || name === 'ding') this.synthCarriageReturn(ctx, t, this.volume, name === 'return');
+    else this.synthSoft(ctx, t, this.volume);
+  }
 
   // ---- profiles ----
   private noise(ctx: AudioContext, dur: number, decay: number): AudioBufferSourceNode {
@@ -201,6 +213,57 @@ export class AudioEngine {
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3 * v, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
     osc.connect(g).connect(m); osc.start(t); osc.stop(t + 0.1);
+  }
+
+  // graphite pencil — a short gritty scratch of filtered noise with a soft
+  // paper-drag body. Length + brightness vary per letter so it reads as a hand
+  // moving, not a click.
+  private synthPencil(ctx: AudioContext, t: number, v: number) {
+    const m = this.master!;
+    const dur = 0.05 + Math.random() * 0.05;
+    const n = this.noise(ctx, dur, 1.3);
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
+    bp.frequency.value = 2200 + Math.random() * 2600; bp.Q.value = 0.6;
+    const ng = ctx.createGain();
+    ng.gain.setValueAtTime(0.0001, t);
+    ng.gain.exponentialRampToValueAtTime(0.16 * v, t + 0.008);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    // a little low paper-body rumble under the scratch
+    const body = this.noise(ctx, dur, 2);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420 + Math.random() * 120;
+    const bg = ctx.createGain(); bg.gain.value = 0.06 * v;
+    n.connect(bp).connect(ng).connect(m);
+    body.connect(lp).connect(bg).connect(m);
+    n.start(t); n.stop(t + dur); body.start(t); body.stop(t + dur);
+  }
+
+  // typewriter carriage return — a metallic bell ding plus a quick return swipe.
+  private synthCarriageReturn(ctx: AudioContext, t: number, v: number, withSwipe: boolean) {
+    const m = this.master!;
+    // bell ding: two close partials, fast attack, long ring
+    const ding = (freq: number, amp: number) => {
+      const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(amp * v, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      osc.connect(g).connect(m); osc.start(t); osc.stop(t + 0.62);
+    };
+    ding(1850, 0.18);
+    ding(2640, 0.10);
+    if (withSwipe) {
+      // return swipe: a band of noise that sweeps as the carriage flies back
+      const dur = 0.16;
+      const n = this.noise(ctx, dur, 1.1);
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+      bp.frequency.setValueAtTime(900, t + 0.04);
+      bp.frequency.exponentialRampToValueAtTime(3200, t + 0.04 + dur);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.12 * v, t + 0.07);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04 + dur);
+      n.connect(bp).connect(g).connect(m); n.start(t + 0.04); n.stop(t + 0.04 + dur);
+    }
   }
 
   // very muted marshmallow thud

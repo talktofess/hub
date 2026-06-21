@@ -1,10 +1,33 @@
 # Sim Hub
 
 Typed-animation recreations of everyday apps (Notes, iMessage, Email, …) for
-screen-recording short videos. Built as a **Vite + React** app and deployed
-static on **Vercel**; designed to run as an **OBS Browser Source**.
+screen-recording short videos.
 
-This is a ground-up rebuild for a more app-like feel. The previous
+**Now being rebuilt as a native Android app** (Kotlin + Jetpack Compose, in
+[`app/`](./app)) so it runs on a phone and **records itself to the gallery** —
+no desktop, no OBS. The original **Vite + React** web app (`src/`) is kept as the
+**reference spec** for what each sim looks like and what "completely editable"
+means; the native app ports it sim-by-sim. See
+[`memory/`](./memory) for the rewrite decisions.
+
+## Android app (the rebuild)
+
+```bash
+./gradlew :app:assembleDebug      # build the APK
+./gradlew :app:installDebug       # build + install on a connected device
+```
+
+Status — **Phase 1 (native hub)**: core engine ported (typing engine, 9-profile
+keystroke-audio synth, settings), first sim live (**Notes**), scaling stage +
+script editor. Remaining: the full settings drawer, the other 10 sims, then
+**Phase 2** — on-device record-to-gallery (capture the present screen + app
+audio, save via MediaStore).
+
+The rest of this README documents the **React reference** app.
+
+---
+
+This was a ground-up rebuild for a more app-like feel. The previous
 single-file/iframe version lives in [`legacy/`](./legacy) as reference (its
 deterministic-render notes are in [`legacy/RENDER.md`](./legacy/RENDER.md)).
 
@@ -47,17 +70,39 @@ http://localhost:3000/#present&sim=notes&cfg=ab12cd34
 OBS fetches the config by token from the local server. If the server isn't
 running, the button falls back to lightweight inline params (no media).
 
-### Universal settings (gear → drawer)
+### Settings drawer — universal tabs + per-sim tabs
 
-Global — the same for **every** sim, baked into the one URL:
+The drawer is **tabbed**. The left set of tabs is universal (applies to every
+sim, baked into the one URL); the active sim then contributes **its own tabs**
+(e.g. Email adds Layout / Gmail / Compose / Inbox / Camera / Notif).
 
-- **Typing sound** — 8 profiles (mechanical, blue switch, typewriter, vintage,
-  tactile, soft, marshmallow, bubble) + volume, with a Test button
-- **Speed & realism** — speed, hesitation, timing jitter, auto-mistakes
-  (fumble + self-correct), start delay, loop + hold
+Universal tabs:
+
+- **Sound** — 9 keystroke profiles (mechanical, blue switch, typewriter,
+  vintage, tactile, soft, marshmallow, bubble, **pencil**) + volume, Test. A sim
+  can override this for its own feel (Journal → pencil, Typewriter → typewriter).
+- **Timing** — speed, hesitation, timing jitter, auto-mistakes (fumble +
+  self-correct), start delay, loop + hold
 - **Caret** — show/blink/color/style (bar / block / underline)
-- **Look & feel** — theme, accent, text scale, grain, vignette
-- **Background media** — see below
+- **Look** — theme, accent, text scale, grain, vignette
+- **Media** — uploaded background media (see below)
+- **Narrate** — on-screen **subtitles**, spoken **voiceover** (browser TTS:
+  voice, rate, pitch) for `[[say:…]]` lines, and an optional **SRT** caption
+  track synced to the take clock
+
+### Universal effect directives (any sim's script)
+
+Reusable across sims, rendered as overlays on the stage and recorded by OBS:
+
+- `[[notif:GitHub|CI passed|all checks green]]` — slide-in notification (stacks,
+  auto-dismisses, optional chime)
+- `[[zoom:body]]` / `[[zoom:0.5,0.3,1.8]]` / `[[zoomout]]` — camera punch-in; the
+  zoomed-in look **persists** until released
+- `[[cursor:send]]` / `[[click]]` — a fake cursor that moves and clicks
+- `[[lens:0.5,0.3]]` / `[[lens:off]]` — spotlight that dims everything else
+- `[[arrow:0.2,0.3>0.6,0.7|look]]`, `[[string:…|note]]`, `[[box:x,y,w,h|here]]` —
+  on-screen annotations (coords are 0..1 of the frame)
+- `[[say:Narration line]]` — subtitle + optional TTS · `[[clearfx]]` — clear them
 
 ### Media (universal, uploaded — not in the URL)
 
@@ -83,20 +128,29 @@ pan-zoom; a video can play as video or **audio-only**.
 
 ```
 src/
-  recording/     deterministic RNG, URL/mode parsing, keystroke audio engine,
-                 typing engine, provider/hook, sync marker, background media
-  sims/          one folder per sim + a registry; types.ts is the sim contract
-  shell/         launcher, stage (resolution-independent scaling), control panel
+  recording/         deterministic RNG, URL/mode parsing, keystroke audio engine,
+                     typing engine, provider/hook, per-sim settings, sync marker
+  recording/effects/ reusable overlays: notifications, camera (persistent zoom),
+                     fake cursor, spotlight, annotations, subtitles, TTS speech
+  sims/              one folder per sim + a registry; types.ts is the sim contract
+  shell/             launcher, stage (resolution-independent scaling), tabbed
+                     settings drawer, control panel
 ```
 
 Adding a sim = a folder under `src/sims/` exporting a `SimDef` (id, label, glyph,
-logical size, default script, component), registered in `src/sims/registry.ts`.
-The component drives the shared typing engine via `useTypewriter()`.
+logical size, default script, component). Optionally it declares
+`defaultSettings`, `settingsTabs` (its own drawer tabs, read/written with
+`useSimSettings()`), and `getLogical()` to pick its render size from its own
+settings (e.g. Email flips between 1920×1080 desktop and 1080×1920 reel).
+Register it in `src/sims/registry.ts`. The component drives the shared typing
+engine via `useTypewriter()` and can fire overlays via `useEffects()`.
 
-## Status
+## Sims
 
-Rebuilt one sim at a time. **Built:** Notes. The rest show as "soon" in the
-launcher and are ported from `legacy/` next.
+Notes · iMessage · **WhatsApp** (chat + story replies) · **Email** (switchable
+desktop Gmail ⇄ mobile reel, editable inbox, notifications, auto-zoom camera) ·
+Lists · Corporate · Typer · **Typewriter** (mechanical strikes + carriage-return
+bell & swipe) · TikTok · Claude · Journal (graphite pencil).
 
 ## Deploy
 

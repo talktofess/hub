@@ -6,7 +6,7 @@
 
 export type SoundProfile =
   | 'mechanical' | 'typewriter' | 'soft' | 'tactile'
-  | 'blue' | 'vintage' | 'bubble' | 'mush' | 'none';
+  | 'blue' | 'vintage' | 'bubble' | 'mush' | 'pencil' | 'none';
 
 export const SOUND_PROFILES: { id: SoundProfile; label: string }[] = [
   { id: 'mechanical', label: 'Mechanical (clicky)' },
@@ -17,6 +17,7 @@ export const SOUND_PROFILES: { id: SoundProfile; label: string }[] = [
   { id: 'soft', label: 'Soft (laptop)' },
   { id: 'mush', label: 'Marshmallow (muted)' },
   { id: 'bubble', label: 'Bubble (poppy)' },
+  { id: 'pencil', label: 'Pencil (graphite)' },
   { id: 'none', label: 'No sound' },
 ];
 
@@ -74,8 +75,19 @@ export interface Settings {
   fontScale: number; // 0.8..1.3
   grain: boolean;
   vignette: boolean;
+  // narration / subtitles (universal)
+  subtitles: boolean;  // show [[say:]] + SRT captions on the stage
+  narrate: boolean;    // speak [[say:]] lines aloud via the browser's TTS
+  ttsVoice: string;    // preferred voice name ('' = default)
+  ttsRate: number;     // 0.6..1.6
+  ttsPitch: number;    // 0.5..1.5
+  srt: string;         // optional pre-written SRT caption track
   // media (universal)
   bg: BackgroundSetting;
+  // per-sim settings, keyed by sim id (each sim defines its own shape +
+  // defaults; only the diff from defaults is stored). Travels to OBS inside
+  // the token config like everything else under `settings`.
+  sim: Record<string, Record<string, unknown>>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,14 +95,33 @@ export const DEFAULT_SETTINGS: Settings = {
   startDelay: 600, thinkPauses: 0.5, jitter: 0.5, autoTypo: 0, loop: false, holdEnd: 1200,
   showCaret: true, caretStyle: 'bar', caretColor: '#ffffff', caretBlink: true,
   theme: 'dark', accent: '#5b8def', fontScale: 1, grain: false, vignette: false,
+  subtitles: true, narrate: false, ttsVoice: '', ttsRate: 1, ttsPitch: 1, srt: '',
   bg: { mediaId: null, url: null, kind: 'video', mode: 'cover', kenBurns: false, audioOnly: false, loop: true, volume: 0.5 },
+  sim: {},
 };
 
 const KEY = 'hub:settings';
 
 export function mergeSettings(base: Settings, over: Partial<Settings> | undefined): Settings {
   if (!over) return base;
-  return { ...base, ...over, bg: { ...base.bg, ...(over.bg || {}) } };
+  return { ...base, ...over, bg: { ...base.bg, ...(over.bg || {}) }, sim: mergeSim(base.sim, over.sim) };
+}
+
+/** Per-sim settings merge — shallow per sim id (each sim's stored diff overlays
+    onto whatever was there before; whole sub-objects like inbox arrays replace). */
+function mergeSim(
+  base: Record<string, Record<string, unknown>>,
+  over: Record<string, Record<string, unknown>> | undefined,
+): Record<string, Record<string, unknown>> {
+  if (!over) return base;
+  const out = { ...base };
+  for (const id of Object.keys(over)) out[id] = { ...(base[id] || {}), ...(over[id] || {}) };
+  return out;
+}
+
+/** Read a sim's effective settings: its defaults overlaid with the stored diff. */
+export function simSettingsOf<T extends object>(s: Settings, simId: string, defaults: T): T {
+  return { ...defaults, ...((s.sim?.[simId] as Partial<T>) || {}) };
 }
 
 export function loadSettings(): Settings {

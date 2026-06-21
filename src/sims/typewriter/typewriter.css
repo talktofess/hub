@@ -1,0 +1,63 @@
+/* Typewriter sim — a sheet in a machine at 1080×1920. Monospace strikes, a
+   platen roller up top, and a carriage guide that rides the current column and
+   swipes home on every carriage return. */
+
+.tw-root {
+  width: 1080px; height: 1920px;
+  background: radial-gradient(120% 80% at 50% -10%, #3a3027, #211b15 70%);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 70px 70px 0;
+  overflow: hidden;
+  --margin: 96px;
+  --tw-fz: 46px;
+  --tw-ch: 27.6px; /* advance width of the monospace glyph at this size */
+}
+
+.tw-machine { position: relative; width: 880px; }
+
+/* platen roller */
+.tw-platen {
+  position: relative; height: 54px; margin: 0 -28px 0;
+  background: linear-gradient(#23201c, #100d0a);
+  border-radius: 27px; box-shadow: inset 0 4px 8px rgba(255,255,255,.06), 0 8px 20px rgba(0,0,0,.5);
+}
+.tw-knob {
+  position: absolute; top: 50%; width: 70px; height: 70px; margin-top: -35px;
+  border-radius: 50%; background: radial-gradient(circle at 40% 35%, #4a443c, #1a1714);
+  box-shadow: 0 6px 16px rgba(0,0,0,.55);
+}
+.tw-knob.left { left: -70px; }
+.tw-knob.right { right: -70px; }
+
+/* carriage guide — rides the typing column, transitions home on return */
+.tw-carriage {
+  position: absolute; top: 40px; height: 70px;
+  left: calc(var(--margin) + var(--col) * var(--tw-ch));
+  transition: left .26s cubic-bezier(.3,.7,.2,1);
+  z-index: 3; pointer-events: none;
+}
+.tw-guide {
+  position: absolute; top: 0; left: -3px; width: 6px; height: 64px;
+  background: linear-gradient(#e8413a, #9a1f1a);
+  border-radius: 3px; box-shadow: 0 0 14px rgba(232,65,58,.6);
+}
+
+/* paper */
+.tw-paper {
+  position: relative; margin-top: 6px; min-height: 1640px;
+  background: #f6f1e3;
+  background-image: linear-gradient(rgba(120,100,70,.05) .1px, transparent .1px);
+  background-size: 100% calc(var(--tw-fz) * 1.5);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -2px 0 rgba(0,0,0,.3), 0 18px 50px rgba(0,0,0,.5);
+  padding: 40px var(--margin) 80px;
+  zoom: var(--font-scale, 1);
+}
+.tw-text {
+  font-family: 'Courier New', 'Courier', ui-monospace, monospace;
+  font-size: var(--tw-fz); line-height: 1.5; color: #2b2117;
+  white-space: pre-wrap; word-break: break-word;
+  text-shadow: 0 0 1px rgba(43,33,23,.4); /* faint ink bleed */
+}
+.tw-line { min-height: calc(var(--tw-fz) * 1.5); letter-spacing: 0; }
+.tw-text .caret { background: #2b2117; }

@@ -1,5 +1,6 @@
 import type { SimDef } from '../types';
 import { Journal } from './Journal';
+import { SimSoundTab } from '../../shell/SimSoundTab';
 
 const defaultScript = `[[date:Tuesday]]
 note to self:
@@ -19,4 +20,7 @@ export const journalSim: SimDef = {
   ready: true,
   defaultScript,
   Component: Journal,
+  // graphite-pencil feel by default; the user can change it in the Sound tab.
+  defaultSettings: { sound: 'pencil' },
+  settingsTabs: [{ id: 'sound', label: 'Sound', Panel: SimSoundTab }],
 };

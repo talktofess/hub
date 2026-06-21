@@ -44,3 +44,21 @@ config/
 
 # TS incremental build info
 *.tsbuildinfo
+
+# Android / Gradle (native app build artifacts + machine-local config)
+.gradle/
+/build/
+app/build/
+local.properties
+*.apk
+*.aab
+.kotlin/
+.cxx/
+captures/
+
+# IDE
+.idea/
+*.iml
+
+# Agent working notes (local memory, not project code)
+/memory/

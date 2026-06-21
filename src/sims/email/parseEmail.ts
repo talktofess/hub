@@ -17,12 +17,16 @@
    Anything in [[ ]] that isn't a known directive is treated as literal typed
    text, so it survives into whichever field is focused. */
 
-export type Field = 'to' | 'subject' | 'body';
+import { parseEffectDirective } from '../../recording/effects/directives';
+import type { EffectOp } from '../../recording/effects/directives';
+
+export type Field = 'to' | 'cc' | 'subject' | 'body';
 
 export type EmailOp =
   | { kind: 'type'; field: Field; text: string }
   | { kind: 'pause'; ms: number }
-  | { kind: 'send' };
+  | { kind: 'send' }
+  | { kind: 'fx'; op: EffectOp };
 
 export interface Email {
   from: string;
@@ -63,6 +67,7 @@ export function parseEmail(script: string): Email {
         account = arg.trim();
         break;
       case 'to':
+      case 'cc':
       case 'subject':
       case 'body':
         flush();
@@ -76,10 +81,14 @@ export function parseEmail(script: string): Email {
         flush();
         ops.push({ kind: 'send' });
         break;
-      default:
-        // Not a directive (e.g. typo markup [[a|b]]) — keep it as literal text.
+      default: {
+        // a universal effect directive (notif/zoom/cursor/annotation/say/…)?
+        const fx = parseEffectDirective(head, arg);
+        if (fx) { flush(); ops.push({ kind: 'fx', op: fx }); break; }
+        // otherwise not a directive (e.g. typo markup [[a|b]]) — literal text.
         buf += '[[' + body + ']]';
         break;
+      }
     }
   }
   buf += script.slice(last);
