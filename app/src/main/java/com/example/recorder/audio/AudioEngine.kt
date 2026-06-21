@@ -440,23 +440,23 @@ class AudioEngine {
     }
 
     private fun synthPencil(v: Float): FloatArray {
-        // Continuous graphite friction (modelled on real pencil-on-paper: a continuous
-        // low-pass noise below ~2 kHz, amplitude-modulated by the back-and-forth of the
-        // hand). A Hann window fades each segment in/out with no click, so segments
-        // played ~every letter overlap into one seamless scratch instead of ticks.
-        val dur = 0.20 + Random.nextDouble() * 0.07
+        // One graphite stroke per letter. Band-passed around the woody pencil tone (NOT a
+        // broadband wash), with a soft attack so there's no click, decaying like a single
+        // stroke. ~0.16 s, so consecutive letters overlap into a connected scratch that
+        // pulses with the writing instead of a constant hiss.
+        val dur = 0.14 + Random.nextDouble() * 0.05
         val n = noise(dur, 0.0)
-        filter(n, "lp", 1500.0 + Random.nextDouble() * 500, 0.707)
-        filter(n, "hp", 260.0, 0.707)
+        filter(n, "bp", 700.0 + Random.nextDouble() * 150, 0.7)
         val len = n.size
-        val wob = 5.0 + Random.nextDouble() * 5.0          // stroke wobble 5–10 Hz
-        val phase0 = Random.nextDouble() * 2 * PI
+        val atk = (len * 0.32).toInt().coerceAtLeast(1)
         val buf = FloatArray(len)
         for (i in 0 until len) {
-            val t = i.toDouble() / sr
-            val win = 0.5 - 0.5 * cos(2 * PI * i / (len - 1))                 // smooth fade in/out
-            val mod = 0.6 + 0.4 * (0.5 + 0.5 * sin(2 * PI * wob * t + phase0)) // amplitude strokes
-            buf[i] = (n[i] * win * mod * 0.13 * v).toFloat()
+            val env = if (i < atk) {
+                val a = i.toDouble() / atk; a * a              // smooth ramp-in (no click)
+            } else {
+                val d = (i - atk).toDouble() / (len - atk); (1 - d) * (1 - d)  // stroke decay
+            }
+            buf[i] = (n[i] * env * 0.6 * v).toFloat()
         }
         return buf
     }

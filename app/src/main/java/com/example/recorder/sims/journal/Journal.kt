@@ -137,7 +137,7 @@ object JournalSim : SimDef {
             val drawMs = (DRAW_MS / s.typeSpeed.coerceAtLeast(0.1f)).toInt().coerceAtLeast(16)
             steps.add(TypeStep.Reveal({
                 doneCount = 0; activeIdx = -1; activeLen = 0; dateShown = false; drawingLine = -1; doneAnnos.clear(); revision++
-                rt.audio.profile = s.keySound; rt.audio.writing(false)
+                rt.audio.profile = s.keySound
             }))
             if (s.date.isNotBlank()) steps.add(TypeStep.Reveal({ dateShown = true; revision++ }, delay = 380))
             plines.forEachIndexed { idx, pl ->
@@ -146,23 +146,24 @@ object JournalSim : SimDef {
                     steps.add(TypeStep.Reveal({ doneCount = idx + 1; revision++ }))
                     steps.add(TypeStep.Pause(120))
                 } else {
-                    steps.add(TypeStep.Reveal({ rt.audio.writing(true) })) // pen down — continuous scratch
                     for (j in 1..ln.length) {
-                        steps.add(TypeStep.Reveal({ activeIdx = idx; activeLen = j; charKey++; revision++ }))
+                        val ch = ln[j - 1]
+                        // one soft graphite stroke per letter — sound stays in step with the hand
+                        steps.add(TypeStep.Reveal({ activeIdx = idx; activeLen = j; charKey++; revision++; if (!ch.isWhitespace()) rt.audio.key() }))
                         steps.add(TypeStep.Pause(drawMs))
                     }
                     steps.add(TypeStep.Reveal({ activeIdx = idx; activeLen = ln.length; revision++ }))
                     pl.annos.forEachIndexed { ai, anno ->
                         val dur = annoDurMs(anno.type)
-                        steps.add(TypeStep.Reveal({ drawingLine = idx; drawingAnnoIdx = ai; annoDur = dur; annoKey++; revision++ }, delay = 120))
+                        steps.add(TypeStep.Reveal({ drawingLine = idx; drawingAnnoIdx = ai; annoDur = dur; annoKey++; revision++; rt.audio.key() }, delay = 120))
                         steps.add(TypeStep.Pause(dur + 90))
                         steps.add(TypeStep.Reveal({ doneAnnos.add("$idx:$ai"); drawingLine = -1; revision++ }))
                     }
-                    steps.add(TypeStep.Reveal({ doneCount = idx + 1; activeIdx = -1; rt.audio.writing(false); revision++ })) // pen up
+                    steps.add(TypeStep.Reveal({ doneCount = idx + 1; activeIdx = -1; revision++ }))
                     steps.add(TypeStep.Pause(150))
                 }
             }
-            steps.add(TypeStep.Reveal({ activeIdx = -1; rt.audio.writing(false); revision++ }))
+            steps.add(TypeStep.Reveal({ activeIdx = -1; revision++ }))
             steps.add(TypeStep.Pause(900))
             return steps
         }
@@ -290,11 +291,13 @@ private fun HandLine(
             val x0 = lr.getHorizontalPosition(i, usePrimaryDirection = true)
             val x1 = lr.getHorizontalPosition((i + 1).coerceAtMost(text.length), usePrimaryDirection = true)
             val cw = (x1 - x0).coerceAtLeast(1f)
-            val angle = (jitter(seed, i, 1) - 0.5f) * 2.6f * messiness     // crooked (subtle)
-            val sc = 1f + (jitter(seed, i, 2) - 0.5f) * 0.09f * messiness  // bigger/smaller
-            val dy = (jitter(seed, i, 3) - 0.5f) * 1.1f * messiness        // baseline sits steady on the rule
-            val dx = (jitter(seed, i, 5) - 0.5f) * 2.2f * messiness        // uneven spacing
-            val a = 1f - jitter(seed, i, 4) * 0.26f * messiness            // ink weight (some lighter)
+            // Letters come out clean (the hand look is in the font itself); these are only a
+            // whisper of variation so it doesn't look like a printout. A real writer is steady.
+            val angle = (jitter(seed, i, 1) - 0.5f) * 1.1f * messiness     // barely crooked
+            val sc = 1f + (jitter(seed, i, 2) - 0.5f) * 0.035f * messiness // barely bigger/smaller
+            val dy = (jitter(seed, i, 3) - 0.5f) * 0.45f * messiness       // baseline sits steady on the rule
+            val dx = (jitter(seed, i, 5) - 0.5f) * 1.1f * messiness        // near-even spacing
+            val a = 1f - jitter(seed, i, 4) * 0.18f * messiness            // ink weight (some lighter)
             val frac = if (i == n - 1) penFrac else 1f
             Box(
                 Modifier.offset(x = (x0 + dx).dp, y = dy.dp)
