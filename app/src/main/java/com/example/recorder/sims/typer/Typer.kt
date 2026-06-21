@@ -123,18 +123,21 @@ object TyperSim : SimDef {
                 .verticalScroll(scroll).padding(start = 44.dp, end = 36.dp, top = 56.dp, bottom = 120.dp),
         ) {
             history.forEach { cmd -> PromptLine(TyperStore.prompt, cmd, ink, promptCol, style) }
-            if (!preview) PromptLine(TyperStore.prompt, current + (if (caretOn) "▏" else ""), ink, promptCol, style)
+            if (!preview) PromptLine(TyperStore.prompt, current, ink, promptCol, style, caret = if (caretOn) ink else Color.Transparent)
         }
     }
 }
 
-/** One terminal line: prompt (dim) then the command, left-aligned monospace. */
+/** One terminal line: prompt (dim) then the command, left-aligned monospace. The caret
+ *  is always part of the layout (its cell is reserved) and only its colour blinks, so the
+ *  line never reflows/"dances" as the cursor toggles on and off. */
 @Composable
-private fun PromptLine(prompt: String, cmd: String, ink: Color, promptCol: Color, style: TextStyle) {
+private fun PromptLine(prompt: String, cmd: String, ink: Color, promptCol: Color, style: TextStyle, caret: Color? = null) {
     Text(
         buildAnnotatedString {
             withStyle(SpanStyle(color = promptCol)) { append(prompt) }
             withStyle(SpanStyle(color = ink)) { append(cmd) }
+            if (caret != null) withStyle(SpanStyle(color = caret)) { append("▏") }
         },
         style = style, modifier = Modifier.padding(bottom = 2.dp),
     )
