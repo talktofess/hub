@@ -146,8 +146,10 @@ object ListsSim : SimDef {
         }
         rt.planFactory = { buildPlan() }
         DisposableEffect(Unit) { onDispose { rt.planFactory = null } }
-        // smooth scroll only when a block appears (not per word) — keeps the list grounded
-        LaunchedEffect(lives.size) { scroll.animateScrollTo(scroll.maxValue) }
+        // no auto-scroll: the list is sized to fit, so it stays anchored at the top.
+        // (a spring animateScrollTo here read as the list "stretching and releasing".)
+        // If a custom list overflows, jump instantly — never spring.
+        LaunchedEffect(scroll.maxValue) { if (scroll.maxValue > 0) scroll.scrollTo(scroll.maxValue) }
 
         val caretOn = run {
             val t = rememberInfiniteTransition(label = "caret")
