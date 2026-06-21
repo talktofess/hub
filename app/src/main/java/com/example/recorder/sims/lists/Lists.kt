@@ -96,14 +96,23 @@ object ListsSim : SimDef {
         fun buildPlan(): List<TypeStep> {
             val s = ListsStore
             val steps = mutableListOf<TypeStep>()
-            fun bn(len: Int) = rt.beginNote(NoteTiming(s.typeSpeed.coerceAtLeast(0.1f), s.pacing, 0.4f, 0.5f, 0f, len.coerceAtLeast(1), emptyMap()))
+            val speed = s.typeSpeed.coerceAtLeast(0.1f)
+            // reveal word-by-word (like the Claude stream) — whole words never reflow, so
+            // a wrapping title/blurb can't jitter as it grows.
+            fun stream(text: String, key: String, set: (String) -> Unit) {
+                val toks = Regex("""\S+\s*""").findAll(text).map { it.value }.toList().ifEmpty { listOf(text) }
+                var acc = ""
+                for (tok in toks) {
+                    steps.add(TypeStep.Reveal({ acc += tok; set(acc); active = key; revision++; rt.audio.key() }))
+                    steps.add(TypeStep.Pause((70f / speed).toInt().coerceAtLeast(16)))
+                }
+            }
             steps.add(TypeStep.Reveal({
                 typedTitle = ""; lives.clear(); active = "title"; revision++
-                rt.audio.profile = s.keySound; bn(1)
+                rt.audio.profile = s.keySound
             }))
             if (s.heading.isNotEmpty()) {
-                steps.add(TypeStep.Reveal({ bn(s.heading.length) }))
-                steps.add(TypeStep.Type(s.heading, { typedTitle = it; active = "title"; revision++ }))
+                stream(s.heading, "title") { typedTitle = it }
                 steps.add(TypeStep.Pause(360))
             }
             var i = 0
@@ -116,14 +125,10 @@ object ListsSim : SimDef {
                 }
                 // type each block's content in order
                 group.forEach { b ->
-                    if (b.title.isNotEmpty()) {
-                        steps.add(TypeStep.Reveal({ bn(b.title.length) }))
-                        steps.add(TypeStep.Type(b.title, { live(b.id)?.title = it; active = "${b.id}:t"; revision++ }))
-                    }
+                    if (b.title.isNotEmpty()) stream(b.title, "${b.id}:t") { live(b.id)?.title = it }
                     if (b.text.isNotEmpty() && (b.type == BlockType.CARD || b.type == BlockType.NOTE)) {
                         steps.add(TypeStep.Pause(140))
-                        steps.add(TypeStep.Reveal({ bn(b.text.length) }))
-                        steps.add(TypeStep.Type(b.text, { live(b.id)?.text = it; active = "${b.id}:x"; revision++ }))
+                        stream(b.text, "${b.id}:x") { live(b.id)?.text = it }
                     }
                 }
                 steps.add(TypeStep.Pause(s.cardGap))
@@ -141,9 +146,8 @@ object ListsSim : SimDef {
         }
         rt.planFactory = { buildPlan() }
         DisposableEffect(Unit) { onDispose { rt.planFactory = null } }
-        // scroll only when a new block appears (not while typing) — chasing the growing
-        // content every keystroke is what made the whole list jitter ("shaking table").
-        LaunchedEffect(lives.size) { scroll.scrollTo(scroll.maxValue) }
+        // smooth scroll only when a block appears (not per word) — keeps the list grounded
+        LaunchedEffect(lives.size) { scroll.animateScrollTo(scroll.maxValue) }
 
         val caretOn = run {
             val t = rememberInfiniteTransition(label = "caret")
@@ -155,8 +159,8 @@ object ListsSim : SimDef {
 
         Column(Modifier.fillMaxSize().background(Brush.linearGradient(BG))) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 80.dp, end = 80.dp, top = 110.dp, bottom = 220.dp),
-                verticalArrangement = Arrangement.spacedBy(44.dp),
+                Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 72.dp, end = 72.dp, top = 96.dp, bottom = 110.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 if (titleText.isNotEmpty() || active == "title") {
                     Text(titleText + caret("title"), color = Color(0xFFF4F6FB), fontSize = (84f * fs).sp, lineHeight = (90f * fs).sp, fontWeight = FontWeight.ExtraBold)
@@ -210,18 +214,15 @@ private fun BlockContent(b: Block, title: String, text: String, accent: Color, f
 private fun CardBlock(b: Block, title: String, text: String, accent: Color, fs: Float, rank: Boolean) {
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(Color(0x0DFFFFFF))
-            .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(32.dp)).padding(horizontal = 48.dp, vertical = 44.dp),
-        horizontalArrangement = Arrangement.spacedBy(36.dp), verticalAlignment = Alignment.Top,
+            .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(32.dp)).padding(horizontal = 44.dp, vertical = 30.dp),
+        horizontalArrangement = Arrangement.spacedBy(32.dp), verticalAlignment = Alignment.Top,
     ) {
         if (rank && b.rank.isNotEmpty()) {
             Text(b.rank, color = accent, fontSize = (96f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.widthIn(min = 120.dp))
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                Box(Modifier.weight(1f, fill = false)) {
-                    Text(b.title, color = Color.Transparent, fontSize = (56f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.Bold)
-                    Text(title, color = Color(0xFFF4F6FB), fontSize = (56f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.Bold)
-                }
+                Text(title, color = Color(0xFFF4F6FB), fontSize = (56f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
                 if (b.badge.isNotEmpty()) {
                     Box(Modifier.clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(listOf(Color(0xFFFFD23F), Color(0xFFFF9D2F)))).padding(horizontal = 18.dp, vertical = 8.dp)) {
                         Text(b.badge.uppercase(), color = Color(0xFF1A0D06), fontSize = (28f * fs).sp, fontWeight = FontWeight.ExtraBold)

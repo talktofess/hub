@@ -68,11 +68,9 @@ object ListsStore {
         heading = "Editing tricks, ranked"; accent = 0xFF5B8DEFL; textScale = 1f
         typeSpeed = 0.85f; pacing = 0.3f; keySound = SoundProfile.MECHANICAL; cardGap = 280
         items.clear(); counter = 1L
-        items.add(Block(counter++, BlockType.CARD, "5", "Counter-cut", "Cut against the beat to keep eyes moving.", "8.4", "B"))
-        items.add(Block(counter++, BlockType.CARD, "4", "Speed ramps", "Ramp into the action, ramp out of the lull.", "8.9", "A", enter = Trans.SLIDE_UP))
-        items.add(Block(counter++, BlockType.CARD, "3", "J-cuts", "Let the next scene's audio lead the cut.", "9.1", "A", "SMOOTH", enter = Trans.SLIDE_LEFT))
-        items.add(Block(counter++, BlockType.CARD, "2", "Match cut", "Shapes line up across a hard cut.", "9.4", "S", enter = Trans.POP))
-        items.add(Block(counter++, BlockType.CARD, "1", "Needle drop", "Drop the track right on the action.", "9.8", "S", "VIRAL", enter = Trans.POP))
+        items.add(Block(counter++, BlockType.CARD, "3", "J-cuts", "Let the next scene's audio lead.", "9.1", "A"))
+        items.add(Block(counter++, BlockType.CARD, "2", "Match cut", "Shapes line up across the cut.", "9.4", "S"))
+        items.add(Block(counter++, BlockType.CARD, "1", "Needle drop", "Drop the track on the beat.", "9.8", "S", "VIRAL"))
         selectedId = items.firstOrNull()?.id
     }
 }
