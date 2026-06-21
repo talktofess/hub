@@ -290,11 +290,11 @@ private fun HandLine(
             val x0 = lr.getHorizontalPosition(i, usePrimaryDirection = true)
             val x1 = lr.getHorizontalPosition((i + 1).coerceAtMost(text.length), usePrimaryDirection = true)
             val cw = (x1 - x0).coerceAtLeast(1f)
-            val angle = (jitter(seed, i, 1) - 0.5f) * 5f * messiness       // crooked (subtle — big = loopy)
-            val sc = 1f + (jitter(seed, i, 2) - 0.5f) * 0.16f * messiness  // bigger/smaller
-            val dy = (jitter(seed, i, 3) - 0.5f) * 3.5f * messiness        // baseline kept steady
-            val dx = (jitter(seed, i, 5) - 0.5f) * 3f * messiness          // uneven spacing
-            val a = 1f - jitter(seed, i, 4) * 0.30f * messiness            // ink weight (some lighter)
+            val angle = (jitter(seed, i, 1) - 0.5f) * 2.6f * messiness     // crooked (subtle)
+            val sc = 1f + (jitter(seed, i, 2) - 0.5f) * 0.09f * messiness  // bigger/smaller
+            val dy = (jitter(seed, i, 3) - 0.5f) * 1.1f * messiness        // baseline sits steady on the rule
+            val dx = (jitter(seed, i, 5) - 0.5f) * 2.2f * messiness        // uneven spacing
+            val a = 1f - jitter(seed, i, 4) * 0.26f * messiness            // ink weight (some lighter)
             val frac = if (i == n - 1) penFrac else 1f
             Box(
                 Modifier.offset(x = (x0 + dx).dp, y = dy.dp)

@@ -74,18 +74,26 @@ class AudioEngine {
     private fun makeScratchLoop(): FloatArray {
         val len = sr * 2
         val xf = sr / 16
+        // colour the noise around graphite's tone (band-pass) instead of a broadband "shh"
         val raw = noise((len + xf).toDouble() / sr, 0.0)
-        filter(raw, "lp", 1700.0, 0.7)
-        filter(raw, "hp", 240.0, 0.7)
+        filter(raw, "bp", 760.0, 0.7)
+        // an irregular, slow grain envelope — graphite catching/skipping, not a smooth wash
+        val env = noise((len + xf).toDouble() / sr, 0.0)
+        filter(env, "lp", 28.0, 0.7)
+        var emax = 1e-6
+        for (e in env) { val a = if (e < 0) -e else e; if (a > emax) emax = a.toDouble() }
         val buf = FloatArray(len)
         for (i in 0 until len) {
-            // crossfade the head with the overhang so the 2 s loop is seamless (no click)
-            var sv = raw[i].toDouble()
-            if (i < xf) { val a = i.toDouble() / xf; sv = raw[i] * a + raw[i + len] * (1 - a) }
+            var sv = raw[i].toDouble(); var ev = env[i].toDouble()
+            if (i < xf) { // crossfade head with overhang so the 2 s loop is seamless
+                val a = i.toDouble() / xf
+                sv = raw[i] * a + raw[i + len] * (1 - a)
+                ev = env[i] * a + env[i + len] * (1 - a)
+            }
             val t = i.toDouble() / sr
-            // hand stroke (~6 Hz) + slow drift, never to silence (pencil stays on paper)
-            val mod = 0.62 + 0.24 * (0.5 + 0.5 * sin(2 * PI * 6.2 * t)) + 0.14 * (0.5 + 0.5 * sin(2 * PI * 1.3 * t + 1.0))
-            buf[i] = (sv * mod * 0.42).toFloat()
+            val stroke = 0.6 + 0.4 * (0.5 + 0.5 * sin(2 * PI * 5.0 * t))      // hand back-and-forth
+            val grain = (0.22 + 0.9 * ((ev / emax) + 1.0) / 2.0).coerceIn(0.08, 1.0)
+            buf[i] = (sv * stroke * grain * 0.34).toFloat()
         }
         return buf
     }
