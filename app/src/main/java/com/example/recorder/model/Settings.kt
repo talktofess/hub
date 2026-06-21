@@ -23,6 +23,13 @@ enum class SoundProfile(val id: String, val label: String) {
     GLASS("glass", "Glass (ping)"),
     THUD("thud", "Thud (spacebar)"),
     PEN("pen", "Ballpoint pen"),
+    FOUNTAIN("fountain", "Fountain pen (wet ink)"),
+    GEL("gel", "Gel pen (smooth)"),
+    MARKER("marker", "Marker (squeaky)"),
+    FELT("felt", "Felt-tip (soft)"),
+    CHALK("chalk", "Chalk (dusty)"),
+    CRAYON("crayon", "Crayon (waxy)"),
+    BRUSHPEN("brushpen", "Brush pen (inky)"),
     NONE("none", "No sound");
 
     companion object {

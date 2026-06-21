@@ -165,6 +165,13 @@ class AudioEngine {
             SoundProfile.GLASS -> synthGlass(v)
             SoundProfile.THUD -> synthThud(v)
             SoundProfile.PEN -> synthPen(v)
+            SoundProfile.FOUNTAIN -> synthFountain(v)
+            SoundProfile.GEL -> synthGel(v)
+            SoundProfile.MARKER -> synthMarker(v)
+            SoundProfile.FELT -> synthFelt(v)
+            SoundProfile.CHALK -> synthChalk(v)
+            SoundProfile.CRAYON -> synthCrayon(v)
+            SoundProfile.BRUSHPEN -> synthBrush(v)
             SoundProfile.KEYBOARD -> synthKeyboard(v)
             SoundProfile.NONE -> return
             else -> synthMechanical(v)
@@ -385,13 +392,83 @@ class AudioEngine {
     }
 
     private fun synthPencil(v: Float): FloatArray {
-        val dur = 0.05 + Random.nextDouble() * 0.05
-        val buf = FloatArray(frames(dur + 0.01))
-        val n = noise(dur, 1.3); filter(n, "bp", 2200 + Random.nextDouble() * 2600, 0.6)
-        addNoiseEnv(buf, n, 0.008, 0.16 * v, dur)
-        val body = noise(dur, 2.0); filter(body, "lp", 420 + Random.nextDouble() * 120, 0.707)
-        addNoise(buf, body, 0.06 * v)
+        // Continuous graphite friction (modelled on real pencil-on-paper: a continuous
+        // low-pass noise below ~2 kHz, amplitude-modulated by the back-and-forth of the
+        // hand). A Hann window fades each segment in/out with no click, so segments
+        // played ~every letter overlap into one seamless scratch instead of ticks.
+        val dur = 0.20 + Random.nextDouble() * 0.07
+        val n = noise(dur, 0.0)
+        filter(n, "lp", 1500.0 + Random.nextDouble() * 500, 0.707)
+        filter(n, "hp", 260.0, 0.707)
+        val len = n.size
+        val wob = 5.0 + Random.nextDouble() * 5.0          // stroke wobble 5–10 Hz
+        val phase0 = Random.nextDouble() * 2 * PI
+        val buf = FloatArray(len)
+        for (i in 0 until len) {
+            val t = i.toDouble() / sr
+            val win = 0.5 - 0.5 * cos(2 * PI * i / (len - 1))                 // smooth fade in/out
+            val mod = 0.6 + 0.4 * (0.5 + 0.5 * sin(2 * PI * wob * t + phase0)) // amplitude strokes
+            buf[i] = (n[i] * win * mod * 0.13 * v).toFloat()
+        }
         return buf
+    }
+
+    // shared shaper for writing sounds: window a filtered-noise burst with a Hann fade
+    // and a slow stroke wobble so repeated hits overlap into a continuous scratch.
+    private fun windowed(n: FloatArray, gain: Double, v: Float): FloatArray {
+        val len = n.size
+        val wob = 4.0 + Random.nextDouble() * 6.0
+        val phase0 = Random.nextDouble() * 2 * PI
+        val buf = FloatArray(len)
+        for (i in 0 until len) {
+            val t = i.toDouble() / sr
+            val win = if (len > 1) 0.5 - 0.5 * cos(2 * PI * i / (len - 1)) else 1.0
+            val mod = 0.6 + 0.4 * (0.5 + 0.5 * sin(2 * PI * wob * t + phase0))
+            buf[i] = (n[i] * win * mod * gain * v).toFloat()
+        }
+        return buf
+    }
+
+    private fun synthFountain(v: Float): FloatArray {
+        val n = noise(0.18 + Random.nextDouble() * 0.06, 0.0)
+        filter(n, "lp", 1100.0 + Random.nextDouble() * 300, 0.9); filter(n, "hp", 200.0, 0.707)
+        return windowed(n, 0.14, v)
+    }
+
+    private fun synthGel(v: Float): FloatArray {
+        val n = noise(0.13 + Random.nextDouble() * 0.05, 0.0)
+        filter(n, "lp", 1700.0 + Random.nextDouble() * 400, 0.707); filter(n, "hp", 350.0, 0.707)
+        return windowed(n, 0.08, v)
+    }
+
+    private fun synthMarker(v: Float): FloatArray {
+        val n = noise(0.16 + Random.nextDouble() * 0.05, 0.0)
+        filter(n, "bp", 2500.0 + Random.nextDouble() * 800, 1.1)
+        return windowed(n, 0.12, v)
+    }
+
+    private fun synthFelt(v: Float): FloatArray {
+        val n = noise(0.16 + Random.nextDouble() * 0.06, 0.0)
+        filter(n, "lp", 950.0 + Random.nextDouble() * 200, 0.707); filter(n, "hp", 170.0, 0.707)
+        return windowed(n, 0.10, v)
+    }
+
+    private fun synthChalk(v: Float): FloatArray {
+        val n = noise(0.13 + Random.nextDouble() * 0.06, 0.0)
+        filter(n, "bp", 3300.0 + Random.nextDouble() * 1200, 0.8)
+        return windowed(n, 0.13, v)
+    }
+
+    private fun synthCrayon(v: Float): FloatArray {
+        val n = noise(0.22 + Random.nextDouble() * 0.08, 0.0)
+        filter(n, "lp", 720.0 + Random.nextDouble() * 180, 0.707); filter(n, "hp", 140.0, 0.707)
+        return windowed(n, 0.14, v)
+    }
+
+    private fun synthBrush(v: Float): FloatArray {
+        val n = noise(0.20 + Random.nextDouble() * 0.08, 0.0)
+        filter(n, "lp", 1300.0 + Random.nextDouble() * 300, 0.8); filter(n, "hp", 200.0, 0.707)
+        return windowed(n, 0.13, v)
     }
 
     private fun synthCreamy(v: Float): FloatArray {
