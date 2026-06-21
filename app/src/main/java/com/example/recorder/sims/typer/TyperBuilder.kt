@@ -54,7 +54,8 @@ fun TyperBuilder(ctx: BuilderContext) {
                     IconButton(onClick = { store.move(i, 1) }, enabled = i < store.cards.size - 1) { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "down", modifier = Modifier.size(18.dp)) }
                     IconButton(onClick = { store.remove(i) }) { Icon(Icons.Filled.Delete, contentDescription = "delete", modifier = Modifier.size(18.dp)) }
                 }
-                OutlinedTextField(card, { store.update(i, it) }, label = { Text("Command") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(card.command, { store.updateCommand(i, it) }, label = { Text("Command") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                OutlinedTextField(card.output, { store.updateOutput(i, it) }, label = { Text("Result (a line that is just \"@bar\" animates a progress bar)") }, modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp))
             }
         }
         OutlinedButton(onClick = { store.add() }, contentPadding = smallPad) {
