@@ -57,6 +57,39 @@ class AudioEngine {
         bedPos = 0
     }
 
+    /** Continuous writing friction (pencil/pen on paper). A seamless noise loop that is
+        faded IN while the hand is drawing and OUT when it lifts — so writing sounds like
+        one long stroke instead of a tick per letter. */
+    @Volatile private var scratch: FloatArray? = null
+    @Volatile private var scratchTarget = 0f
+    private var scratchGain = 0f
+    private var scratchPos = 0
+
+    /** Turn the continuous writing scratch on/off; it fades smoothly either way. */
+    fun writing(active: Boolean) {
+        if (active && scratch == null) scratch = makeScratchLoop()
+        scratchTarget = if (active) 1f else 0f
+    }
+
+    private fun makeScratchLoop(): FloatArray {
+        val len = sr * 2
+        val xf = sr / 16
+        val raw = noise((len + xf).toDouble() / sr, 0.0)
+        filter(raw, "lp", 1700.0, 0.7)
+        filter(raw, "hp", 240.0, 0.7)
+        val buf = FloatArray(len)
+        for (i in 0 until len) {
+            // crossfade the head with the overhang so the 2 s loop is seamless (no click)
+            var sv = raw[i].toDouble()
+            if (i < xf) { val a = i.toDouble() / xf; sv = raw[i] * a + raw[i + len] * (1 - a) }
+            val t = i.toDouble() / sr
+            // hand stroke (~6 Hz) + slow drift, never to silence (pencil stays on paper)
+            val mod = 0.62 + 0.24 * (0.5 + 0.5 * sin(2 * PI * 6.2 * t)) + 0.14 * (0.5 + 0.5 * sin(2 * PI * 1.3 * t + 1.0))
+            buf[i] = (sv * mod * 0.42).toFloat()
+        }
+        return buf
+    }
+
     /** Start the playback thread + AudioTrack. Idempotent. */
     fun resume() {
         if (running) return
@@ -109,10 +142,12 @@ class AudioEngine {
             val sink = pcmSink
             val curBed = bed
             val bg = bedGain
+            val curScratch = scratch
             synchronized(lock) {
                 val base = (playCursor % sr).toInt()
                 val mg = monitorGain
                 val rg = recordGain
+                scratchGain += (scratchTarget - scratchGain) * 0.06f // smooth fade in/out
                 for (i in 0 until block) {
                     val idx = (base + i) % sr
                     val s = ring[idx]
@@ -122,8 +157,13 @@ class AudioEngine {
                         bedS = (curBed[bedPos] / 32768f) * bg
                         bedPos = (bedPos + 1) % curBed.size
                     }
-                    out[i] = pcm(s * mg + bedS)
-                    if (sink != null) tap[i] = pcm(s * rg + bedS)
+                    var scrS = 0f
+                    if (curScratch != null && scratchGain > 0.0005f) {
+                        scrS = curScratch[scratchPos] * scratchGain
+                        scratchPos++; if (scratchPos >= curScratch.size) scratchPos = 0
+                    }
+                    out[i] = pcm(s * mg + bedS + scrS * mg)
+                    if (sink != null) tap[i] = pcm(s * rg + bedS + scrS * rg)
                 }
                 playCursor += block
             }

@@ -137,7 +137,7 @@ object JournalSim : SimDef {
             val drawMs = (DRAW_MS / s.typeSpeed.coerceAtLeast(0.1f)).toInt().coerceAtLeast(16)
             steps.add(TypeStep.Reveal({
                 doneCount = 0; activeIdx = -1; activeLen = 0; dateShown = false; drawingLine = -1; doneAnnos.clear(); revision++
-                rt.audio.profile = s.keySound
+                rt.audio.profile = s.keySound; rt.audio.writing(false)
             }))
             if (s.date.isNotBlank()) steps.add(TypeStep.Reveal({ dateShown = true; revision++ }, delay = 380))
             plines.forEachIndexed { idx, pl ->
@@ -146,28 +146,28 @@ object JournalSim : SimDef {
                     steps.add(TypeStep.Reveal({ doneCount = idx + 1; revision++ }))
                     steps.add(TypeStep.Pause(120))
                 } else {
+                    steps.add(TypeStep.Reveal({ rt.audio.writing(true) })) // pen down — continuous scratch
                     for (j in 1..ln.length) {
-                        val ch = ln[j - 1]
-                        steps.add(TypeStep.Reveal({ activeIdx = idx; activeLen = j; charKey++; revision++; if (!ch.isWhitespace()) rt.audio.key() }))
+                        steps.add(TypeStep.Reveal({ activeIdx = idx; activeLen = j; charKey++; revision++ }))
                         steps.add(TypeStep.Pause(drawMs))
                     }
                     steps.add(TypeStep.Reveal({ activeIdx = idx; activeLen = ln.length; revision++ }))
                     pl.annos.forEachIndexed { ai, anno ->
                         val dur = annoDurMs(anno.type)
-                        steps.add(TypeStep.Reveal({ drawingLine = idx; drawingAnnoIdx = ai; annoDur = dur; annoKey++; revision++; rt.audio.key() }, delay = 120))
+                        steps.add(TypeStep.Reveal({ drawingLine = idx; drawingAnnoIdx = ai; annoDur = dur; annoKey++; revision++ }, delay = 120))
                         steps.add(TypeStep.Pause(dur + 90))
                         steps.add(TypeStep.Reveal({ doneAnnos.add("$idx:$ai"); drawingLine = -1; revision++ }))
                     }
-                    steps.add(TypeStep.Reveal({ doneCount = idx + 1; activeIdx = -1; revision++ }))
+                    steps.add(TypeStep.Reveal({ doneCount = idx + 1; activeIdx = -1; rt.audio.writing(false); revision++ })) // pen up
                     steps.add(TypeStep.Pause(150))
                 }
             }
-            steps.add(TypeStep.Reveal({ activeIdx = -1; revision++ }))
+            steps.add(TypeStep.Reveal({ activeIdx = -1; rt.audio.writing(false); revision++ }))
             steps.add(TypeStep.Pause(900))
             return steps
         }
         rt.planFactory = { buildPlan() }
-        DisposableEffect(Unit) { onDispose { rt.planFactory = null } }
+        DisposableEffect(Unit) { onDispose { rt.planFactory = null; rt.audio.writing(false) } }
 
         val showDate = if (preview) s.date.isNotBlank() else dateShown
 
@@ -188,7 +188,10 @@ object JournalSim : SimDef {
         }
 
         val scroll = rememberScrollState()
-        LaunchedEffect(doneCount) { scroll.animateScrollTo(scroll.maxValue) }
+        // no spring scroll (that read as the page "stretching/shaking"); the page stays put
+        // and only jumps instantly if the writing overflows it.
+        LaunchedEffect(scroll.maxValue) { if (scroll.maxValue > 0) scroll.scrollTo(scroll.maxValue) }
+        LaunchedEffect(rt.playing) { if (!rt.playing) rt.audio.writing(false) }
 
         val ink = Color(s.ink)
         val ruleColor = Color(0x525A78A0)
