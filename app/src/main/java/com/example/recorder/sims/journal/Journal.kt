@@ -255,10 +255,10 @@ object JournalSim : SimDef {
     }
 }
 
-/** A ruled line written in a human hand: each glyph sits at its real layout x but is
- *  slightly rotated, resized and inked unevenly (deterministic per glyph, so it never
- *  jitters frame to frame). The whole line is laid out once — no re-layout shake. The
- *  newest glyph (index [revealLen]-1) is dragged on by [penFrac] of its width. */
+/** A ruled line written in a human hand. The whole line is ONE Text — so every letter
+ *  shares the font's baseline (no per-glyph box that would lift descenders and look jittery)
+ *  — and it's revealed left-to-right with a clip, the newest letter dragged on by [penFrac].
+ *  The hand look is the font itself; the line is dead steady. */
 @Composable
 private fun HandLine(
     text: String, revealLen: Int, penFrac: Float, ink: Color, style: TextStyle, lineH: Float,
@@ -288,30 +288,14 @@ private fun HandLine(
         }
         val lr = layout ?: return@Box
         val n = revealLen.coerceAtMost(text.length)
-        for (i in 0 until n) {
-            val ch = text[i]
-            if (ch == ' ') continue
-            val x0 = lr.getHorizontalPosition(i, usePrimaryDirection = true)
-            val x1 = lr.getHorizontalPosition((i + 1).coerceAtMost(text.length), usePrimaryDirection = true)
-            val cw = (x1 - x0).coerceAtLeast(1f)
-            // Letters sit exactly on their layout positions — clean and steady, like a real
-            // hand. The hand look is in the font itself; the only variation is a touch of ink
-            // weight (some letters a little lighter), which never moves anything.
-            val angle = 0f
-            val sc = 1f
-            val dy = 0f
-            val dx = 0f
-            val a = 1f - jitter(seed, i, 4) * 0.16f * messiness
-            val frac = if (i == n - 1) penFrac else 1f
-            Box(
-                Modifier.offset(x = (x0 + dx).dp, y = dy.dp)
-                    .graphicsLayer(rotationZ = angle, scaleX = sc, scaleY = sc, transformOrigin = TransformOrigin(0.5f, 1f))
-                    .drawWithContent { clipRect(right = (cw * frac).coerceAtLeast(0.5f)) { this@drawWithContent.drawContent() } },
-                contentAlignment = Alignment.BottomStart,
-            ) {
-                Text(ch.toString(), color = ink.copy(alpha = a.coerceIn(0.5f, 1f)), style = style, softWrap = false, maxLines = 1)
-            }
-        }
+        // reveal up to the current letter; drag the last one on by penFrac of its width
+        val xStart = lr.getHorizontalPosition((n - 1).coerceIn(0, text.length), usePrimaryDirection = true)
+        val xEnd = lr.getHorizontalPosition(n.coerceAtMost(text.length), usePrimaryDirection = true)
+        val revealX = (xStart + (xEnd - xStart) * penFrac).coerceAtLeast(0.5f)
+        Text(
+            text, color = ink, style = style, softWrap = false, maxLines = 1,
+            modifier = Modifier.drawWithContent { clipRect(right = revealX) { this@drawWithContent.drawContent() } },
+        )
     }
 }
 
