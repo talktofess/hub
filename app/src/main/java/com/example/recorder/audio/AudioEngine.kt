@@ -440,23 +440,20 @@ class AudioEngine {
     }
 
     private fun synthPencil(v: Float): FloatArray {
-        // One graphite stroke per letter. Band-passed around the woody pencil tone (NOT a
-        // broadband wash), with a soft attack so there's no click, decaying like a single
-        // stroke. ~0.16 s, so consecutive letters overlap into a connected scratch that
-        // pulses with the writing instead of a constant hiss.
-        val dur = 0.14 + Random.nextDouble() * 0.05
-        val n = noise(dur, 0.0)
-        filter(n, "bp", 700.0 + Random.nextDouble() * 150, 0.7)
+        // graphite pencil — the hub.html sound: a short gritty bandpass scratch (bright,
+        // 2.2–4.8 kHz) with a fast attack + exponential decay, over a quiet low paper-body
+        // rumble. Frequencies vary per letter so it reads as a hand moving, not a click.
+        val dur = 0.05 + Random.nextDouble() * 0.05
+        val n = noise(dur, 1.3)
+        filter(n, "bp", 2200.0 + Random.nextDouble() * 2600, 0.6)
+        val body = noise(dur, 2.0)
+        filter(body, "lp", 420.0 + Random.nextDouble() * 120, 0.707)
         val len = n.size
-        val atk = (len * 0.32).toInt().coerceAtLeast(1)
         val buf = FloatArray(len)
         for (i in 0 until len) {
-            val env = if (i < atk) {
-                val a = i.toDouble() / atk; a * a              // smooth ramp-in (no click)
-            } else {
-                val d = (i - atk).toDouble() / (len - atk); (1 - d) * (1 - d)  // stroke decay
-            }
-            buf[i] = (n[i] * env * 0.6 * v).toFloat()
+            val t = i.toDouble() / sr
+            val g = env(t, 0.008, 0.16, dur)        // mirrors the Web Audio gain ramp
+            buf[i] = ((n[i] * g + body[i] * 0.06) * v).toFloat()
         }
         return buf
     }

@@ -2,6 +2,7 @@ package com.example.recorder.sims.journal
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -178,7 +179,9 @@ object JournalSim : SimDef {
         LaunchedEffect(charKey) {
             if (!preview && activeLen > 0) {
                 val ms = (DRAW_MS / s.typeSpeed.coerceAtLeast(0.1f)).toInt().coerceAtLeast(16)
-                charDraw.snapTo(0f); charDraw.animateTo(1f, tween(ms, easing = EaseInOut))
+                // constant-velocity draw so each letter finishes exactly as the next starts —
+                // no slow-end that snaps to full (which read as a per-letter stutter).
+                charDraw.snapTo(0f); charDraw.animateTo(1f, tween(ms, easing = LinearEasing))
             }
         }
 
@@ -291,13 +294,14 @@ private fun HandLine(
             val x0 = lr.getHorizontalPosition(i, usePrimaryDirection = true)
             val x1 = lr.getHorizontalPosition((i + 1).coerceAtMost(text.length), usePrimaryDirection = true)
             val cw = (x1 - x0).coerceAtLeast(1f)
-            // Letters come out clean (the hand look is in the font itself); these are only a
-            // whisper of variation so it doesn't look like a printout. A real writer is steady.
-            val angle = (jitter(seed, i, 1) - 0.5f) * 1.1f * messiness     // barely crooked
-            val sc = 1f + (jitter(seed, i, 2) - 0.5f) * 0.035f * messiness // barely bigger/smaller
-            val dy = (jitter(seed, i, 3) - 0.5f) * 0.45f * messiness       // baseline sits steady on the rule
-            val dx = (jitter(seed, i, 5) - 0.5f) * 1.1f * messiness        // near-even spacing
-            val a = 1f - jitter(seed, i, 4) * 0.18f * messiness            // ink weight (some lighter)
+            // Letters sit exactly on their layout positions — clean and steady, like a real
+            // hand. The hand look is in the font itself; the only variation is a touch of ink
+            // weight (some letters a little lighter), which never moves anything.
+            val angle = 0f
+            val sc = 1f
+            val dy = 0f
+            val dx = 0f
+            val a = 1f - jitter(seed, i, 4) * 0.16f * messiness
             val frac = if (i == n - 1) penFrac else 1f
             Box(
                 Modifier.offset(x = (x0 + dx).dp, y = dy.dp)
