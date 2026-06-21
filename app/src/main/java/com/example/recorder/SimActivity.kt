@@ -167,7 +167,7 @@ class SimActivity : ComponentActivity() {
         try {
             val temp = File(cacheDir, "take_${System.currentTimeMillis()}.mp4")
             recordTemp = temp
-            val s = runtime.settings.recordScale
+            val s = com.example.recorder.model.AppSettings.recordScale
             val w = (sim.logical.w * s).toInt()
             val h = (sim.logical.h * s).toInt()
             val rec = Recorder(w, h, temp, AudioBus.engine).also { it.start() }

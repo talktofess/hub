@@ -141,7 +141,9 @@ object ListsSim : SimDef {
         }
         rt.planFactory = { buildPlan() }
         DisposableEffect(Unit) { onDispose { rt.planFactory = null } }
-        LaunchedEffect(revision) { scroll.scrollTo(scroll.maxValue) }
+        // scroll only when a new block appears (not while typing) — chasing the growing
+        // content every keystroke is what made the whole list jitter ("shaking table").
+        LaunchedEffect(lives.size) { scroll.scrollTo(scroll.maxValue) }
 
         val caretOn = run {
             val t = rememberInfiniteTransition(label = "caret")
@@ -209,21 +211,29 @@ private fun CardBlock(b: Block, title: String, text: String, accent: Color, fs: 
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(32.dp)).background(Color(0x0DFFFFFF))
             .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(32.dp)).padding(horizontal = 48.dp, vertical = 44.dp),
-        horizontalArrangement = Arrangement.spacedBy(36.dp), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(36.dp), verticalAlignment = Alignment.Top,
     ) {
         if (rank && b.rank.isNotEmpty()) {
-            Text(b.rank, color = accent, fontSize = (96f * fs).sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.widthIn(min = 120.dp))
+            Text(b.rank, color = accent, fontSize = (96f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.widthIn(min = 120.dp))
         }
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-                Text(title, color = Color(0xFFF4F6FB), fontSize = (56f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
+                Box(Modifier.weight(1f, fill = false)) {
+                    Text(b.title, color = Color.Transparent, fontSize = (56f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.Bold)
+                    Text(title, color = Color(0xFFF4F6FB), fontSize = (56f * fs).sp, lineHeight = (60f * fs).sp, fontWeight = FontWeight.Bold)
+                }
                 if (b.badge.isNotEmpty()) {
                     Box(Modifier.clip(RoundedCornerShape(12.dp)).background(Brush.linearGradient(listOf(Color(0xFFFFD23F), Color(0xFFFF9D2F)))).padding(horizontal = 18.dp, vertical = 8.dp)) {
                         Text(b.badge.uppercase(), color = Color(0xFF1A0D06), fontSize = (28f * fs).sp, fontWeight = FontWeight.ExtraBold)
                     }
                 }
             }
-            if (text.isNotEmpty()) Text(text, color = Color(0xFFC4CBDB), fontSize = (40f * fs).sp, lineHeight = (56f * fs).sp, modifier = Modifier.padding(top = 14.dp))
+            if (b.text.isNotEmpty()) {
+                Box(Modifier.padding(top = 14.dp)) {
+                    Text(b.text, color = Color.Transparent, fontSize = (40f * fs).sp, lineHeight = (56f * fs).sp)
+                    Text(text, color = Color(0xFFC4CBDB), fontSize = (40f * fs).sp, lineHeight = (56f * fs).sp)
+                }
+            }
             if (b.score.isNotEmpty() || b.tier.isNotEmpty()) {
                 Row(Modifier.padding(top = 26.dp), horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (b.tier.isNotEmpty()) {

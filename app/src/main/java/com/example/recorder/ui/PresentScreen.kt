@@ -105,7 +105,7 @@ fun PresentScreen(
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        CaptureStage(sim.logical, captureLayer, recordScale = rt.settings.recordScale) {
+        CaptureStage(sim.logical, captureLayer, recordScale = com.example.recorder.model.AppSettings.recordScale) {
             SimBackground(rt, previewMode = false)
             sim.Content(rt)
         }

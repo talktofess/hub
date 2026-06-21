@@ -19,7 +19,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Chat
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Keyboard
+import androidx.compose.material.icons.outlined.Leaderboard
+import androidx.compose.material.icons.outlined.MailOutline
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.StickyNote2
+import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,12 +51,16 @@ fun HubScreen(
     sims: List<SimDef>,
     onOpenSim: (SimDef) -> Unit,
     onPlaySim: (SimDef) -> Unit,
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 6.dp)) {
-            Text("Sim Hub", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Text("Pick an app to build & record", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 18.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Sim Hub", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("Pick an app to build & record", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onOpenSettings) { Icon(Icons.Outlined.Settings, contentDescription = "settings", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -58,25 +74,39 @@ fun HubScreen(
     }
 }
 
+private fun iconFor(id: String): ImageVector = when (id) {
+    "notes" -> Icons.Outlined.StickyNote2
+    "imessage" -> Icons.Outlined.ChatBubbleOutline
+    "whatsapp" -> Icons.Outlined.Chat
+    "email" -> Icons.Outlined.MailOutline
+    "lists" -> Icons.Outlined.Leaderboard
+    "typer" -> Icons.Outlined.TextFields
+    "typewriter" -> Icons.Outlined.Keyboard
+    "claude" -> Icons.Outlined.Terminal
+    "journal" -> Icons.Outlined.MenuBook
+    else -> Icons.Outlined.TextFields
+}
+
 @Composable
 private fun HubCard(sim: SimDef, onOpen: () -> Unit, onPlay: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
             .clickable { onOpen() }
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+            .padding(start = 14.dp, end = 12.dp, top = 16.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(sim.glyph, fontSize = 40.sp)
-            Spacer(Modifier.weight(1f))
-            Box(
-                Modifier.size(44.dp).clip(CircleShape).background(sim.accent).clickable { onPlay() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.PlayArrow, contentDescription = "play ${sim.label}", tint = Color.White, modifier = Modifier.size(26.dp))
-            }
+        Icon(iconFor(sim.id), contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.size(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text(sim.label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text("Build & record", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Text(sim.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Box(
+            Modifier.size(32.dp).clip(CircleShape).background(Color(0xFF45454D)).clickable { onPlay() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = "play ${sim.label}", tint = Color(0xFFE7E7EA), modifier = Modifier.size(18.dp))
+        }
     }
 }

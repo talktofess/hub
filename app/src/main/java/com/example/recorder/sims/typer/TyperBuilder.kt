@@ -38,7 +38,10 @@ fun TyperBuilder(ctx: BuilderContext) {
     val store = TyperStore
     val smallPad = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionLabel("Cards (each types, holds, then clears)")
+        SectionLabel("Prompt")
+        OutlinedTextField(store.prompt, { store.prompt = it }, label = { Text("Prompt (e.g. PS C:\\Users\\dev>)") }, modifier = Modifier.fillMaxWidth())
+
+        SectionLabel("Commands (typed one after another)")
         store.cards.forEachIndexed { i, card ->
             Column(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(10.dp),
@@ -51,21 +54,22 @@ fun TyperBuilder(ctx: BuilderContext) {
                     IconButton(onClick = { store.move(i, 1) }, enabled = i < store.cards.size - 1) { Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "down", modifier = Modifier.size(18.dp)) }
                     IconButton(onClick = { store.remove(i) }) { Icon(Icons.Filled.Delete, contentDescription = "delete", modifier = Modifier.size(18.dp)) }
                 }
-                OutlinedTextField(card, { store.update(i, it) }, label = { Text("Text") }, modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp))
+                OutlinedTextField(card, { store.update(i, it) }, label = { Text("Command") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
             }
         }
         OutlinedButton(onClick = { store.add() }, contentPadding = smallPad) {
-            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp)); Text(" Add card", style = MaterialTheme.typography.labelMedium)
+            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp)); Text(" Add command", style = MaterialTheme.typography.labelMedium)
         }
 
-        SectionLabel("Style")
+        SectionLabel("Terminal")
         LabeledSlider("Text size", store.textScale, 0.6f..1.6f, "%.2f×") { store.textScale = it }
         BubbleColorRow("Text color", store.color) { store.color = it }
+        BubbleColorRow("Background", store.bg) { store.bg = it }
 
         SectionLabel("Typing & sound")
         LabeledSlider("Typing speed", store.typeSpeed, 0.3f..3f, "%.2f×") { store.typeSpeed = it }
         LabeledSlider("Pacing arc", store.pacing, 0f..1f) { store.pacing = it }
         SoundProfilePicker("Keystroke sound", store.keySound) { store.keySound = it }
-        LabeledSlider("Hold each card", store.holdMs.toFloat(), 200f..5000f, "%.0f ms") { store.holdMs = it.toInt() }
+        LabeledSlider("Hold after each command", store.holdMs.toFloat(), 200f..4000f, "%.0f ms") { store.holdMs = it.toInt() }
     }
 }

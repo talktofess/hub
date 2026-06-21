@@ -145,7 +145,7 @@ fun ConfigScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                 IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "back to hub") }
-                Text(selected.glyph + "  " + selected.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(selected.label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 IconButton(onClick = onOpenProjects) { Icon(Icons.Filled.FolderOpen, contentDescription = "projects", modifier = Modifier.size(20.dp)) }

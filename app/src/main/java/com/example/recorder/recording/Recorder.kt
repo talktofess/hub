@@ -66,7 +66,7 @@ class Recorder(
         val vFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, w, h).apply {
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
             setInteger(MediaFormat.KEY_BIT_RATE, min(16_000_000, (w * h * 5.0).toInt()))
-            setInteger(MediaFormat.KEY_FRAME_RATE, 30)
+            setInteger(MediaFormat.KEY_FRAME_RATE, com.example.recorder.model.AppSettings.fps)
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
         }
         videoCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
