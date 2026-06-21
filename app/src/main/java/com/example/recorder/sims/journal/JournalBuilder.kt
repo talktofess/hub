@@ -15,8 +15,8 @@ import com.example.recorder.ui.BubbleColorRow
 import com.example.recorder.ui.EnumPicker
 import com.example.recorder.ui.LabeledSlider
 import com.example.recorder.ui.SectionLabel
-import com.example.recorder.ui.SoundProfilePicker
 import com.example.recorder.ui.SymbolTextField
+import com.example.recorder.ui.WritingSoundPicker
 
 @Composable
 fun JournalBuilder(ctx: BuilderContext) {
@@ -35,6 +35,6 @@ fun JournalBuilder(ctx: BuilderContext) {
 
         SectionLabel("Writing & sound")
         LabeledSlider("Writing speed", s.typeSpeed, 0.3f..3f, "%.2f×") { s.typeSpeed = it }
-        SoundProfilePicker("Writing sound", s.keySound) { s.keySound = it }
+        WritingSoundPicker("Writing sound", s.keySound) { s.keySound = it }
     }
 }

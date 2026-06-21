@@ -459,18 +459,17 @@ class AudioEngine {
         return buf
     }
 
-    // shared shaper for writing sounds: window a filtered-noise burst with a Hann fade
-    // and a slow stroke wobble so repeated hits overlap into a continuous scratch.
+    // shared shaper for writing sounds: a single pen/nib stroke — soft attack (no click)
+    // then a decay (not a Hann fade, which over a run of letters smears into a wash). At
+    // letter spacing the strokes overlap just enough to connect, but each one is distinct.
     private fun windowed(n: FloatArray, gain: Double, v: Float): FloatArray {
         val len = n.size
-        val wob = 4.0 + Random.nextDouble() * 6.0
-        val phase0 = Random.nextDouble() * 2 * PI
+        val atk = (len * 0.28).toInt().coerceAtLeast(1)
         val buf = FloatArray(len)
         for (i in 0 until len) {
-            val t = i.toDouble() / sr
-            val win = if (len > 1) 0.5 - 0.5 * cos(2 * PI * i / (len - 1)) else 1.0
-            val mod = 0.6 + 0.4 * (0.5 + 0.5 * sin(2 * PI * wob * t + phase0))
-            buf[i] = (n[i] * win * mod * gain * v).toFloat()
+            val e = if (i < atk) { val a = i.toDouble() / atk; a * a }                 // soft ramp-in
+            else { val d = (i - atk).toDouble() / (len - atk); (1 - d) * (1 - d) }     // stroke decay
+            buf[i] = (n[i] * e * gain * 1.2 * v).toFloat()
         }
         return buf
     }

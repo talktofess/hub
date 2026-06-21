@@ -270,6 +270,25 @@ fun SoundProfilePicker(label: String, current: com.example.recorder.model.SoundP
     EnumPicker(label, current.label, all.map { it.label }) { i -> onPick(all[i]) }
 }
 
+/** Just the writing instruments — for handwriting sims (Journal). */
+val WRITING_SOUNDS = listOf(
+    com.example.recorder.model.SoundProfile.PENCIL,
+    com.example.recorder.model.SoundProfile.PEN,
+    com.example.recorder.model.SoundProfile.FOUNTAIN,
+    com.example.recorder.model.SoundProfile.GEL,
+    com.example.recorder.model.SoundProfile.MARKER,
+    com.example.recorder.model.SoundProfile.FELT,
+    com.example.recorder.model.SoundProfile.CHALK,
+    com.example.recorder.model.SoundProfile.CRAYON,
+    com.example.recorder.model.SoundProfile.BRUSHPEN,
+)
+
+@Composable
+fun WritingSoundPicker(label: String, current: com.example.recorder.model.SoundProfile, onPick: (com.example.recorder.model.SoundProfile) -> Unit) {
+    val opts = if (current in WRITING_SOUNDS) WRITING_SOUNDS else listOf(current) + WRITING_SOUNDS
+    EnumPicker(label, current.label, opts.map { it.label }) { i -> onPick(opts[i]) }
+}
+
 @Composable
 fun ReactionPicker(current: String?, onPick: (String?) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
