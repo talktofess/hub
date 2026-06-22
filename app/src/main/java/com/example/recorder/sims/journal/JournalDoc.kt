@@ -15,7 +15,7 @@ object JournalStore {
         "Today I [o]shipped[/o] it!\n\nThe little app that\ntypes itself and\nrecords the take.\n---\n[u]Small ideas[/u] become\nthe ones worth\n[x]keening[/x] keeping.\n\nMore tomorrow.",
     )
     var date by mutableStateOf("Tuesday")
-    var font by mutableStateOf(NoteFont.HANDWRITING)
+    var font by mutableStateOf(NoteFont.MARKER)
     var ink by mutableStateOf(0xFF1E2026L)
     var paper by mutableStateOf(0xFFFCFCFEL)
     var textScale by mutableStateOf(1f)
@@ -28,7 +28,7 @@ object JournalStore {
 
     fun reset() {
         text = "Today I [o]shipped[/o] it!\n\nThe little app that\ntypes itself and\nrecords the take.\n---\n[u]Small ideas[/u] become\nthe ones worth\n[x]keening[/x] keeping.\n\nMore tomorrow."
-        date = "Tuesday"; font = NoteFont.HANDWRITING; ink = 0xFF1E2026L; paper = 0xFFFCFCFEL; textScale = 1f
+        date = "Tuesday"; font = NoteFont.MARKER; ink = 0xFF1E2026L; paper = 0xFFFCFCFEL; textScale = 1f
         messiness = 0.5f; typeSpeed = 0.8f; pacing = 0.6f; keySound = SoundProfile.STYLUS
     }
 }

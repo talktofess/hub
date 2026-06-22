@@ -203,7 +203,7 @@ object JournalSim : SimDef {
         // The notes app fills the whole screen — a clean blank canvas (like writing in a
         // tablet notes app), not a paper card floating on a desk.
         Box(Modifier.fillMaxSize().background(Color(s.paper))) {
-            val style = TextStyle(fontSize = fontPx.sp, lineHeight = lineH.sp, fontFamily = s.font.family, fontWeight = FontWeight.Medium)
+            val style = TextStyle(fontSize = fontPx.sp, lineHeight = lineH.sp, fontFamily = s.font.family)
             Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 96.dp, end = 72.dp, top = TOP_PAD.dp, bottom = 120.dp)) {
                     lines.forEachIndexed { i, ln ->
                         val showLen = when {
