@@ -100,6 +100,8 @@ object IMessageSim : SimDef {
         var kbEmoji by remember { mutableStateOf(false) }
         var emojiTarget by remember { mutableIntStateOf(-1) }
         val reacted = remember { mutableStateListOf<Long>() }
+        var notif by remember { mutableStateOf<com.example.recorder.sims.chat.ChatNotif?>(null) }
+        var notifVisible by remember { mutableStateOf(false) }
         var revision by remember { mutableIntStateOf(0) }
         val scroll = rememberScrollState()
 
@@ -107,7 +109,7 @@ object IMessageSim : SimDef {
             val s = MessagesStore
             val steps = mutableListOf<TypeStep>()
             steps.add(TypeStep.Reveal({
-                visible = 0; composing = ""; showTyping = false; pressedKey = null; kbEmoji = false; emojiTarget = -1; reacted.clear(); revision++
+                visible = 0; composing = ""; showTyping = false; pressedKey = null; kbEmoji = false; emojiTarget = -1; reacted.clear(); notif = null; notifVisible = false; revision++
                 rt.audio.profile = s.keySound
                 rt.beginNote(NoteTiming(s.typeSpeed.coerceAtLeast(0.1f), s.pacing, 0.55f, 0.7f, 0f, 1, emptyMap()))
             }))
@@ -147,6 +149,13 @@ object IMessageSim : SimDef {
                         steps.add(TypeStep.Reveal({ reacted.add(m.id); revision++ }))
                     }
                 }
+                // a notification from another chat slides in after this message
+                s.notifs.filter { it.after == i }.forEach { n ->
+                    steps.add(TypeStep.Reveal({ notif = n; notifVisible = true; revision++; if (n.sound != "off") rt.audio.cue(n.sound) }, delay = 220))
+                    steps.add(TypeStep.Pause(2600))
+                    steps.add(TypeStep.Reveal({ notifVisible = false; revision++ }))
+                    steps.add(TypeStep.Pause(420))
+                }
             }
             return steps
         }
@@ -159,6 +168,7 @@ object IMessageSim : SimDef {
             t.animateFloat(0f, 1f, infiniteRepeatable(tween(1060, easing = LinearEasing)), label = "b").value < 0.5f
         }
 
+      Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().background(Color.White)) {
             if (MessagesStore.statusBar) StatusBar(MessagesStore.clock, onDark = false)
             HeaderBar(MessagesStore.contactName, MessagesStore.avatarUri, fs)
@@ -188,6 +198,15 @@ object IMessageSim : SimDef {
                 )
             }
         }
+        androidx.compose.animation.AnimatedVisibility(
+            visible = !preview && notifVisible,
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 16.dp),
+            enter = androidx.compose.animation.slideInVertically { -it } + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.slideOutVertically { -it } + androidx.compose.animation.fadeOut(),
+        ) {
+            notif?.let { com.example.recorder.sims.chat.NotificationBanner(it.sender, it.text, ios = true, fs = fs) }
+        }
+      }
     }
 }
 

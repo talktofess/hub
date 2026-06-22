@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.recorder.model.SoundProfile
+import com.example.recorder.sims.chat.ChatNotif
 import com.example.recorder.sims.notes.NoteFont
 
 /** One chat message. [fromMe] = a sent (blue, right) bubble; else received (gray, left). */
@@ -41,6 +42,8 @@ object MessagesStore {
     var clock by mutableStateOf("9:41")
     var dateLabel by mutableStateOf("iMessage • Today")
     var readReceipt by mutableStateOf(true)
+    // push notifications from other chats that pop in during the take
+    val notifs = mutableStateListOf<ChatNotif>()
 
     var selectedId by mutableStateOf<Long?>(null)
         private set
@@ -89,7 +92,7 @@ object MessagesStore {
         avatarUri = null
         sentColor = 0xFF0A84FFL; receivedColor = 0xFFE9E9EBL
         sentTextColor = 0xFFFFFFFFL; receivedTextColor = 0xFF000000L
-        font = NoteFont.PRINT; textScale = 1f
+        font = NoteFont.PRINT; textScale = 1.12f
         typeSpeed = 0.7f; pacing = 0.6f; keySound = SoundProfile.KEYBOARD
         sendSound = "whoosh"; receiveSound = "tritone"; msgGap = 620; typingDur = 1300; showKeyboard = true
         statusBar = true; clock = "9:41"; dateLabel = "iMessage • Today"; readReceipt = true
@@ -99,5 +102,7 @@ object MessagesStore {
         messages.add(Message(counter++, "same. wanna grab coffee tmrw?", false))
         messages.add(Message(counter++, "for sure. 9am at the usual spot", true))
         selectedId = messages.firstOrNull()?.id
+        notifs.clear()
+        notifs.add(ChatNotif("Mom", "Call me when you're free ❤️", 1, "tritone"))
     }
 }

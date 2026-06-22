@@ -77,6 +77,9 @@ fun WhatsAppBuilder(ctx: BuilderContext) {
         LabeledSlider("Gap between messages", store.msgGap.toFloat(), 0f..2500f, "%.0f ms") { store.msgGap = it.toInt() }
         LabeledSlider("Typing indicator", store.typingDur.toFloat(), 200f..3000f, "%.0f ms") { store.typingDur = it.toInt() }
 
+        SectionLabel("Notifications (from other chats)")
+        com.example.recorder.sims.chat.NotifEditor(store.notifs, store.messages.size)
+
         SectionLabel("Chrome")
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("On-screen keyboard (keys type)", Modifier.weight(1f))
