@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
@@ -25,6 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
@@ -33,6 +36,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.TextLayoutResult
@@ -72,7 +76,8 @@ object JournalSim : SimDef {
     override fun Builder(ctx: com.example.recorder.sims.BuilderContext) = JournalBuilder(ctx)
 
     override fun toJson() = JSONObject().apply {
-        put("fill", JournalStore.fill); put("widthPct", JournalStore.widthPct.toDouble())
+        put("fill", JournalStore.fill); put("widthPct", JournalStore.widthPct.toDouble()); put("heightPct", JournalStore.heightPct.toDouble())
+        put("corner", JournalStore.corner.toDouble()); put("lines", JournalStore.lines.name); put("lineColor", JournalStore.lineColor)
         put("paper", JournalStore.paper); put("backdrop", JournalStore.backdrop)
         put("defFont", JournalStore.defFont.name); put("defColor", JournalStore.defColor)
         put("typeSpeed", JournalStore.typeSpeed.toDouble()); put("keySound", JournalStore.keySound.name)
@@ -81,7 +86,7 @@ object JournalSim : SimDef {
                 put(JSONObject().apply {
                     put("t", e.text); put("x", e.xPct.toDouble()); put("y", e.yPct.toDouble())
                     put("f", e.font.name); put("c", e.color); put("s", e.size.toDouble())
-                    put("r", e.rotation.toDouble()); put("o", e.order); put("k", e.kind.name)
+                    put("r", e.rotation.toDouble()); put("o", e.order); put("op", e.opacity.toDouble()); put("k", e.kind.name)
                     if (e.kind == ElKind.DOODLE) {
                         put("pts", JSONArray().apply { e.points.forEach { p -> put(JSONArray().apply { put(p.x.toDouble()); put(p.y.toDouble()) }) } })
                     }
@@ -93,6 +98,10 @@ object JournalSim : SimDef {
     override fun fromJson(o: JSONObject) {
         JournalStore.fill = o.optBoolean("fill", true)
         JournalStore.widthPct = o.optDouble("widthPct", 0.78).toFloat()
+        JournalStore.heightPct = o.optDouble("heightPct", 1.0).toFloat()
+        JournalStore.corner = o.optDouble("corner", 0.0).toFloat()
+        JournalStore.lines = runCatching { SurfaceLines.valueOf(o.optString("lines")) }.getOrDefault(SurfaceLines.NONE)
+        JournalStore.lineColor = o.optLong("lineColor", 0x14101114)
         JournalStore.paper = o.optLong("paper", 0xFFFCFCFE)
         JournalStore.backdrop = o.optLong("backdrop", 0xFF0E0F12)
         JournalStore.defFont = noteFont(o.optString("defFont"), NoteFont.MARKER)
@@ -107,14 +116,14 @@ object JournalSim : SimDef {
                 val kind = runCatching { ElKind.valueOf(e.optString("k")) }.getOrDefault(ElKind.TEXT)
                 val pa = e.optJSONArray("pts")
                 val pts = if (pa != null) (0 until pa.length()).map { val q = pa.getJSONArray(it); Offset(q.getDouble(0).toFloat(), q.getDouble(1).toFloat()) } else emptyList()
-                JournalStore.elements.add(
-                    JElement(
-                        JournalStore.nextId++, e.optString("t", "text"),
-                        e.optDouble("x", 0.5).toFloat(), e.optDouble("y", 0.3).toFloat(),
-                        noteFont(e.optString("f"), JournalStore.defFont), e.optLong("c", JournalStore.defColor),
-                        e.optDouble("s", 1.0).toFloat(), e.optDouble("r", 0.0).toFloat(), e.optInt("o", i), kind, pts,
-                    ),
+                val el = JElement(
+                    JournalStore.nextId++, e.optString("t", "text"),
+                    e.optDouble("x", 0.5).toFloat(), e.optDouble("y", 0.3).toFloat(),
+                    noteFont(e.optString("f"), JournalStore.defFont), e.optLong("c", JournalStore.defColor),
+                    e.optDouble("s", 1.0).toFloat(), e.optDouble("r", 0.0).toFloat(), e.optInt("o", i), kind, pts,
                 )
+                el.opacity = e.optDouble("op", 1.0).toFloat()
+                JournalStore.elements.add(el)
             }
         }
     }
@@ -184,19 +193,46 @@ object JournalSim : SimDef {
             else -> 0f
         }
 
-        if (s.fill) {
-            BoxWithConstraints(Modifier.fillMaxSize().background(Color(s.paper))) {
-                DoodleLayer(s.elements, ::doodleFrac)
-                PlaceElements(s.elements, fs, ::shownOf, penFrac)
-            }
-        } else {
-            Box(Modifier.fillMaxSize().background(Color(s.backdrop)), contentAlignment = Alignment.Center) {
-                BoxWithConstraints(Modifier.fillMaxWidth(s.widthPct.coerceIn(0.2f, 1f)).fillMaxHeight().background(Color(s.paper))) {
-                    DoodleLayer(s.elements, ::doodleFrac)
-                    PlaceElements(s.elements, fs, ::shownOf, penFrac)
-                }
-            }
+        JournalSurface {
+            RenderElements(s.elements, fs, ::shownOf, penFrac, ::doodleFrac)
         }
+    }
+}
+
+/** The paper surface: fills the screen or sits centred at a chosen size, with optional
+ *  ruling/grid/dots and rounded corners. Provides a BoxWithConstraints scope for content. */
+@Composable
+fun JournalSurface(content: @Composable BoxWithConstraintsScope.() -> Unit) {
+    val s = JournalStore
+    val shape = RoundedCornerShape(s.corner.dp)
+    val surfaceMod = Modifier.clip(shape).background(Color(s.paper))
+        .drawBehind { drawSurfaceLines(s.lines, Color(s.lineColor)) }
+    if (s.fill) {
+        BoxWithConstraints(Modifier.fillMaxSize().then(surfaceMod), content = content)
+    } else {
+        Box(Modifier.fillMaxSize().background(Color(s.backdrop)), contentAlignment = Alignment.Center) {
+            BoxWithConstraints(
+                Modifier.fillMaxWidth(s.widthPct.coerceIn(0.2f, 1f)).fillMaxHeight(s.heightPct.coerceIn(0.2f, 1f)).then(surfaceMod),
+                content = content,
+            )
+        }
+    }
+}
+
+/** Ruling / grid / dots drawn behind the writing. */
+fun DrawScope.drawSurfaceLines(lines: SurfaceLines, color: Color) {
+    if (lines == SurfaceLines.NONE) return
+    val gap = size.width / 14f
+    when (lines) {
+        SurfaceLines.RULED -> { var y = gap; while (y < size.height) { drawLine(color, Offset(0f, y), Offset(size.width, y), 2f); y += gap } }
+        SurfaceLines.GRID -> {
+            var y = gap; while (y < size.height) { drawLine(color, Offset(0f, y), Offset(size.width, y), 2f); y += gap }
+            var x = gap; while (x < size.width) { drawLine(color, Offset(x, 0f), Offset(x, size.height), 2f); x += gap }
+        }
+        SurfaceLines.DOTS -> {
+            var y = gap; while (y < size.height) { var x = gap; while (x < size.width) { drawCircle(color, 3f, Offset(x, y)); x += gap }; y += gap }
+        }
+        else -> {}
     }
 }
 
@@ -216,46 +252,45 @@ fun doodlePath(el: JElement, w: Float, h: Float): Path {
     return path
 }
 
-/** Draw every doodle on the surface, each revealed up to its [fracOf] of the stroke. */
-@Composable
-fun DoodleLayer(elements: List<JElement>, fracOf: (JElement) -> Float) {
-    Canvas(Modifier.fillMaxSize()) {
-        elements.forEach { el ->
-            if (el.kind != ElKind.DOODLE || el.points.size < 2) return@forEach
-            val frac = fracOf(el)
-            if (frac <= 0f) return@forEach
-            val full = doodlePath(el, size.width, size.height)
-            val pm = PathMeasure(); pm.setPath(full, false)
-            val dst = Path(); pm.getSegment(0f, pm.length * frac.coerceIn(0f, 1f), dst, true)
-            drawPath(dst, Color(el.color), style = Stroke(width = (4.5f * el.size).dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-        }
-    }
-}
-
 private fun noteFont(name: String, fallback: NoteFont): NoteFont =
     runCatching { NoteFont.valueOf(name) }.getOrDefault(fallback)
 
-/** Lay every visible element on the surface, each centred at its (x,y) fraction and rotated. */
+/** Draw one doodle's stroke (revealed up to [frac]) into the current DrawScope. */
+fun DrawScope.drawDoodle(el: JElement, frac: Float) {
+    if (el.points.size < 2 || frac <= 0f) return
+    val full = doodlePath(el, size.width, size.height)
+    val pm = PathMeasure(); pm.setPath(full, false)
+    val dst = Path(); pm.getSegment(0f, pm.length * frac.coerceIn(0f, 1f), dst, true)
+    drawPath(dst, Color(el.color).copy(alpha = el.opacity), style = Stroke(width = (4.5f * el.size).dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+}
+
+/** Render every element in LIST order (= z-stack: later in the list draws on top), text and
+ *  doodles freely interleaved, each at its place / style / reveal. */
 @Composable
-fun BoxWithConstraintsScope.PlaceElements(
+fun BoxWithConstraintsScope.RenderElements(
     elements: List<JElement>,
     fs: Float,
     shownOf: (JElement) -> Int,
     penFrac: (JElement) -> Float,
+    doodleFrac: (JElement) -> Float,
 ) {
     val w = constraints.maxWidth
     val h = constraints.maxHeight
     elements.forEach { el ->
-        if (el.kind != ElKind.TEXT) return@forEach
-        val shown = shownOf(el)
-        if (shown >= 0) {
-            Box(
-                Modifier
-                    .align(Alignment.Center)
-                    .offset { IntOffset(((el.xPct - 0.5f) * w).roundToInt(), ((el.yPct - 0.5f) * h).roundToInt()) }
-                    .rotate(el.rotation),
-            ) {
-                JElementText(el, shown, penFrac(el), fs)
+        when (el.kind) {
+            ElKind.TEXT -> {
+                val shown = shownOf(el)
+                if (shown >= 0) {
+                    Box(
+                        Modifier.align(Alignment.Center)
+                            .offset { IntOffset(((el.xPct - 0.5f) * w).roundToInt(), ((el.yPct - 0.5f) * h).roundToInt()) }
+                            .rotate(el.rotation),
+                    ) { JElementText(el, shown, penFrac(el), fs) }
+                }
+            }
+            ElKind.DOODLE -> {
+                val frac = doodleFrac(el)
+                if (frac > 0f) Canvas(Modifier.fillMaxSize()) { drawDoodle(el, frac) }
             }
         }
     }
@@ -281,7 +316,7 @@ fun JElementText(el: JElement, shown: Int, penFrac: Float, fs: Float) {
             }
         }
         Text(
-            el.text, color = Color(el.color), style = style, softWrap = false, maxLines = 1,
+            el.text, color = Color(el.color).copy(alpha = el.opacity), style = style, softWrap = false, maxLines = 1,
             modifier = Modifier.drawWithContent { clipRect(right = revealX) { this@drawWithContent.drawContent() } },
         )
     }

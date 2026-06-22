@@ -10,6 +10,8 @@ import com.example.recorder.sims.notes.NoteFont
 
 enum class ElKind { TEXT, DOODLE }
 
+enum class SurfaceLines(val label: String) { NONE("Blank"), RULED("Ruled"), GRID("Grid"), DOTS("Dots") }
+
 /** One piece of writing placed freely on the surface: its text, where it sits (as a
  *  fraction of the surface), how it looks (font / colour / size / rotation), and WHEN it is
  *  written (order in the sequence). Everything is observable so the editor updates live. */
@@ -34,6 +36,7 @@ class JElement(
     var size by mutableStateOf(size0)       // text size / doodle stroke + scale multiplier
     var rotation by mutableStateOf(rot0)    // degrees (90 = sideways)
     var order by mutableStateOf(order0)     // when it's written (lower = earlier)
+    var opacity by mutableStateOf(1f)       // ink opacity 0..1
     // doodle stroke: points relative to the anchor, x in width-fractions, y in height-fractions
     var points by mutableStateOf(pts0)
 }
@@ -47,6 +50,10 @@ object JournalStore {
     // surface
     var fill by mutableStateOf(true)            // fill the whole screen vs a centred surface
     var widthPct by mutableStateOf(0.78f)       // surface width (fraction of screen) when not filling
+    var heightPct by mutableStateOf(1f)         // surface height (fraction) when not filling
+    var corner by mutableStateOf(0f)            // surface corner radius (dp)
+    var lines by mutableStateOf(SurfaceLines.NONE)
+    var lineColor by mutableStateOf(0x14101114L)
     var paper by mutableStateOf(0xFFFCFCFEL)
     var backdrop by mutableStateOf(0xFF0E0F12L) // behind a centred surface
 
@@ -82,9 +89,22 @@ object JournalStore {
 
     fun remove(id: Long) { elements.removeAll { it.id == id } }
 
+    // stacking: list order is the z-order (later in the list = drawn on top)
+    private fun move(id: Long, to: Int) {
+        val i = elements.indexOfFirst { it.id == id }
+        if (i < 0) return
+        val j = to.coerceIn(0, elements.size - 1)
+        if (i != j) elements.add(j, elements.removeAt(i))
+    }
+    fun toFront(id: Long) = move(id, elements.size - 1)
+    fun toBack(id: Long) = move(id, 0)
+    fun forward(id: Long) { val i = elements.indexOfFirst { it.id == id }; if (i >= 0) move(id, i + 1) }
+    fun backward(id: Long) { val i = elements.indexOfFirst { it.id == id }; if (i >= 0) move(id, i - 1) }
+
     fun reset() {
         elements.clear(); nextId = 1L
-        fill = true; widthPct = 0.78f; paper = 0xFFFCFCFEL; backdrop = 0xFF0E0F12L
+        fill = true; widthPct = 0.78f; heightPct = 1f; corner = 0f; lines = SurfaceLines.NONE; lineColor = 0x14101114L
+        paper = 0xFFFCFCFEL; backdrop = 0xFF0E0F12L
         defFont = NoteFont.MARKER; defColor = 0xFF1E2026L
         typeSpeed = 0.85f; keySound = SoundProfile.STYLUS
         // a starter layout that shows the idea

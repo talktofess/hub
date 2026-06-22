@@ -100,8 +100,33 @@ fun JournalBuilder(ctx: BuilderContext) {
                 val h = constraints.maxHeight
                 val scale = maxWidth.value / 1080f
 
-                // existing doodles (drawn full) + the live stroke being drawn
-                DoodleLayer(s.elements) { 1f }
+                // render in list order (z-stack): text pieces are interactive Boxes, doodles
+                // are drawn into their own Canvas — so stacking matches the real output.
+                s.elements.forEach { el ->
+                    if (el.kind == ElKind.DOODLE) {
+                        Canvas(Modifier.fillMaxSize()) { drawDoodle(el, 1f) }
+                    } else {
+                        val selected = el.id == selId
+                        Box(
+                            Modifier.align(Alignment.Center)
+                                .offset { IntOffset(((el.xPct - 0.5f) * w).roundToInt(), ((el.yPct - 0.5f) * h).roundToInt()) }
+                                .rotate(el.rotation)
+                                .border(if (selected) 1.5.dp else 0.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(4.dp))
+                                .padding(2.dp)
+                                .pointerInput(el.id) { detectTapGestures { selId = el.id } }
+                                .pointerInput(el.id) {
+                                    detectDragGestures(onDragStart = { selId = el.id }) { _, drag ->
+                                        el.xPct = (el.xPct + drag.x / w).coerceIn(0.02f, 0.98f)
+                                        el.yPct = (el.yPct + drag.y / h).coerceIn(0.02f, 0.98f)
+                                    }
+                                },
+                        ) {
+                            Text(el.text.ifEmpty { "·" }, color = Color(el.color).copy(alpha = el.opacity), fontFamily = el.font.family, fontSize = (62f * el.size * scale).sp, maxLines = 1, softWrap = false)
+                        }
+                    }
+                }
+
+                // the live stroke being drawn
                 if (livePts.size > 1) {
                     Canvas(Modifier.fillMaxSize()) {
                         val p = Path().apply {
@@ -112,29 +137,7 @@ fun JournalBuilder(ctx: BuilderContext) {
                     }
                 }
 
-                // text pieces — tap to select, drag to move
-                s.elements.forEach { el ->
-                    if (el.kind != ElKind.TEXT) return@forEach
-                    val selected = el.id == selId
-                    Box(
-                        Modifier.align(Alignment.Center)
-                            .offset { IntOffset(((el.xPct - 0.5f) * w).roundToInt(), ((el.yPct - 0.5f) * h).roundToInt()) }
-                            .rotate(el.rotation)
-                            .border(if (selected) 1.5.dp else 0.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(4.dp))
-                            .padding(2.dp)
-                            .pointerInput(el.id) { detectTapGestures { selId = el.id } }
-                            .pointerInput(el.id) {
-                                detectDragGestures(onDragStart = { selId = el.id }) { _, drag ->
-                                    el.xPct = (el.xPct + drag.x / w).coerceIn(0.02f, 0.98f)
-                                    el.yPct = (el.yPct + drag.y / h).coerceIn(0.02f, 0.98f)
-                                }
-                            },
-                    ) {
-                        Text(el.text.ifEmpty { "·" }, color = Color(el.color), fontFamily = el.font.family, fontSize = (62f * el.size * scale).sp, maxLines = 1, softWrap = false)
-                    }
-                }
-
-                // doodle handles — a dot at each doodle's anchor to select / drag
+                // doodle handles — a dot at each doodle's anchor to select / drag (always on top)
                 s.elements.forEach { el ->
                     if (el.kind != ElKind.DOODLE) return@forEach
                     val selected = el.id == selId
@@ -178,6 +181,7 @@ fun JournalBuilder(ctx: BuilderContext) {
             }
             BubbleColorRow("Colour", sel.color) { sel.color = it }
             LabeledSlider(if (sel.kind == ElKind.DOODLE) "Thickness / scale" else "Size", sel.size, 0.4f..3.2f, "%.2f×") { sel.size = it }
+            LabeledSlider("Ink opacity", sel.opacity, 0.1f..1f, "%.0f%%") { sel.opacity = it }
             LabeledSlider("Rotation", sel.rotation, -180f..180f, "%.0f°") { sel.rotation = it }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf(0f, 90f, 180f, 270f).forEach { deg ->
@@ -185,6 +189,15 @@ fun JournalBuilder(ctx: BuilderContext) {
                         Text("${deg.toInt()}°", style = MaterialTheme.typography.labelMedium)
                     }
                 }
+            }
+            // stacking (z-order): later in the list draws on top
+            Text("Stacking", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                val pad = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
+                OutlinedButton(onClick = { s.toBack(sel.id) }, contentPadding = pad) { Text("⤓ Back", style = MaterialTheme.typography.labelMedium) }
+                OutlinedButton(onClick = { s.backward(sel.id) }, contentPadding = pad) { Text("↓", style = MaterialTheme.typography.labelMedium) }
+                OutlinedButton(onClick = { s.forward(sel.id) }, contentPadding = pad) { Text("↑", style = MaterialTheme.typography.labelMedium) }
+                OutlinedButton(onClick = { s.toFront(sel.id) }, contentPadding = pad) { Text("⤒ Front", style = MaterialTheme.typography.labelMedium) }
             }
             val maxOrder = (s.elements.size - 1).coerceAtLeast(1)
             LabeledSlider("Write order (lower = written first)", sel.order.toFloat().coerceIn(0f, maxOrder.toFloat()), 0f..maxOrder.toFloat(), "%.0f") { sel.order = it.roundToInt() }
@@ -197,9 +210,14 @@ fun JournalBuilder(ctx: BuilderContext) {
         }
         if (!s.fill) {
             LabeledSlider("Surface width", s.widthPct, 0.3f..1f, "%.0f%%") { s.widthPct = it }
+            LabeledSlider("Surface height", s.heightPct, 0.3f..1f, "%.0f%%") { s.heightPct = it }
             BubbleColorRow("Behind the surface", s.backdrop) { s.backdrop = it }
         }
         BubbleColorRow("Paper / surface colour", s.paper) { s.paper = it }
+        LabeledSlider("Corner rounding", s.corner, 0f..80f, "%.0f") { s.corner = it }
+        val lineOpts = SurfaceLines.values()
+        EnumPicker("Lines", s.lines.label, lineOpts.map { it.label }) { s.lines = lineOpts[it] }
+        if (s.lines != SurfaceLines.NONE) BubbleColorRow("Line colour", s.lineColor) { s.lineColor = it }
 
         SectionLabel("New-piece defaults")
         EnumPicker("Default font", s.defFont.label, fonts.map { it.label }) { s.defFont = fonts[it] }
