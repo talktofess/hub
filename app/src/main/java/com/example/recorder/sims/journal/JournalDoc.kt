@@ -16,19 +16,19 @@ object JournalStore {
     )
     var date by mutableStateOf("Tuesday")
     var font by mutableStateOf(NoteFont.HANDWRITING)
-    var ink by mutableStateOf(0xFF2B2620L)
-    var paper by mutableStateOf(0xFFF4ECE0L)
+    var ink by mutableStateOf(0xFF1E2026L)
+    var paper by mutableStateOf(0xFFFCFCFEL)
     var textScale by mutableStateOf(1f)
     // human-hand imperfection: per-letter crookedness, size variation + ink weight
     var messiness by mutableStateOf(0.5f)
     // typing + sound
     var typeSpeed by mutableStateOf(0.8f)
     var pacing by mutableStateOf(0.6f)
-    var keySound by mutableStateOf(SoundProfile.PENCIL)
+    var keySound by mutableStateOf(SoundProfile.STYLUS)
 
     fun reset() {
         text = "Today I [o]shipped[/o] it!\n\nThe little app that\ntypes itself and\nrecords the take.\n---\n[u]Small ideas[/u] become\nthe ones worth\n[x]keening[/x] keeping.\n\nMore tomorrow."
-        date = "Tuesday"; font = NoteFont.HANDWRITING; ink = 0xFF2B2620L; paper = 0xFFF4ECE0L; textScale = 1f
+        date = "Tuesday"; font = NoteFont.HANDWRITING; ink = 0xFF1E2026L; paper = 0xFFFCFCFEL; textScale = 1f
         messiness = 0.5f; typeSpeed = 0.8f; pacing = 0.6f; keySound = SoundProfile.STYLUS
     }
 }

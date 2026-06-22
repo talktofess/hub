@@ -198,18 +198,19 @@ object JournalSim : SimDef {
         LaunchedEffect(rt.playing) { if (!rt.playing) rt.audio.writing(false) }
 
         val ink = Color(s.ink)
-        val ruleColor = Color(0x525A78A0)
+        // a clean digital-note canvas (tablet + stylus), not a physical notebook: faint grey
+        // ruling, no schoolbook red margin, just a soft page edge.
+        val ruleColor = Color(0x12101114)
 
-        Box(Modifier.fillMaxSize().background(Color(0xFF1B1712)).padding(horizontal = PAGE_PAD.dp, vertical = 80.dp)) {
+        Box(Modifier.fillMaxSize().background(Color(0xFF0D0E11)).padding(horizontal = (PAGE_PAD * 0.5f).dp, vertical = 44.dp)) {
             Box(
-                Modifier.fillMaxSize().shadow(36.dp, RoundedCornerShape(8.dp)).background(Color(s.paper), RoundedCornerShape(8.dp))
+                Modifier.fillMaxSize().shadow(14.dp, RoundedCornerShape(20.dp)).background(Color(s.paper), RoundedCornerShape(20.dp))
                     .drawBehind {
                         var y = TOP_PAD + lineH
                         while (y < size.height) {
-                            drawLine(ruleColor, Offset(0f, y), Offset(size.width, y), 2f)
+                            drawLine(ruleColor, Offset(36f, y), Offset(size.width - 36f, y), 1.4f)
                             y += lineH
                         }
-                        drawLine(Color(0x8CC85A5A), Offset(MARGIN_X, 0f), Offset(MARGIN_X, size.height), 3f)
                     },
             ) {
                 val style = TextStyle(fontSize = fontPx.sp, lineHeight = lineH.sp, fontFamily = s.font.family)
@@ -235,7 +236,7 @@ object JournalSim : SimDef {
                 }
                 if (showDate) {
                     Text(
-                        s.date, color = Color(0xBF4A4036), fontSize = (58f * fs).sp, fontFamily = s.font.family,
+                        s.date, color = Color(0x99535862), fontSize = (58f * fs).sp, fontFamily = s.font.family,
                         modifier = Modifier.align(Alignment.TopEnd).padding(top = 28.dp, end = 70.dp).rotate(-1.5f),
                     )
                 }
