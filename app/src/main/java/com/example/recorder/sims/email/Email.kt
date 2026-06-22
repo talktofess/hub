@@ -89,22 +89,12 @@ object EmailSim : SimDef {
         fun buildPlan(): List<TypeStep> {
             val steps = mutableListOf<TypeStep>()
             fun bn(len: Int) = rt.beginNote(NoteTiming(EmailStore.typeSpeed.coerceAtLeast(0.1f), 0.45f, 0.4f, 0.5f, 0f, len.coerceAtLeast(1), emptyMap()))
+            // The recipient/subject are already filled in; only the body is composed (typed).
             steps.add(TypeStep.Reveal({
-                typedTo = ""; typedCc = ""; typedSubject = ""; typedBody = ""; field = -1; sendState = 0; revision++
-                rt.audio.profile = EmailStore.keySound; bn(1)
+                typedTo = EmailStore.to; typedCc = EmailStore.cc; typedSubject = EmailStore.subject; typedBody = ""; field = 3; sendState = 0; revision++
+                rt.audio.profile = EmailStore.keySound; bn(EmailStore.body.length)
             }))
-            steps.add(TypeStep.Reveal({ field = 0; bn(EmailStore.to.length); revision++ }, delay = 140))
-            steps.add(TypeStep.Type(EmailStore.to, { typedTo = it; revision++ }))
-            steps.add(TypeStep.Pause(360))
-            if (EmailStore.showCc) {
-                steps.add(TypeStep.Reveal({ field = 1; bn(EmailStore.cc.length); revision++ }, delay = 120))
-                steps.add(TypeStep.Type(EmailStore.cc, { typedCc = it; revision++ }))
-                steps.add(TypeStep.Pause(320))
-            }
-            steps.add(TypeStep.Reveal({ field = 2; bn(EmailStore.subject.length); revision++ }, delay = 120))
-            steps.add(TypeStep.Type(EmailStore.subject, { typedSubject = it; revision++ }))
-            steps.add(TypeStep.Pause(420))
-            steps.add(TypeStep.Reveal({ field = 3; bn(EmailStore.body.length); revision++ }, delay = 160))
+            steps.add(TypeStep.Reveal({ field = 3; bn(EmailStore.body.length); revision++ }, delay = 250))
             steps.add(TypeStep.Type(EmailStore.body, { typedBody = it; revision++ }))
             steps.add(TypeStep.Reveal({ field = -1; sendState = 1; revision++; if (EmailStore.soundsOn) rt.audio.cue("whoosh") }, delay = 1000))
             steps.add(TypeStep.Reveal({ sendState = 2; revision++; if (EmailStore.soundsOn) rt.audio.cue("tritone") }, delay = 1600))
@@ -259,8 +249,8 @@ private fun ComposePopup(
     c: Pal, accent: Color, to: String, cc: String, subject: String, body: String,
     showCc: Boolean, center: Boolean, sending: Int, modifier: Modifier = Modifier,
 ) {
-    val w = if (center) 980.dp else 660.dp
-    val h = if (center) 760.dp else 620.dp
+    val w = if (center) 1480.dp else 1060.dp
+    val h = if (center) 880.dp else 760.dp
     Column(
         modifier.padding(end = if (center) 0.dp else 80.dp).width(w).height(h)
             .clip(RoundedCornerShape(16.dp, 16.dp, 0.dp, 0.dp)).background(c.surface),
@@ -269,10 +259,9 @@ private fun ComposePopup(
             Text("New Message", color = c.text, fontSize = 26.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text("—  ⤢  ✕", color = c.sub, fontSize = 24.sp)
         }
-        ComposeRow("To", to, c, false)
-        if (showCc) ComposeRow("Cc", cc, c, false)
+        // recipient line is fixed (not part of the typed take); only the body composes
         ComposeRow("", subject.ifEmpty { "" }, c, true, placeholder = "Subject")
-        Text(body.ifEmpty { "Compose email" }, color = if (body.isEmpty()) Color(0xFF9AA0A6) else c.text, fontSize = 27.sp, lineHeight = 40.sp, fontFamily = EmailStore.font.family, modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 22.dp))
+        Text(body.ifEmpty { "Compose email" }, color = if (body.isEmpty()) Color(0xFF9AA0A6) else c.text, fontSize = 30.sp, lineHeight = 46.sp, fontFamily = EmailStore.font.family, modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 30.dp, vertical = 24.dp))
         if (EmailStore.attachment.isNotBlank()) {
             Row(Modifier.padding(horizontal = 24.dp, vertical = 6.dp).clip(RoundedCornerShape(12.dp)).background(c.search).padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text("📎", fontSize = 24.sp)

@@ -101,9 +101,13 @@ object TyperSim : SimDef {
             steps.add(TypeStep.Reveal({ done.clear(); curCmd = ""; curOut = ""; showActive = false; revision++; rt.audio.profile = s.keySound }))
             s.cards.forEachIndexed { i, card ->
                 steps.add(TypeStep.Reveal({ curCmd = ""; curFull = card.command; curOut = ""; showActive = true; revision++ }, delay = if (i > 0) 200 else 0))
-                // type the command character-by-character
-                steps.add(TypeStep.Reveal({ rt.beginNote(NoteTiming(speed, s.pacing, 0.45f, 0.6f, 0f, card.command.length.coerceAtLeast(1), emptyMap())) }))
-                steps.add(TypeStep.Type(card.command, { curCmd = it; revision++ }))
+                // reveal the command word-by-word; the line word-wraps so whole words always
+                // fit their line and already-placed words never move (no shake).
+                val toks = Regex("""\S+\s*""").findAll(card.command).map { it.value }.toList().ifEmpty { listOf(card.command) }
+                for (tok in toks) {
+                    steps.add(TypeStep.Reveal({ curCmd += tok; revision++; rt.audio.key() }))
+                    steps.add(TypeStep.Pause((70f / speed).toInt().coerceAtLeast(16)))
+                }
                 steps.add(TypeStep.Pause(s.holdMs))
                 // print the result; whole lines (no reflow). A line "@bar Label" animates a
                 // progress bar filling 0→100%, like a build/transfer.
@@ -154,7 +158,7 @@ object TyperSim : SimDef {
             } else {
                 done.forEach { e -> CmdEntry(TyperStore.prompt, e, ink, promptCol, outCol, style) }
                 if (showActive) {
-                    ActiveLine(TyperStore.prompt, curCmd, curFull, if (caretOn && curOut.isEmpty()) ink else Color.Transparent, ink, promptCol, style)
+                    PromptLine(TyperStore.prompt, curCmd, ink, promptCol, style, caret = if (caretOn && curOut.isEmpty()) ink else Color.Transparent)
                     if (curOut.isNotEmpty()) OutputText(curOut, outCol, style)
                 }
             }

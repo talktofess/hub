@@ -142,16 +142,16 @@ object ClaudeSim : SimDef {
             steps.add(TypeStep.Pause(420))
             steps.add(TypeStep.Reveal({ userTyping = false; revision++ }))
             steps.add(TypeStep.Pause(380))
-            // 4) thinking beat
+            // 4) thinking beat — stays until the answer is ready
             steps.add(TypeStep.Reveal({ thinking = true; revision++ }))
             steps.add(TypeStep.Pause(s.thinkMs.coerceIn(0, 60000)))
-            steps.add(TypeStep.Reveal({ thinking = false; revision++ }))
-            steps.add(TypeStep.Pause(200))
-            // 5) stream the reply, word by word
+            // 5) stream the reply word by word — the thinking line vanishes the instant the
+            // first answer token lands (it doesn't linger).
             val tokens = Regex("""\s+|\S+""").findAll(s.reply).map { it.value }.toList()
             val delay = (58 / s.streamSpeed.coerceAtLeast(0.1f)).toInt()
-            for (tok in tokens) {
+            tokens.forEachIndexed { i, tok ->
                 steps.add(TypeStep.Reveal({
+                    if (i == 0) thinking = false
                     reply += tok; revision++
                     if (tok.isNotBlank()) rt.audio.key()
                 }))
@@ -190,8 +190,8 @@ object ClaudeSim : SimDef {
         val scroll = rememberScrollState()
         LaunchedEffect(revision) { scroll.scrollTo(scroll.maxValue) }
 
-        val base = 40f * fs
-        Column(Modifier.fillMaxSize().background(BG).padding(start = 30.dp, end = 30.dp, top = 52.dp)) {
+        val base = 34f * fs
+        Column(Modifier.fillMaxSize().background(BG).padding(start = 16.dp, end = 16.dp, top = 46.dp)) {
             Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(scroll)) {
                 // PowerShell launch line
                 Row(Modifier.padding(bottom = 28.dp)) {
