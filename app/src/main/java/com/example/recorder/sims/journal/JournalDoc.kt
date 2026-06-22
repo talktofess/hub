@@ -4,8 +4,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
 import com.example.recorder.model.SoundProfile
 import com.example.recorder.sims.notes.NoteFont
+
+enum class ElKind { TEXT, DOODLE }
 
 /** One piece of writing placed freely on the surface: its text, where it sits (as a
  *  fraction of the surface), how it looks (font / colour / size / rotation), and WHEN it is
@@ -20,15 +23,19 @@ class JElement(
     size0: Float,
     rot0: Float,
     order0: Int,
+    val kind: ElKind = ElKind.TEXT,
+    pts0: List<Offset> = emptyList(),
 ) {
     var text by mutableStateOf(text0)
     var xPct by mutableStateOf(x0)          // centre x, 0..1 of the surface
     var yPct by mutableStateOf(y0)          // centre y, 0..1 of the surface
     var font by mutableStateOf(font0)
     var color by mutableStateOf(color0)
-    var size by mutableStateOf(size0)       // size multiplier
+    var size by mutableStateOf(size0)       // text size / doodle stroke + scale multiplier
     var rotation by mutableStateOf(rot0)    // degrees (90 = sideways)
     var order by mutableStateOf(order0)     // when it's written (lower = earlier)
+    // doodle stroke: points relative to the anchor, x in width-fractions, y in height-fractions
+    var points by mutableStateOf(pts0)
 }
 
 /** The Journal is now a free canvas: drop text anywhere, style each piece, choose the order
@@ -56,6 +63,19 @@ object JournalStore {
     fun add(x: Float, y: Float): JElement {
         val maxOrder = (elements.maxOfOrNull { it.order } ?: -1) + 1
         val el = JElement(nextId++, "text", x.coerceIn(0.04f, 0.96f), y.coerceIn(0.03f, 0.97f), defFont, defColor, 1f, 0f, maxOrder)
+        elements.add(el)
+        return el
+    }
+
+    /** Make a doodle from captured px points on a w×h surface. Anchor = centroid (x/w, y/h);
+     *  points are offsets from the anchor in uniform width-units so rotation isn't distorted. */
+    fun addDoodle(pxPts: List<Offset>, w: Float, h: Float): JElement? {
+        if (pxPts.size < 2 || w <= 0f || h <= 0f) return null
+        val cx = pxPts.map { it.x }.average().toFloat()
+        val cy = pxPts.map { it.y }.average().toFloat()
+        val rel = pxPts.map { Offset((it.x - cx) / w, (it.y - cy) / w) }
+        val maxOrder = (elements.maxOfOrNull { it.order } ?: -1) + 1
+        val el = JElement(nextId++, "", (cx / w).coerceIn(0.02f, 0.98f), (cy / h).coerceIn(0.02f, 0.98f), defFont, defColor, 1f, 0f, maxOrder, ElKind.DOODLE, rel)
         elements.add(el)
         return el
     }

@@ -3,6 +3,7 @@ package com.example.recorder.sims.journal
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -25,12 +27,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 import com.example.recorder.engine.SimRuntime
 import com.example.recorder.engine.TypeStep
 import com.example.recorder.sims.SimDef
@@ -69,7 +81,10 @@ object JournalSim : SimDef {
                 put(JSONObject().apply {
                     put("t", e.text); put("x", e.xPct.toDouble()); put("y", e.yPct.toDouble())
                     put("f", e.font.name); put("c", e.color); put("s", e.size.toDouble())
-                    put("r", e.rotation.toDouble()); put("o", e.order)
+                    put("r", e.rotation.toDouble()); put("o", e.order); put("k", e.kind.name)
+                    if (e.kind == ElKind.DOODLE) {
+                        put("pts", JSONArray().apply { e.points.forEach { p -> put(JSONArray().apply { put(p.x.toDouble()); put(p.y.toDouble()) }) } })
+                    }
                 })
             }
         })
@@ -89,12 +104,15 @@ object JournalSim : SimDef {
             JournalStore.elements.clear(); JournalStore.nextId = 1L
             for (i in 0 until a.length()) {
                 val e = a.getJSONObject(i)
+                val kind = runCatching { ElKind.valueOf(e.optString("k")) }.getOrDefault(ElKind.TEXT)
+                val pa = e.optJSONArray("pts")
+                val pts = if (pa != null) (0 until pa.length()).map { val q = pa.getJSONArray(it); Offset(q.getDouble(0).toFloat(), q.getDouble(1).toFloat()) } else emptyList()
                 JournalStore.elements.add(
                     JElement(
                         JournalStore.nextId++, e.optString("t", "text"),
                         e.optDouble("x", 0.5).toFloat(), e.optDouble("y", 0.3).toFloat(),
                         noteFont(e.optString("f"), JournalStore.defFont), e.optLong("c", JournalStore.defColor),
-                        e.optDouble("s", 1.0).toFloat(), e.optDouble("r", 0.0).toFloat(), e.optInt("o", i),
+                        e.optDouble("s", 1.0).toFloat(), e.optDouble("r", 0.0).toFloat(), e.optInt("o", i), kind, pts,
                     ),
                 )
             }
@@ -110,22 +128,34 @@ object JournalSim : SimDef {
         val doneIds = remember { mutableStateListOf<Long>() }
         var activeId by remember { mutableStateOf<Long?>(null) }
         var activeLen by remember { mutableIntStateOf(0) }
+        var doodleProg by remember { mutableFloatStateOf(0f) }
         var charKey by remember { mutableIntStateOf(0) }
         var revision by remember { mutableIntStateOf(0) }
 
         fun buildPlan(): List<TypeStep> {
             val steps = mutableListOf<TypeStep>()
             val drawMs = (DRAW_MS / s.typeSpeed.coerceAtLeast(0.1f)).toInt().coerceAtLeast(14)
-            steps.add(TypeStep.Reveal({ doneIds.clear(); activeId = null; activeLen = 0; revision++; rt.audio.profile = s.keySound }))
+            steps.add(TypeStep.Reveal({ doneIds.clear(); activeId = null; activeLen = 0; doodleProg = 0f; revision++; rt.audio.profile = s.keySound }))
             s.elements.sortedBy { it.order }.forEach { el ->
-                steps.add(TypeStep.Reveal({ activeId = el.id; activeLen = 0; revision++ }, delay = 180))
-                for (j in 1..el.text.length) {
-                    val ch = el.text[j - 1]
-                    steps.add(TypeStep.Reveal({ activeId = el.id; activeLen = j; charKey++; revision++; if (!ch.isWhitespace()) rt.audio.key() }))
-                    steps.add(TypeStep.Pause(drawMs))
+                if (el.kind == ElKind.DOODLE) {
+                    steps.add(TypeStep.Reveal({ activeId = el.id; doodleProg = 0f; revision++ }, delay = 180))
+                    val n = 24
+                    for (k in 1..n) {
+                        steps.add(TypeStep.Reveal({ activeId = el.id; doodleProg = k / n.toFloat(); revision++; if (k % 3 == 0) rt.audio.key() }))
+                        steps.add(TypeStep.Pause(drawMs))
+                    }
+                    steps.add(TypeStep.Reveal({ doneIds.add(el.id); activeId = null; revision++ }))
+                    steps.add(TypeStep.Pause(220))
+                } else {
+                    steps.add(TypeStep.Reveal({ activeId = el.id; activeLen = 0; revision++ }, delay = 180))
+                    for (j in 1..el.text.length) {
+                        val ch = el.text[j - 1]
+                        steps.add(TypeStep.Reveal({ activeId = el.id; activeLen = j; charKey++; revision++; if (!ch.isWhitespace()) rt.audio.key() }))
+                        steps.add(TypeStep.Pause(drawMs))
+                    }
+                    steps.add(TypeStep.Reveal({ doneIds.add(el.id); activeId = null; revision++ }))
+                    steps.add(TypeStep.Pause(220))
                 }
-                steps.add(TypeStep.Reveal({ doneIds.add(el.id); activeId = null; revision++ }))
-                steps.add(TypeStep.Pause(220))
             }
             steps.add(TypeStep.Pause(800))
             return steps
@@ -148,17 +178,56 @@ object JournalSim : SimDef {
             else -> -1
         }
         val penFrac: (JElement) -> Float = { el -> if (!preview && el.id == activeId) charDraw.value else 1f }
+        fun doodleFrac(el: JElement): Float = when {
+            preview || el.id in doneIds -> 1f
+            el.id == activeId -> doodleProg
+            else -> 0f
+        }
 
         if (s.fill) {
             BoxWithConstraints(Modifier.fillMaxSize().background(Color(s.paper))) {
+                DoodleLayer(s.elements, ::doodleFrac)
                 PlaceElements(s.elements, fs, ::shownOf, penFrac)
             }
         } else {
             Box(Modifier.fillMaxSize().background(Color(s.backdrop)), contentAlignment = Alignment.Center) {
                 BoxWithConstraints(Modifier.fillMaxWidth(s.widthPct.coerceIn(0.2f, 1f)).fillMaxHeight().background(Color(s.paper))) {
+                    DoodleLayer(s.elements, ::doodleFrac)
                     PlaceElements(s.elements, fs, ::shownOf, penFrac)
                 }
             }
+        }
+    }
+}
+
+/** Convert a doodle's relative points to absolute px on a w×h surface (uniform width-units,
+ *  rotated/scaled around the anchor). */
+fun doodlePath(el: JElement, w: Float, h: Float): Path {
+    val a = el.rotation * (PI / 180.0)
+    val cosA = cos(a).toFloat(); val sinA = sin(a).toFloat()
+    val ax = el.xPct * w; val ay = el.yPct * h
+    val path = Path()
+    el.points.forEachIndexed { i, p ->
+        val rx = p.x * w * el.size; val ry = p.y * w * el.size
+        val x = ax + (rx * cosA - ry * sinA)
+        val y = ay + (rx * sinA + ry * cosA)
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    return path
+}
+
+/** Draw every doodle on the surface, each revealed up to its [fracOf] of the stroke. */
+@Composable
+fun DoodleLayer(elements: List<JElement>, fracOf: (JElement) -> Float) {
+    Canvas(Modifier.fillMaxSize()) {
+        elements.forEach { el ->
+            if (el.kind != ElKind.DOODLE || el.points.size < 2) return@forEach
+            val frac = fracOf(el)
+            if (frac <= 0f) return@forEach
+            val full = doodlePath(el, size.width, size.height)
+            val pm = PathMeasure(); pm.setPath(full, false)
+            val dst = Path(); pm.getSegment(0f, pm.length * frac.coerceIn(0f, 1f), dst, true)
+            drawPath(dst, Color(el.color), style = Stroke(width = (4.5f * el.size).dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
     }
 }
@@ -177,6 +246,7 @@ fun BoxWithConstraintsScope.PlaceElements(
     val w = constraints.maxWidth
     val h = constraints.maxHeight
     elements.forEach { el ->
+        if (el.kind != ElKind.TEXT) return@forEach
         val shown = shownOf(el)
         if (shown >= 0) {
             Box(
