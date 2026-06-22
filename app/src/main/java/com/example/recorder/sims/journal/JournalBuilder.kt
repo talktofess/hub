@@ -22,8 +22,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Gesture
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -58,19 +60,43 @@ import com.example.recorder.ui.EnumPicker
 import com.example.recorder.ui.LabeledSlider
 import com.example.recorder.ui.SectionLabel
 import com.example.recorder.ui.WritingSoundPicker
+import kotlin.math.cos
+import kotlin.math.hypot
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 fun JournalBuilder(ctx: BuilderContext) {
     val s = JournalStore
-    var selId by remember { mutableStateOf(s.elements.firstOrNull()?.id) }
+    val selIds = remember { mutableStateListOf<Long>() }
     var drawMode by remember { mutableStateOf(false) }
+    var eraseMode by remember { mutableStateOf(false) }
+    var multi by remember { mutableStateOf(false) }
     val livePts = remember { mutableStateListOf<Offset>() }
-    val sel = s.elements.firstOrNull { it.id == selId }
     val fonts = NoteFont.values()
+    if (selIds.isEmpty()) s.elements.firstOrNull()?.let { selIds.add(it.id) }
+    val sel = selIds.singleOrNull()?.let { id -> s.elements.firstOrNull { it.id == id } }
+
+    fun selectOnly(id: Long) { selIds.clear(); selIds.add(id) }
+    fun toggle(id: Long) { if (id in selIds) selIds.remove(id) else selIds.add(id) }
+    fun moveGroup(anchorId: Long, dxF: Float, dyF: Float) {
+        val ids = if (anchorId in selIds && selIds.size > 1) selIds.toList() else listOf(anchorId)
+        ids.forEach { id ->
+            s.elements.firstOrNull { it.id == id }?.let {
+                it.xPct = (it.xPct + dxF).coerceIn(0.02f, 0.98f); it.yPct = (it.yPct + dyF).coerceIn(0.02f, 0.98f)
+            }
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionLabel(if (drawMode) "Draw a doodle on the canvas" else "Tap empty space to add text · tap a piece to edit · drag to move")
+        SectionLabel(
+            when {
+                drawMode -> "Draw a doodle on the canvas"
+                eraseMode -> "Rub over doodles to erase them"
+                multi -> "Tap pieces to multi-select · drag to move the group"
+                else -> "Tap empty to add text · tap a piece to edit · drag to move"
+            },
+        )
 
         Box(
             Modifier.fillMaxWidth().aspectRatio(1080f / 1920f).clip(RoundedCornerShape(10.dp))
@@ -78,21 +104,24 @@ fun JournalBuilder(ctx: BuilderContext) {
             contentAlignment = Alignment.Center,
         ) {
             val surfaceMod = if (s.fill) Modifier.fillMaxSize()
-            else Modifier.fillMaxWidth(s.widthPct.coerceIn(0.2f, 1f)).fillMaxHeight().background(Color(s.paper))
+            else Modifier.fillMaxWidth(s.widthPct.coerceIn(0.2f, 1f)).fillMaxHeight(s.heightPct.coerceIn(0.2f, 1f)).background(Color(s.paper))
             BoxWithConstraints(
-                surfaceMod.pointerInput(drawMode) {
-                    if (drawMode) {
-                        detectDragGestures(
+                surfaceMod.pointerInput(drawMode, eraseMode, multi) {
+                    when {
+                        drawMode -> detectDragGestures(
                             onDragStart = { livePts.clear(); livePts.add(it) },
                             onDrag = { ch, _ -> livePts.add(ch.position) },
-                            onDragEnd = {
-                                s.addDoodle(livePts.toList(), size.width.toFloat(), size.height.toFloat())?.let { selId = it.id }
-                                livePts.clear(); drawMode = false
-                            },
+                            onDragEnd = { s.addDoodle(livePts.toList(), size.width.toFloat(), size.height.toFloat())?.let { selectOnly(it.id) }; livePts.clear(); drawMode = false },
                             onDragCancel = { livePts.clear(); drawMode = false },
                         )
-                    } else {
-                        detectTapGestures { pos -> selId = s.add(pos.x / size.width, pos.y / size.height).id }
+                        eraseMode -> {
+                            val r = size.width * 0.05f
+                            detectDragGestures(
+                                onDragStart = { eraseAt(it, size.width.toFloat(), size.height.toFloat(), r) },
+                                onDrag = { ch, _ -> eraseAt(ch.position, size.width.toFloat(), size.height.toFloat(), r) },
+                            )
+                        }
+                        else -> detectTapGestures { pos -> if (!multi) selectOnly(s.add(pos.x / size.width, pos.y / size.height).id) }
                     }
                 },
             ) {
@@ -100,25 +129,20 @@ fun JournalBuilder(ctx: BuilderContext) {
                 val h = constraints.maxHeight
                 val scale = maxWidth.value / 1080f
 
-                // render in list order (z-stack): text pieces are interactive Boxes, doodles
-                // are drawn into their own Canvas — so stacking matches the real output.
                 s.elements.forEach { el ->
                     if (el.kind == ElKind.DOODLE) {
                         Canvas(Modifier.fillMaxSize()) { drawDoodle(el, 1f) }
                     } else {
-                        val selected = el.id == selId
+                        val selected = el.id in selIds
                         Box(
                             Modifier.align(Alignment.Center)
                                 .offset { IntOffset(((el.xPct - 0.5f) * w).roundToInt(), ((el.yPct - 0.5f) * h).roundToInt()) }
                                 .rotate(el.rotation)
                                 .border(if (selected) 1.5.dp else 0.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, RoundedCornerShape(4.dp))
                                 .padding(2.dp)
-                                .pointerInput(el.id) { detectTapGestures { selId = el.id } }
+                                .pointerInput(el.id, multi) { detectTapGestures { if (multi) toggle(el.id) else selectOnly(el.id) } }
                                 .pointerInput(el.id) {
-                                    detectDragGestures(onDragStart = { selId = el.id }) { _, drag ->
-                                        el.xPct = (el.xPct + drag.x / w).coerceIn(0.02f, 0.98f)
-                                        el.yPct = (el.yPct + drag.y / h).coerceIn(0.02f, 0.98f)
-                                    }
+                                    detectDragGestures(onDragStart = { if (el.id !in selIds) selectOnly(el.id) }) { _, drag -> moveGroup(el.id, drag.x / w, drag.y / h) }
                                 },
                         ) {
                             Text(el.text.ifEmpty { "·" }, color = Color(el.color).copy(alpha = el.opacity), fontFamily = el.font.family, fontSize = (62f * el.size * scale).sp, maxLines = 1, softWrap = false)
@@ -126,54 +150,58 @@ fun JournalBuilder(ctx: BuilderContext) {
                     }
                 }
 
-                // the live stroke being drawn
                 if (livePts.size > 1) {
                     Canvas(Modifier.fillMaxSize()) {
-                        val p = Path().apply {
-                            moveTo(livePts[0].x, livePts[0].y)
-                            for (i in 1 until livePts.size) lineTo(livePts[i].x, livePts[i].y)
-                        }
+                        val p = Path().apply { moveTo(livePts[0].x, livePts[0].y); for (i in 1 until livePts.size) lineTo(livePts[i].x, livePts[i].y) }
                         drawPath(p, Color(s.defColor), style = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
                     }
                 }
 
-                // doodle handles — a dot at each doodle's anchor to select / drag (always on top)
+                // doodle handles — select / drag (and show selection)
                 s.elements.forEach { el ->
                     if (el.kind != ElKind.DOODLE) return@forEach
-                    val selected = el.id == selId
+                    val selected = el.id in selIds
                     Box(
                         Modifier.align(Alignment.Center)
                             .offset { IntOffset(((el.xPct - 0.5f) * w).roundToInt(), ((el.yPct - 0.5f) * h).roundToInt()) }
-                            .size(if (selected) 18.dp else 13.dp)
-                            .clip(CircleShape)
+                            .size(if (selected) 18.dp else 13.dp).clip(CircleShape)
                             .background(if (selected) MaterialTheme.colorScheme.primary else Color(0x66000000))
-                            .pointerInput(el.id) { detectTapGestures { selId = el.id } }
+                            .pointerInput(el.id, multi) { detectTapGestures { if (multi) toggle(el.id) else selectOnly(el.id) } }
                             .pointerInput(el.id) {
-                                detectDragGestures(onDragStart = { selId = el.id }) { _, drag ->
-                                    el.xPct = (el.xPct + drag.x / w).coerceIn(0.02f, 0.98f)
-                                    el.yPct = (el.yPct + drag.y / h).coerceIn(0.02f, 0.98f)
-                                }
+                                detectDragGestures(onDragStart = { if (el.id !in selIds) selectOnly(el.id) }) { _, drag -> moveGroup(el.id, drag.x / w, drag.y / h) }
                             },
                     ) {}
                 }
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { drawMode = false; selId = s.add(0.5f, 0.5f).id }) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedButton(onClick = { drawMode = false; eraseMode = false; selectOnly(s.add(0.5f, 0.5f).id) }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
                 Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(" Text")
             }
-            OutlinedButton(onClick = { drawMode = !drawMode }) {
-                Icon(Icons.Filled.Gesture, null, Modifier.size(18.dp)); Text(if (drawMode) " Drawing…" else " Doodle")
-            }
+            FilterChip(selected = drawMode, onClick = { drawMode = !drawMode; eraseMode = false }, label = { Text("Doodle") }, leadingIcon = { Icon(Icons.Filled.Gesture, null, Modifier.size(16.dp)) })
+            FilterChip(selected = eraseMode, onClick = { eraseMode = !eraseMode; drawMode = false }, label = { Text("Erase") })
+            FilterChip(selected = multi, onClick = { multi = !multi }, label = { Text("Multi") })
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (sel != null) {
-                TextButton(onClick = { s.remove(sel.id); selId = s.elements.firstOrNull()?.id }) {
-                    Icon(Icons.Filled.Delete, null, Modifier.size(18.dp)); Text(" Delete")
+                OutlinedButton(onClick = { s.duplicate(sel.id)?.let { selectOnly(it.id) } }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
+                    Icon(Icons.Filled.ContentCopy, null, Modifier.size(16.dp)); Text(" Duplicate")
+                }
+            }
+            if (selIds.isNotEmpty()) {
+                TextButton(onClick = { selIds.toList().forEach { s.remove(it) }; selIds.clear() }) {
+                    Icon(Icons.Filled.Delete, null, Modifier.size(18.dp)); Text(if (selIds.size > 1) " Delete ${selIds.size}" else " Delete")
                 }
             }
         }
 
-        if (sel != null) {
+        if (selIds.size > 1) {
+            SectionLabel("${selIds.size} pieces selected")
+            val first = s.elements.firstOrNull { it.id == selIds.first() }
+            BubbleColorRow("Colour (all)", first?.color ?: 0xFF1E2026L) { c -> selIds.forEach { id -> s.elements.firstOrNull { it.id == id }?.color = c } }
+            LabeledSlider("Rotate all", first?.rotation ?: 0f, -180f..180f, "%.0f°") { r -> selIds.forEach { id -> s.elements.firstOrNull { it.id == id }?.rotation = r } }
+        } else if (sel != null) {
             SectionLabel(if (sel.kind == ElKind.DOODLE) "Selected doodle" else "Selected text")
             if (sel.kind == ElKind.TEXT) {
                 OutlinedTextField(sel.text, { sel.text = it }, label = { Text("Text") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -190,7 +218,6 @@ fun JournalBuilder(ctx: BuilderContext) {
                     }
                 }
             }
-            // stacking (z-order): later in the list draws on top
             Text("Stacking", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 val pad = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
@@ -227,4 +254,20 @@ fun JournalBuilder(ctx: BuilderContext) {
         LabeledSlider("Writing speed", s.typeSpeed, 0.3f..3f, "%.2f×") { s.typeSpeed = it }
         WritingSoundPicker("Writing sound", s.keySound) { s.keySound = it }
     }
+}
+
+/** Remove any doodle whose stroke passes within [r] px of [pos] on a w×h surface. */
+private fun eraseAt(pos: Offset, w: Float, h: Float, r: Float) {
+    val hit = JournalStore.elements.filter { el ->
+        if (el.kind != ElKind.DOODLE) return@filter false
+        val a = el.rotation * (Math.PI / 180.0)
+        val cosA = cos(a).toFloat(); val sinA = sin(a).toFloat()
+        val ax = el.xPct * w; val ay = el.yPct * h
+        el.points.any { p ->
+            val rx = p.x * w * el.size; val ry = p.y * w * el.size
+            val px = ax + (rx * cosA - ry * sinA); val py = ay + (rx * sinA + ry * cosA)
+            hypot(pos.x - px, pos.y - py) < r
+        }
+    }.map { it.id }
+    hit.forEach { JournalStore.remove(it) }
 }

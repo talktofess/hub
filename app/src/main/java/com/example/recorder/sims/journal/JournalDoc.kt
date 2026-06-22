@@ -89,6 +89,18 @@ object JournalStore {
 
     fun remove(id: Long) { elements.removeAll { it.id == id } }
 
+    fun duplicate(id: Long): JElement? {
+        val src = elements.firstOrNull { it.id == id } ?: return null
+        val maxOrder = (elements.maxOfOrNull { it.order } ?: -1) + 1
+        val copy = JElement(
+            nextId++, src.text, (src.xPct + 0.04f).coerceIn(0.02f, 0.98f), (src.yPct + 0.04f).coerceIn(0.02f, 0.98f),
+            src.font, src.color, src.size, src.rotation, maxOrder, src.kind, src.points,
+        )
+        copy.opacity = src.opacity
+        elements.add(copy)
+        return copy
+    }
+
     // stacking: list order is the z-order (later in the list = drawn on top)
     private fun move(id: Long, to: Int) {
         val i = elements.indexOfFirst { it.id == id }
