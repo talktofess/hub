@@ -29,6 +29,6 @@ object JournalStore {
     fun reset() {
         text = "Today I [o]shipped[/o] it!\n\nThe little app that\ntypes itself and\nrecords the take.\n---\n[u]Small ideas[/u] become\nthe ones worth\n[x]keening[/x] keeping.\n\nMore tomorrow."
         date = "Tuesday"; font = NoteFont.HANDWRITING; ink = 0xFF2B2620L; paper = 0xFFF4ECE0L; textScale = 1f
-        messiness = 0.5f; typeSpeed = 0.8f; pacing = 0.6f; keySound = SoundProfile.PENCIL
+        messiness = 0.5f; typeSpeed = 0.8f; pacing = 0.6f; keySound = SoundProfile.STYLUS
     }
 }

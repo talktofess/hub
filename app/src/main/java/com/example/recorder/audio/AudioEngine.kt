@@ -207,6 +207,7 @@ class AudioEngine {
             SoundProfile.VINTAGE -> synthVintage(v)
             SoundProfile.BUBBLE -> synthBubble(v)
             SoundProfile.MUSH -> synthMush(v)
+            SoundProfile.STYLUS -> synthStylus(v)
             SoundProfile.PENCIL -> synthPencil(v)
             SoundProfile.CREAMY -> synthCreamy(v)
             SoundProfile.CLACKY -> synthClacky(v)
@@ -436,6 +437,26 @@ class AudioEngine {
         val n = noise(0.05, 1.6); filter(n, "lp", 320 + Random.nextDouble() * 80, 0.707)
         addNoise(buf, n, 0.2 * v)
         addOsc(buf, "sine", 70 + Random.nextDouble() * 20, 0.0, 0.01, 0.12 * v, 0.08)
+        return buf
+    }
+
+    private fun synthStylus(v: Float): FloatArray {
+        // Apple Pencil / S Pen on a screen (paper-like protector): a light, smooth, HIGH
+        // friction scritch with a soft nib tap — clean and glassy, not gritty like paper.
+        val dur = 0.07 + Random.nextDouble() * 0.04
+        val glide = noise(dur, 0.0)
+        filter(glide, "bp", 2700.0 + Random.nextDouble() * 800, 0.8)   // high, smooth glide
+        val tap = noise(0.010, 3.0)
+        filter(tap, "hp", 2400.0, 0.707)                               // faint nib contact
+        val len = glide.size
+        val atk = (len * 0.22).toInt().coerceAtLeast(1)
+        val buf = FloatArray(len)
+        for (i in 0 until len) {
+            val e = if (i < atk) { val a = i.toDouble() / atk; a * a }
+            else { val d = (i - atk).toDouble() / (len - atk); (1 - d) * (1 - d) }
+            val tp = if (i < tap.size) tap[i] * 0.08 else 0.0
+            buf[i] = ((glide[i] * e * 0.12) + tp).toFloat() * v
+        }
         return buf
     }
 
