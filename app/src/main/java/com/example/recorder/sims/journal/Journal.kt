@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -198,23 +199,12 @@ object JournalSim : SimDef {
         LaunchedEffect(rt.playing) { if (!rt.playing) rt.audio.writing(false) }
 
         val ink = Color(s.ink)
-        // a clean digital-note canvas (tablet + stylus), not a physical notebook: faint grey
-        // ruling, no schoolbook red margin, just a soft page edge.
-        val ruleColor = Color(0x12101114)
 
-        Box(Modifier.fillMaxSize().background(Color(0xFF0D0E11)).padding(horizontal = (PAGE_PAD * 0.5f).dp, vertical = 44.dp)) {
-            Box(
-                Modifier.fillMaxSize().shadow(14.dp, RoundedCornerShape(20.dp)).background(Color(s.paper), RoundedCornerShape(20.dp))
-                    .drawBehind {
-                        var y = TOP_PAD + lineH
-                        while (y < size.height) {
-                            drawLine(ruleColor, Offset(36f, y), Offset(size.width - 36f, y), 1.4f)
-                            y += lineH
-                        }
-                    },
-            ) {
-                val style = TextStyle(fontSize = fontPx.sp, lineHeight = lineH.sp, fontFamily = s.font.family)
-                Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(start = TEXT_INDENT.dp, end = TEXT_END.dp, top = TOP_PAD.dp, bottom = 120.dp)) {
+        // The notes app fills the whole screen — a clean blank canvas (like writing in a
+        // tablet notes app), not a paper card floating on a desk.
+        Box(Modifier.fillMaxSize().background(Color(s.paper))) {
+            val style = TextStyle(fontSize = fontPx.sp, lineHeight = lineH.sp, fontFamily = s.font.family, fontWeight = FontWeight.Medium)
+            Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 96.dp, end = 72.dp, top = TOP_PAD.dp, bottom = 120.dp)) {
                     lines.forEachIndexed { i, ln ->
                         val showLen = when {
                             preview || i < doneCount -> ln.length
@@ -240,7 +230,6 @@ object JournalSim : SimDef {
                         modifier = Modifier.align(Alignment.TopEnd).padding(top = 28.dp, end = 70.dp).rotate(-1.5f),
                     )
                 }
-            }
             // hidden measuring pass — real layout pipeline gives the correct resolved-font
             // width (and re-fires when the bundled hand loads), driving the auto-fit above.
             Box(Modifier.alpha(0f)) {
