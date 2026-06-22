@@ -30,6 +30,7 @@ fun JournalBuilder(ctx: BuilderContext) {
         EnumPicker("Handwriting", s.font.label, NoteFont.values().map { it.label }) { s.font = NoteFont.values()[it] }
         LabeledSlider("Text size", s.textScale, 0.6f..1.6f, "%.2f×") { s.textScale = it }
         LabeledSlider("Messiness (crooked / sizes / ink)", s.messiness, 0f..1f) { s.messiness = it }
+        LabeledSlider("Scatter (random spots / tilt / flips / order)", s.scatter, 0f..1f) { s.scatter = it }
         BubbleColorRow("Ink", s.ink) { s.ink = it }
         BubbleColorRow("Paper", s.paper) { s.paper = it }
 

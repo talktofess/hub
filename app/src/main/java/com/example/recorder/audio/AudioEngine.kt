@@ -208,6 +208,7 @@ class AudioEngine {
             SoundProfile.BUBBLE -> synthBubble(v)
             SoundProfile.MUSH -> synthMush(v)
             SoundProfile.STYLUS -> synthStylus(v)
+            SoundProfile.STYLUSGLASS -> synthStylusGlass(v)
             SoundProfile.PENCIL -> synthPencil(v)
             SoundProfile.CREAMY -> synthCreamy(v)
             SoundProfile.CLACKY -> synthClacky(v)
@@ -456,6 +457,24 @@ class AudioEngine {
             else { val d = (i - atk).toDouble() / (len - atk); (1 - d) * (1 - d) }
             val tp = if (i < tap.size) tap[i] * 0.08 else 0.0
             buf[i] = ((glide[i] * e * 0.12) + tp).toFloat() * v
+        }
+        return buf
+    }
+
+    private fun synthStylusGlass(v: Float): FloatArray {
+        // bare glass: a clean, soft, high tap with very little friction — slippery, not gritty.
+        val dur = 0.05 + Random.nextDouble() * 0.03
+        val tap = noise(0.014, 2.2)
+        filter(tap, "bp", 3200.0 + Random.nextDouble() * 700, 0.8)
+        val glide = noise(dur, 0.0)
+        filter(glide, "bp", 2900.0 + Random.nextDouble() * 600, 0.7)
+        val len = glide.size
+        val atk = (len * 0.20).toInt().coerceAtLeast(1)
+        val buf = FloatArray(len)
+        for (i in 0 until len) {
+            val e = if (i < atk) (i.toDouble() / atk) else { val d = (i - atk).toDouble() / (len - atk); (1 - d) * (1 - d) }
+            val tp = if (i < tap.size) tap[i] * 0.13 else 0.0
+            buf[i] = ((glide[i] * e * 0.05) + tp).toFloat() * v
         }
         return buf
     }

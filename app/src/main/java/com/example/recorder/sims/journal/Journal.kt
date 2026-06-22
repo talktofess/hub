@@ -81,7 +81,7 @@ object JournalSim : SimDef {
     override fun toJson() = JSONObject().apply {
         put("text", JournalStore.text); put("date", JournalStore.date); put("font", JournalStore.font.name)
         put("ink", JournalStore.ink); put("paper", JournalStore.paper); put("textScale", JournalStore.textScale.toDouble())
-        put("messiness", JournalStore.messiness.toDouble())
+        put("messiness", JournalStore.messiness.toDouble()); put("scatter", JournalStore.scatter.toDouble())
         put("typeSpeed", JournalStore.typeSpeed.toDouble()); put("pacing", JournalStore.pacing.toDouble())
         put("keySound", JournalStore.keySound.name)
     }
@@ -89,14 +89,15 @@ object JournalSim : SimDef {
     override fun fromJson(o: JSONObject) {
         JournalStore.text = o.optString("text", JournalStore.text)
         JournalStore.date = o.optString("date", JournalStore.date)
-        JournalStore.font = runCatching { com.example.recorder.sims.notes.NoteFont.valueOf(o.optString("font")) }.getOrDefault(com.example.recorder.sims.notes.NoteFont.HANDWRITING)
+        JournalStore.font = runCatching { com.example.recorder.sims.notes.NoteFont.valueOf(o.optString("font")) }.getOrDefault(com.example.recorder.sims.notes.NoteFont.MARKER)
         JournalStore.ink = o.optLong("ink", JournalStore.ink)
         JournalStore.paper = o.optLong("paper", JournalStore.paper)
         JournalStore.textScale = o.optDouble("textScale", 1.0).toFloat()
         JournalStore.messiness = o.optDouble("messiness", 0.45).toFloat()
+        JournalStore.scatter = o.optDouble("scatter", 0.0).toFloat()
         JournalStore.typeSpeed = o.optDouble("typeSpeed", 0.8).toFloat()
         JournalStore.pacing = o.optDouble("pacing", 0.6).toFloat()
-        JournalStore.keySound = runCatching { com.example.recorder.model.SoundProfile.valueOf(o.optString("keySound")) }.getOrDefault(com.example.recorder.model.SoundProfile.PENCIL)
+        JournalStore.keySound = runCatching { com.example.recorder.model.SoundProfile.valueOf(o.optString("keySound")) }.getOrDefault(com.example.recorder.model.SoundProfile.STYLUS)
     }
 
     @Composable
@@ -121,7 +122,7 @@ object JournalSim : SimDef {
 
         // Written one letter at a time: each new letter is dragged on left-to-right
         // (the pen stroke), then the next — no caret, no pop, no slide.
-        var doneCount by remember { mutableIntStateOf(0) }
+        val doneLines = remember { mutableStateListOf<Int>() } // which lines are fully written (any order)
         var activeIdx by remember { mutableIntStateOf(-1) }
         var activeLen by remember { mutableIntStateOf(0) }
         var charKey by remember { mutableIntStateOf(0) }
@@ -138,14 +139,18 @@ object JournalSim : SimDef {
             val steps = mutableListOf<TypeStep>()
             val drawMs = (DRAW_MS / s.typeSpeed.coerceAtLeast(0.1f)).toInt().coerceAtLeast(16)
             steps.add(TypeStep.Reveal({
-                doneCount = 0; activeIdx = -1; activeLen = 0; dateShown = false; drawingLine = -1; doneAnnos.clear(); revision++
+                doneLines.clear(); activeIdx = -1; activeLen = 0; dateShown = false; drawingLine = -1; doneAnnos.clear(); revision++
                 rt.audio.profile = s.keySound
             }))
             if (s.date.isNotBlank()) steps.add(TypeStep.Reveal({ dateShown = true; revision++ }, delay = 380))
-            plines.forEachIndexed { idx, pl ->
+            // when scattered, write the lines in a shuffled order (a bottom note first, a top
+            // side-note later, …) — deterministic so it replays the same.
+            val order = if (s.scatter > 0f) plines.indices.sortedBy { jitter(99, it, 20) } else plines.indices.toList()
+            order.forEach { idx ->
+                val pl = plines[idx]
                 val ln = pl.text
                 if (ln.isBlank() && pl.annos.isEmpty()) {
-                    steps.add(TypeStep.Reveal({ doneCount = idx + 1; revision++ }))
+                    steps.add(TypeStep.Reveal({ doneLines.add(idx); revision++ }))
                     steps.add(TypeStep.Pause(120))
                 } else {
                     for (j in 1..ln.length) {
@@ -161,7 +166,7 @@ object JournalSim : SimDef {
                         steps.add(TypeStep.Pause(dur + 90))
                         steps.add(TypeStep.Reveal({ doneAnnos.add("$idx:$ai"); drawingLine = -1; revision++ }))
                     }
-                    steps.add(TypeStep.Reveal({ doneCount = idx + 1; activeIdx = -1; revision++ }))
+                    steps.add(TypeStep.Reveal({ doneLines.add(idx); activeIdx = -1; revision++ }))
                     steps.add(TypeStep.Pause(150))
                 }
             }
@@ -195,7 +200,7 @@ object JournalSim : SimDef {
         val scroll = rememberScrollState()
         // no spring scroll (that read as the page "stretching/shaking"); the page stays put
         // and only jumps instantly if the writing overflows it.
-        LaunchedEffect(scroll.maxValue) { if (scroll.maxValue > 0) scroll.scrollTo(scroll.maxValue) }
+        LaunchedEffect(scroll.maxValue) { if (s.scatter == 0f && scroll.maxValue > 0) scroll.scrollTo(scroll.maxValue) }
         LaunchedEffect(rt.playing) { if (!rt.playing) rt.audio.writing(false) }
 
         val ink = Color(s.ink)
@@ -207,7 +212,7 @@ object JournalSim : SimDef {
             Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(start = 96.dp, end = 72.dp, top = TOP_PAD.dp, bottom = 120.dp)) {
                     lines.forEachIndexed { i, ln ->
                         val showLen = when {
-                            preview || i < doneCount -> ln.length
+                            preview || i in doneLines -> ln.length
                             i == activeIdx -> activeLen
                             else -> -1
                         }
@@ -220,7 +225,16 @@ object JournalSim : SimDef {
                                     else -> 0f
                                 }
                             }
-                            HandLine(ln, showLen, if (i == activeIdx) charDraw.value else 1f, ink, style, lineH, i, s.messiness, annos, progs, fontPx)
+                            // scatter: shove the line somewhere random on the page, tilt it, and
+                            // occasionally flip it upside down — like notes jotted all over.
+                            val sc = s.scatter
+                            val sx = if (sc > 0f) (jitter(7, i, 21) - 0.5f) * sc * 230f else 0f
+                            val sy = if (sc > 0f) (jitter(7, i, 22) - 0.5f) * sc * (lineH * 6f) else 0f
+                            val invert = sc > 0f && jitter(7, i, 24) < sc * 0.22f
+                            val rot = if (sc > 0f) (jitter(7, i, 23) - 0.5f) * sc * 34f + (if (invert) 180f else 0f) else 0f
+                            Box(Modifier.offset(x = sx.dp, y = sy.dp).rotate(rot)) {
+                                HandLine(ln, showLen, if (i == activeIdx) charDraw.value else 1f, ink, style, lineH, i, s.messiness, annos, progs, fontPx)
+                            }
                         }
                     }
                 }

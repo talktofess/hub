@@ -273,6 +273,7 @@ fun SoundProfilePicker(label: String, current: com.example.recorder.model.SoundP
 /** Just the writing instruments — for handwriting sims (Journal). */
 val WRITING_SOUNDS = listOf(
     com.example.recorder.model.SoundProfile.STYLUS,
+    com.example.recorder.model.SoundProfile.STYLUSGLASS,
     com.example.recorder.model.SoundProfile.PENCIL,
     com.example.recorder.model.SoundProfile.PEN,
     com.example.recorder.model.SoundProfile.FOUNTAIN,
@@ -282,6 +283,7 @@ val WRITING_SOUNDS = listOf(
     com.example.recorder.model.SoundProfile.CHALK,
     com.example.recorder.model.SoundProfile.CRAYON,
     com.example.recorder.model.SoundProfile.BRUSHPEN,
+    com.example.recorder.model.SoundProfile.NONE,
 )
 
 @Composable

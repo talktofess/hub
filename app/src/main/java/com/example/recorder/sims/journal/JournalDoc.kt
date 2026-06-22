@@ -21,6 +21,9 @@ object JournalStore {
     var textScale by mutableStateOf(1f)
     // human-hand imperfection: per-letter crookedness, size variation + ink weight
     var messiness by mutableStateOf(0.5f)
+    // scatter: 0 = neat top-down; up = lines flung around the page, tilted, some upside down,
+    // and written in a random order (bottom note first, top side-note later, …)
+    var scatter by mutableStateOf(0f)
     // typing + sound
     var typeSpeed by mutableStateOf(0.8f)
     var pacing by mutableStateOf(0.6f)
@@ -29,6 +32,6 @@ object JournalStore {
     fun reset() {
         text = "Today I [o]shipped[/o] it!\n\nThe little app that\ntypes itself and\nrecords the take.\n---\n[u]Small ideas[/u] become\nthe ones worth\n[x]keening[/x] keeping.\n\nMore tomorrow."
         date = "Tuesday"; font = NoteFont.MARKER; ink = 0xFF1E2026L; paper = 0xFFFCFCFEL; textScale = 1f
-        messiness = 0.5f; typeSpeed = 0.8f; pacing = 0.6f; keySound = SoundProfile.STYLUS
+        messiness = 0.5f; scatter = 0f; typeSpeed = 0.8f; pacing = 0.6f; keySound = SoundProfile.STYLUS
     }
 }
