@@ -56,9 +56,9 @@ private const val FONT_BASE = 70f      // big, bold strikes — auto-fit shrinks
 private const val MARGIN_BELL_COL = 24 // ring the warning bell this many chars in (near the page edge)
 // machine geometry (logical px). The paper emerges UP from the platen and grows as
 // lines fill; the carriage head rides the current column and swings home on a return.
-private const val PAPER_W = 1008f      // wide page — lots of horizontal room
-private const val PAPER_X = 36f        // (1080 - 1008) / 2 — centred
-private const val PAPER_PAD = 50f
+private const val PAPER_W = 1048f      // wide page — lots of horizontal room
+private const val PAPER_X = 16f        // (1080 - 1048) / 2 — centred
+private const val PAPER_PAD = 40f
 private const val PAPER_TOPPAD = 64f
 private const val PAPER_BOTMARGIN = 26f
 private const val PLATEN_Y = 1200f     // where the paper meets the platen (current line bottom)
@@ -83,6 +83,7 @@ object TypewriterSim : SimDef {
         put("text", TypewriterStore.text); put("textScale", TypewriterStore.textScale.toDouble())
         put("typeSpeed", TypewriterStore.typeSpeed.toDouble()); put("pacing", TypewriterStore.pacing.toDouble())
         put("keySound", TypewriterStore.keySound.name); put("bell", TypewriterStore.bell)
+        put("font", TypewriterStore.font.name); put("ink", TypewriterStore.ink); put("paper", TypewriterStore.paper)
     }
 
     override fun fromJson(o: JSONObject) {
@@ -91,6 +92,8 @@ object TypewriterSim : SimDef {
         TypewriterStore.typeSpeed = o.optDouble("typeSpeed", 1.0).toFloat(); TypewriterStore.pacing = o.optDouble("pacing", 0.35).toFloat()
         TypewriterStore.keySound = runCatching { com.example.recorder.model.SoundProfile.valueOf(o.optString("keySound")) }.getOrDefault(com.example.recorder.model.SoundProfile.TYPEWRITER)
         TypewriterStore.bell = o.optBoolean("bell", true)
+        TypewriterStore.font = runCatching { com.example.recorder.sims.notes.NoteFont.valueOf(o.optString("font")) }.getOrDefault(com.example.recorder.sims.notes.NoteFont.TYPEWRITER)
+        TypewriterStore.ink = o.optLong("ink", 0xFF241B12); TypewriterStore.paper = o.optLong("paper", 0xFFFCF8EE)
     }
 
     @Composable
@@ -141,13 +144,13 @@ object TypewriterSim : SimDef {
         // as possible, never clipped). Based on the full text so it stays stable while typing.
         val measurer = rememberTextMeasurer()
         val usableW = PAPER_W - PAPER_PAD - 28f
-        val baseStyle = TextStyle(fontSize = (FONT_BASE * fs).sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+        val baseStyle = TextStyle(fontSize = (FONT_BASE * fs).sp, fontFamily = TypewriterStore.font.family, fontWeight = FontWeight.Bold)
         val longest = settledText(TypewriterStore.text).split("\n").maxByOrNull { it.length }?.ifEmpty { " " } ?: " "
         val longestW = measurer.measure(longest, baseStyle).size.width.toFloat()
         val fitScale = if (longestW > usableW) usableW / longestW else 1f
         val fontPx = FONT_BASE * fs * fitScale
         val lineH = fontPx * 1.5f
-        val textStyle = TextStyle(fontSize = fontPx.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+        val textStyle = TextStyle(fontSize = fontPx.sp, fontFamily = TypewriterStore.font.family, fontWeight = FontWeight.Bold)
         // measure the real rendered width of the current line so the caret/carriage
         // land exactly at its end (monospace advance varies by font — don't guess)
         val ch = measurer.measure("M", textStyle).size.width.toFloat()
@@ -165,7 +168,7 @@ object TypewriterSim : SimDef {
                 Modifier.offset(x = PAPER_X.dp, y = paperTop).width(PAPER_W.dp).height(paperContentH.dp)
                     .shadow(20.dp, RoundedCornerShape(5.dp))
                     .clip(RoundedCornerShape(5.dp))
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFCF8EE), Color(0xFFEDE4D1))))
+                    .background(Brush.verticalGradient(listOf(Color(TypewriterStore.paper), androidx.compose.ui.graphics.lerp(Color(TypewriterStore.paper), Color.Black, 0.07f))))
                     .border(1.dp, Color(0x14000000), RoundedCornerShape(5.dp)),
             ) {
                 // a faint left-margin guide line, like a typist's pencil margin
@@ -177,7 +180,7 @@ object TypewriterSim : SimDef {
                 Column(Modifier.padding(start = PAPER_PAD.dp, end = 24.dp, top = PAPER_TOPPAD.dp)) {
                     lines.forEach { ln ->
                         Text(
-                            ln.ifEmpty { " " }, color = Color(0xFF241B12), fontSize = fontPx.sp, lineHeight = lineH.sp,
+                            ln.ifEmpty { " " }, color = Color(TypewriterStore.ink), fontSize = fontPx.sp, lineHeight = lineH.sp,
                             fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold,
                             softWrap = false, maxLines = 1, overflow = TextOverflow.Clip,
                         )
@@ -200,7 +203,7 @@ object TypewriterSim : SimDef {
                 Box(Modifier.offset(x = carriageX - 4.dp, y = (strikeY - 30f).dp).width(8.dp).height((lineH + 12f).dp).clip(RoundedCornerShape(4.dp)).background(Brush.verticalGradient(listOf(Color(0xFFF24B43), Color(0xFF8E1B16)))))
                 if (!preview && caretOn) {
                     // bold underscore cursor sitting on the baseline of the current cell
-                    Box(Modifier.offset(x = carriageX, y = (strikeY + lineH - 16f).dp).width(ch.dp).height(11.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFF241B12)))
+                    Box(Modifier.offset(x = carriageX, y = (strikeY + lineH - 16f).dp).width(ch.dp).height(11.dp).clip(RoundedCornerShape(2.dp)).background(Color(TypewriterStore.ink)))
                 }
             }
         }

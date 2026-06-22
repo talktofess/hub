@@ -45,6 +45,7 @@ import com.example.recorder.engine.settledText
 import com.example.recorder.sims.SimDef
 import com.example.recorder.sims.SimFrame
 import com.example.recorder.sims.SimLogical
+import org.json.JSONArray
 import org.json.JSONObject
 
 private val SPIN = listOf("✻", "✶", "✳", "✺", "✸", "✷")
@@ -79,8 +80,8 @@ object ClaudeSim : SimDef {
     override fun toJson() = JSONObject().apply {
         put("model", ClaudeStore.model); put("name", ClaudeStore.name); put("account", ClaudeStore.account)
         put("cwd", ClaudeStore.cwd); put("version", ClaudeStore.version); put("thinkMs", ClaudeStore.thinkMs)
-        put("tokenTarget", ClaudeStore.tokenTarget)
-        put("verb", ClaudeStore.verb); put("prompt", ClaudeStore.prompt); put("reply", ClaudeStore.reply)
+        put("tokenTarget", ClaudeStore.tokenTarget); put("verb", ClaudeStore.verb)
+        put("turns", JSONArray().apply { ClaudeStore.turns.forEach { put(JSONObject().apply { put("p", it.prompt); put("r", it.reply) }) } })
         put("typeSpeed", ClaudeStore.typeSpeed.toDouble()); put("pacing", ClaudeStore.pacing.toDouble())
         put("keySound", ClaudeStore.keySound.name); put("streamSpeed", ClaudeStore.streamSpeed.toDouble())
         put("welcomeBox", ClaudeStore.welcomeBox)
@@ -95,8 +96,14 @@ object ClaudeSim : SimDef {
         ClaudeStore.thinkMs = o.optInt("thinkMs", ClaudeStore.thinkMs)
         ClaudeStore.tokenTarget = o.optInt("tokenTarget", ClaudeStore.tokenTarget)
         ClaudeStore.verb = o.optString("verb", ClaudeStore.verb)
-        ClaudeStore.prompt = o.optString("prompt", ClaudeStore.prompt)
-        ClaudeStore.reply = o.optString("reply", ClaudeStore.reply)
+        val ta = o.optJSONArray("turns")
+        if (ta != null) {
+            ClaudeStore.turns.clear()
+            for (i in 0 until ta.length()) { val t = ta.getJSONObject(i); ClaudeStore.turns.add(ClaudeTurn(t.optString("p"), t.optString("r"))) }
+            if (ClaudeStore.turns.isEmpty()) ClaudeStore.turns.add(ClaudeTurn("what should I build next?", "Ship the smallest thing you'd demo first."))
+        } else if (o.has("prompt")) { // migrate an old single-turn save
+            ClaudeStore.turns.clear(); ClaudeStore.turns.add(ClaudeTurn(o.optString("prompt"), o.optString("reply")))
+        }
         ClaudeStore.typeSpeed = o.optDouble("typeSpeed", 0.85).toFloat()
         ClaudeStore.pacing = o.optDouble("pacing", 0.5).toFloat()
         ClaudeStore.keySound = runCatching { com.example.recorder.model.SoundProfile.valueOf(o.optString("keySound")) }.getOrDefault(com.example.recorder.model.SoundProfile.KEYBOARD)
@@ -112,6 +119,7 @@ object ClaudeSim : SimDef {
 
         var psCmd by remember { mutableStateOf("") }
         var welcome by remember { mutableStateOf(false) }
+        var turnIndex by remember { mutableIntStateOf(0) }
         var userText by remember { mutableStateOf("") }
         var userTyping by remember { mutableStateOf(false) }
         var thinking by remember { mutableStateOf(false) }
@@ -122,7 +130,7 @@ object ClaudeSim : SimDef {
             val steps = mutableListOf<TypeStep>()
             fun bn(len: Int) = rt.beginNote(NoteTiming(s.typeSpeed.coerceAtLeast(0.1f), s.pacing, 0.5f, 0.6f, 0f, len.coerceAtLeast(1), emptyMap()))
             steps.add(TypeStep.Reveal({
-                psCmd = ""; welcome = false; userText = ""; userTyping = false; thinking = false; reply = ""; revision++
+                psCmd = ""; welcome = false; turnIndex = 0; userText = ""; userTyping = false; thinking = false; reply = ""; revision++
                 rt.audio.profile = s.keySound; bn(1)
             }))
             // 1) launch — type `claude`
@@ -130,34 +138,27 @@ object ClaudeSim : SimDef {
             steps.add(TypeStep.Type("claude", { psCmd = it; revision++ }))
             steps.add(TypeStep.Pause(340))
             // 2) welcome box fades in
-            if (s.welcomeBox) {
-                steps.add(TypeStep.Reveal({ welcome = true; revision++ }))
-                steps.add(TypeStep.Pause(820))
-            } else {
-                steps.add(TypeStep.Reveal({ welcome = true; revision++ }))
-            }
-            // 3) type the prompt
-            steps.add(TypeStep.Reveal({ userTyping = true; bn(s.prompt.length); revision++ }))
-            steps.add(TypeStep.Type(s.prompt, { userText = it; revision++ }))
-            steps.add(TypeStep.Pause(420))
-            steps.add(TypeStep.Reveal({ userTyping = false; revision++ }))
-            steps.add(TypeStep.Pause(380))
-            // 4) thinking beat — stays until the answer is ready
-            steps.add(TypeStep.Reveal({ thinking = true; revision++ }))
-            steps.add(TypeStep.Pause(s.thinkMs.coerceIn(0, 60000)))
-            // 5) stream the reply word by word — the thinking line vanishes the instant the
-            // first answer token lands (it doesn't linger).
-            val tokens = Regex("""\s+|\S+""").findAll(s.reply).map { it.value }.toList()
+            steps.add(TypeStep.Reveal({ welcome = true; revision++ }))
+            if (s.welcomeBox) steps.add(TypeStep.Pause(820))
+            // 3) the conversation — each turn: type the prompt, think, stream the answer; then
+            //    the next follow-up does the same, with prior turns kept on screen.
             val delay = (58 / s.streamSpeed.coerceAtLeast(0.1f)).toInt()
-            tokens.forEachIndexed { i, tok ->
-                steps.add(TypeStep.Reveal({
-                    if (i == 0) thinking = false
-                    reply += tok; revision++
-                    if (tok.isNotBlank()) rt.audio.key()
-                }))
-                steps.add(TypeStep.Pause(delay))
+            s.turns.forEachIndexed { t, turn ->
+                steps.add(TypeStep.Reveal({ turnIndex = t; userText = ""; userTyping = true; thinking = false; reply = ""; revision++; bn(turn.prompt.length) }, delay = if (t > 0) 540 else 120))
+                steps.add(TypeStep.Type(turn.prompt, { userText = it; revision++ }))
+                steps.add(TypeStep.Pause(420))
+                steps.add(TypeStep.Reveal({ userTyping = false; revision++ }))
+                steps.add(TypeStep.Pause(360))
+                steps.add(TypeStep.Reveal({ thinking = true; revision++ }))
+                steps.add(TypeStep.Pause(s.thinkMs.coerceIn(0, 60000)))
+                val tokens = Regex("""\s+|\S+""").findAll(turn.reply).map { it.value }.toList()
+                tokens.forEachIndexed { i, tok ->
+                    steps.add(TypeStep.Reveal({ if (i == 0) thinking = false; reply += tok; revision++; if (tok.isNotBlank()) rt.audio.key() }))
+                    steps.add(TypeStep.Pause(delay))
+                }
+                steps.add(TypeStep.Pause(700))
             }
-            steps.add(TypeStep.Pause(900))
+            steps.add(TypeStep.Pause(400))
             return steps
         }
         rt.planFactory = { buildPlan() }
@@ -182,10 +183,6 @@ object ClaudeSim : SimDef {
         // static preview
         val sPs = if (preview) "claude" else psCmd
         val sWelcome = if (preview) s.welcomeBox else welcome
-        val sUser = if (preview) settledText(s.prompt) else userText
-        val sReply = if (preview) s.reply else reply
-        val showUser = preview || welcome
-        val showUserCaret = !preview && userTyping
 
         val scroll = rememberScrollState()
         LaunchedEffect(revision) { scroll.scrollTo(scroll.maxValue) }
@@ -202,39 +199,48 @@ object ClaudeSim : SimDef {
 
                 if (sWelcome) WelcomeBox(base)
 
-                if (showUser && (sUser.isNotEmpty() || showUserCaret)) {
-                    Row(Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.Top) {
-                        Text(">", color = ACCENT, fontWeight = FontWeight.Bold, fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp)
-                        Spacer(Modifier.width(20.dp))
-                        Row(Modifier.weight(1f)) {
-                            Text(sUser, color = Color(0xFFD2CFCA), fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp)
-                            if (showUserCaret) Caret(caretOn, base)
+                // the conversation — completed turns stay; the active turn types/thinks/streams
+                if (preview || welcome) {
+                    s.turns.forEachIndexed { t, turn ->
+                        val shown = preview || t < turnIndex
+                        val active = !preview && t == turnIndex
+                        if (!shown && !active) return@forEachIndexed
+                        val uText = if (shown) settledText(turn.prompt) else userText
+                        val uCaret = active && userTyping
+                        if (uText.isNotEmpty() || uCaret) {
+                            Row(Modifier.padding(vertical = 12.dp), verticalAlignment = Alignment.Top) {
+                                Text(">", color = ACCENT, fontWeight = FontWeight.Bold, fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp)
+                                Spacer(Modifier.width(20.dp))
+                                Row(Modifier.weight(1f)) {
+                                    Text(uText, color = Color(0xFFD2CFCA), fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp)
+                                    if (uCaret) Caret(caretOn, base)
+                                }
+                            }
                         }
-                    }
-                }
-
-                if (thinking) {
-                    val verb = s.verb.ifBlank { VERBS[verbIdx] }
-                    val secs = (progress * s.thinkMs / 1000f).toInt()
-                    val tokens = (s.tokenTarget * (progress * (2 - progress))).toInt()
-                    val traceIdx = (progress * TRACE.size).toInt().coerceIn(0, TRACE.size - 1)
-                    Column(Modifier.padding(top = 8.dp, bottom = 24.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(SPIN[spinIdx], color = ACCENT, fontSize = base.sp, fontFamily = FontFamily.Monospace)
-                            Spacer(Modifier.width(18.dp))
-                            Text("$verb…", color = Color(0xFFD7D6D2), fontSize = base.sp, fontFamily = FontFamily.Monospace)
-                            Spacer(Modifier.width(18.dp))
-                            Text("(${secs}s · ↑ ${fmtTok(tokens)} tokens · esc to interrupt)", color = Color(0xFF8A8A86), fontSize = (base * 0.8f).sp, fontFamily = FontFamily.Monospace)
+                        if (active && thinking) {
+                            val verb = s.verb.ifBlank { VERBS[verbIdx] }
+                            val secs = (progress * s.thinkMs / 1000f).toInt()
+                            val tk = (s.tokenTarget * (progress * (2 - progress))).toInt()
+                            val traceIdx = (progress * TRACE.size).toInt().coerceIn(0, TRACE.size - 1)
+                            Column(Modifier.padding(top = 8.dp, bottom = 24.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(SPIN[spinIdx], color = ACCENT, fontSize = base.sp, fontFamily = FontFamily.Monospace)
+                                    Spacer(Modifier.width(18.dp))
+                                    Text("$verb…", color = Color(0xFFD7D6D2), fontSize = base.sp, fontFamily = FontFamily.Monospace)
+                                    Spacer(Modifier.width(18.dp))
+                                    Text("(${secs}s · ↑ ${fmtTok(tk)} tokens · esc to interrupt)", color = Color(0xFF8A8A86), fontSize = (base * 0.8f).sp, fontFamily = FontFamily.Monospace)
+                                }
+                                Text("${TRACE[traceIdx]}…", color = Color(0xFF75736E), fontSize = (base * 0.8f).sp, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 52.dp, top = 12.dp))
+                            }
                         }
-                        Text("${TRACE[traceIdx]}…", color = Color(0xFF75736E), fontSize = (base * 0.8f).sp, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 52.dp, top = 12.dp))
-                    }
-                }
-
-                if (sReply.isNotEmpty()) {
-                    Row(Modifier.padding(top = 6.dp, bottom = 30.dp), verticalAlignment = Alignment.Top) {
-                        Text("⏺", color = ACCENT, fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp)
-                        Spacer(Modifier.width(20.dp))
-                        Text(sReply, color = Color(0xFFE3E2DE), fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp, modifier = Modifier.weight(1f))
+                        val rText = if (shown) turn.reply else reply
+                        if (rText.isNotEmpty()) {
+                            Row(Modifier.padding(top = 6.dp, bottom = 30.dp), verticalAlignment = Alignment.Top) {
+                                Text("⏺", color = ACCENT, fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp)
+                                Spacer(Modifier.width(20.dp))
+                                Text(rText, color = Color(0xFFE3E2DE), fontSize = base.sp, fontFamily = FontFamily.Monospace, lineHeight = (base * 1.5f).sp, modifier = Modifier.weight(1f))
+                            }
+                        }
                     }
                 }
                 Spacer(Modifier.height(40.dp))

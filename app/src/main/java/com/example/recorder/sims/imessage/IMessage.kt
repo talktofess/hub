@@ -1,10 +1,12 @@
 package com.example.recorder.sims.imessage
 
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -109,6 +111,8 @@ object IMessageSim : SimDef {
                 rt.audio.profile = s.keySound
                 rt.beginNote(NoteTiming(s.typeSpeed.coerceAtLeast(0.1f), s.pacing, 0.55f, 0.7f, 0f, 1, emptyMap()))
             }))
+            // open on the focused input — cursor blinking in the field, keyboard up — before typing
+            steps.add(TypeStep.Pause(700))
             messages.forEachIndexed { i, m ->
                 if (m.delayMs > 0) steps.add(TypeStep.Pause(m.delayMs))
                 if (m.fromMe) {
@@ -150,6 +154,10 @@ object IMessageSim : SimDef {
         rt.planFactory = { buildPlan() }
         DisposableEffect(Unit) { onDispose { rt.planFactory = null } }
         LaunchedEffect(revision) { scroll.scrollTo(scroll.maxValue) }
+        val caretOn = run {
+            val t = rememberInfiniteTransition(label = "caret")
+            t.animateFloat(0f, 1f, infiniteRepeatable(tween(1060, easing = LinearEasing)), label = "b").value < 0.5f
+        }
 
         Column(Modifier.fillMaxSize().background(Color.White)) {
             if (MessagesStore.statusBar) StatusBar(MessagesStore.clock, onDark = false)
@@ -170,7 +178,7 @@ object IMessageSim : SimDef {
                     }
                 }
             }
-            InputBar(composing, fs)
+            InputBar(composing, fs, caret = !preview && caretOn)
             if (MessagesStore.showKeyboard) {
                 PhoneKeyboard(
                     pressed = if (preview) null else pressedKey,
@@ -277,7 +285,7 @@ private fun TypingBubble() {
 }
 
 @Composable
-private fun InputBar(composing: String, fs: Float) {
+private fun InputBar(composing: String, fs: Float, caret: Boolean = false) {
     Row(
         Modifier.fillMaxWidth().background(HEADER_BG).padding(horizontal = 24.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -288,12 +296,15 @@ private fun InputBar(composing: String, fs: Float) {
                 .background(Color.White)
                 .padding(horizontal = 28.dp, vertical = 18.dp),
         ) {
-            Text(
-                composing.ifEmpty { "iMessage" },
-                color = if (composing.isEmpty()) Color(0xFFB0B0B5) else Color.Black,
-                fontSize = (36f * fs).sp,
-                fontFamily = FontFamily.SansSerif,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    composing.ifEmpty { if (caret) "" else "iMessage" },
+                    color = if (composing.isEmpty()) Color(0xFFB0B0B5) else Color.Black,
+                    fontSize = (36f * fs).sp,
+                    fontFamily = FontFamily.SansSerif,
+                )
+                if (caret) Box(Modifier.padding(start = 2.dp).width((4f * fs).dp).height((42f * fs).dp).background(SENT))
+            }
         }
         Box(Modifier.size(72.dp).clip(CircleShape).background(if (composing.isNotEmpty()) SENT else Color(0xFFD8D8DD)), contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.ArrowUpward, contentDescription = "send", tint = Color.White, modifier = Modifier.size(42.dp))

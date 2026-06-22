@@ -2,12 +2,21 @@ package com.example.recorder.sims.claude
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,9 +30,20 @@ import com.example.recorder.ui.SoundProfilePicker
 fun ClaudeBuilder(ctx: BuilderContext) {
     val s = ClaudeStore
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionLabel("Conversation")
-        OutlinedTextField(s.prompt, { s.prompt = it }, label = { Text("Your prompt") }, modifier = Modifier.fillMaxWidth().heightIn(min = 110.dp))
-        OutlinedTextField(s.reply, { s.reply = it }, label = { Text("Claude's reply (streams in)") }, modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp))
+        SectionLabel("Conversation (prompt → reply, then follow-ups)")
+        s.turns.forEachIndexed { i, turn ->
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(if (i == 0) "First exchange" else "Follow-up $i", Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    if (s.turns.size > 1) TextButton(onClick = { s.removeTurn(i) }) { Icon(Icons.Filled.Delete, null, Modifier.size(18.dp)); Text(" Remove") }
+                }
+                OutlinedTextField(turn.prompt, { turn.prompt = it }, label = { Text("Your prompt") }, modifier = Modifier.fillMaxWidth().heightIn(min = 90.dp))
+                OutlinedTextField(turn.reply, { turn.reply = it }, label = { Text("Claude's reply (streams in)") }, modifier = Modifier.fillMaxWidth().heightIn(min = 130.dp))
+            }
+        }
+        OutlinedButton(onClick = { s.addTurn() }, contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp)) {
+            Icon(Icons.Filled.Add, null, Modifier.size(18.dp)); Text(" Add follow-up")
+        }
 
         SectionLabel("Thinking")
         LabeledSlider("Thinking time", s.thinkMs / 1000f, 0.4f..15f, "%.1fs") { s.thinkMs = (it * 1000).toInt() }

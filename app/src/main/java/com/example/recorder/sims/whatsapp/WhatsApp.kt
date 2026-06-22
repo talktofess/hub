@@ -1,5 +1,10 @@
 package com.example.recorder.sims.whatsapp
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -101,6 +106,8 @@ object WhatsAppSim : SimDef {
                 rt.audio.profile = s.keySound
                 rt.beginNote(NoteTiming(s.typeSpeed.coerceAtLeast(0.1f), s.pacing, 0.55f, 0.7f, 0f, 1, emptyMap()))
             }))
+            // open on the focused input — cursor blinking, keyboard up — before typing
+            steps.add(TypeStep.Pause(700))
             messages.forEachIndexed { i, m ->
                 if (m.delayMs > 0) steps.add(TypeStep.Pause(m.delayMs))
                 if (m.fromMe) {
@@ -141,6 +148,10 @@ object WhatsAppSim : SimDef {
         rt.planFactory = { buildPlan() }
         DisposableEffect(Unit) { onDispose { rt.planFactory = null } }
         LaunchedEffect(revision) { scroll.scrollTo(scroll.maxValue) }
+        val caretOn = run {
+            val t = rememberInfiniteTransition(label = "caret")
+            t.animateFloat(0f, 1f, infiniteRepeatable(tween(1060, easing = LinearEasing)), label = "b").value < 0.5f
+        }
 
         Column(Modifier.fillMaxSize().background(Color(WhatsAppStore.wallpaper))) {
             Header(WhatsAppStore.contactName, if (!preview && showTyping) "typing…" else WhatsAppStore.status, WhatsAppStore.avatarUri, fs, WhatsAppStore.statusBar, WhatsAppStore.clock)
@@ -153,7 +164,7 @@ object WhatsAppSim : SimDef {
                     if (preview || i < visible) Bubble(m, fs, reactionShown = preview || reacted.contains(m.id))
                 }
             }
-            InputBar(composing, fs)
+            InputBar(composing, fs, caret = !preview && caretOn)
             if (WhatsAppStore.showKeyboard) {
                 PhoneKeyboard(
                     pressed = if (preview) null else pressedKey,
@@ -231,18 +242,21 @@ private fun Bubble(m: Message, fs: Float, reactionShown: Boolean) {
 }
 
 @Composable
-private fun InputBar(composing: String, fs: Float) {
+private fun InputBar(composing: String, fs: Float, caret: Boolean = false) {
     Row(
         Modifier.fillMaxWidth().background(Color(0xFFF0F0F0)).padding(horizontal = 22.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.weight(1f).clip(RoundedCornerShape(40.dp)).background(Color.White).padding(horizontal = 28.dp, vertical = 20.dp)) {
-            Text(
-                composing.ifEmpty { "Message" },
-                color = if (composing.isEmpty()) Color(0xFF9AA0A6) else Color(0xFF111B21),
-                fontSize = (36f * fs).sp, fontFamily = FontFamily.SansSerif,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    composing.ifEmpty { if (caret) "" else "Message" },
+                    color = if (composing.isEmpty()) Color(0xFF9AA0A6) else Color(0xFF111B21),
+                    fontSize = (36f * fs).sp, fontFamily = FontFamily.SansSerif,
+                )
+                if (caret) Box(Modifier.padding(start = 2.dp).width((4f * fs).dp).height((42f * fs).dp).background(SEND))
+            }
         }
         Box(Modifier.size(82.dp).clip(CircleShape).background(SEND), contentAlignment = Alignment.Center) {
             Text(if (composing.isEmpty()) "🎤" else "➤", color = Color.White, fontSize = (38f * fs).sp)
